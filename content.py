@@ -102,12 +102,12 @@ def tasks(stdscr, option, selected, text_input, text_box):
                     display_task(stdscr, task_key, selected, tasks_vertical)
             
             stdscr.addstr(stdscr.getmaxyx()[0] - 4, 0, "╔" + "═" * (stdscr.getmaxyx()[1] - 2) + "╗")
-            stdscr.addstr(stdscr.getmaxyx()[0] - 3, 0, "║", curses.color_pair(1))
-            stdscr.addstr(stdscr.getmaxyx()[0] - 3, 2, text_box, curses.color_pair(1))
+            stdscr.addstr(stdscr.getmaxyx()[0] - 3, 0, "║ - ", curses.color_pair(1))
+            stdscr.addstr(stdscr.getmaxyx()[0] - 3, 4, text_box, curses.color_pair(1))
             if text_input:
-                stdscr.addstr(stdscr.getmaxyx()[0] - 3, len(text_box) + 2, " ", curses.color_pair(2))
-                stdscr.addstr(stdscr.getmaxyx()[0] - 3, len(text_box) + 3, " " * (stdscr.getmaxyx()[1] - len(text_box) - 6), curses.color_pair(1))
+                stdscr.addstr(stdscr.getmaxyx()[0] - 3, len(text_box) + 4, " ", curses.color_pair(2))
+                stdscr.addstr(stdscr.getmaxyx()[0] - 3, len(text_box) + 5, " " * (stdscr.getmaxyx()[1] - len(text_box) - 6), curses.color_pair(1))
             else:
-                stdscr.addstr(stdscr.getmaxyx()[0] - 3, len(text_box) + 2, " ", curses.color_pair(1))
+                stdscr.addstr(stdscr.getmaxyx()[0] - 3, len(text_box) + 4, " ", curses.color_pair(1))
             stdscr.addstr(stdscr.getmaxyx()[0] - 3, stdscr.getmaxyx()[1]-1, "║", curses.color_pair(1))
             stdscr.addstr(stdscr.getmaxyx()[0] - 2, 0, "╚" + "═" * (stdscr.getmaxyx()[1] - 2) + "╝")

@@ -33,10 +33,10 @@ def inner_navbar(stdscr, outer_option, inner_option, selected):
     for x in range(len(options)):
         stdscr.addstr(" " + options[x] + " ", curses.color_pair(1 + (x != inner_option) + 4 * (selected == 1)))
 
-def content(stdscr, outer_option, inner_option, selected, text_input, text_box):
+def content(stdscr, outer_option, inner_option, selected, tasks_vertical, text_input, text_box):
     match outer_option:
         case 0:
-            tasks(stdscr, inner_option, selected, text_input, text_box)
+            tasks(stdscr, inner_option, selected, tasks_vertical, text_input, text_box)
     return
 
 def status_bar(stdscr):
@@ -78,7 +78,10 @@ def main(stdscr):
     outer_option = inner_option = selected = 0
 
     text_input = False
+    text_mode = []
     text_box = ""
+
+    tasks_vertical = []
 
     for x in range(width):
         for y in range(height):
@@ -87,7 +90,6 @@ def main(stdscr):
             except:
                 stdscr.insstr(y, x-1, "•", curses.color_pair(4))
 
-    ping = time.time()
     while True:
         # Update the special color based on conditions
         base_value = 500
@@ -127,7 +129,7 @@ def main(stdscr):
         else:
             outer_navbar(stdscr, outer_option, selected)
             inner_navbar(stdscr, outer_option, inner_option, selected)
-            content(stdscr, outer_option, inner_option, selected, text_input, text_box)
+            content(stdscr, outer_option, inner_option, selected, tasks_vertical, text_input, text_box)
             status_bar(stdscr)
 
         # Non-blocking check for key input
@@ -180,8 +182,9 @@ def main(stdscr):
                 elif key == 13:
                     if outer_option == 0:
                         if inner_option == 0:
-                            Task.add_task(text_box)
-                            text_box = ""
+                            if text_mode == "new task":
+                                Task.add_task(text_box)
+                                text_box = ""
                 else:
                     text_box += chr(key)
             elif chr(key) == "q":
@@ -193,9 +196,19 @@ def main(stdscr):
                         stdscr.clear()
             elif outer_option == 0:
                 if inner_option == 0 and selected >= 2:
+                    task = tasks_vertical[selected - 2]
                     match chr(key):
                         case ":":
                             text_input = True
+                            text_mode = "new task"
+                        case "x":
+                            Task.edit_task(task, completed=not Task.load_tasks()[str(task)]["completed"])
+                        case ">":
+                            text_input = True
+                            text_mode = "migrating"
+                        case "<":
+                            text_input = True
+                            text_mode = "scheduling"
             else:
                 pass
 

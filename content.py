@@ -7,14 +7,12 @@ class Task:
     def __init__(self, title, description="", due_date=date.today().strftime("%Y%m%d"), priority="medium", tags=[], subtasks=[], parents=[]):
         self.id = str(uuid.uuid4())  # Unique identifier for the task
         self.title = title  # Task title
-        self.description = description  # Task description
         self.due_date = due_date  # Task due date (string, could be a day/week/month-based format)
         self.priority = priority  # Priority: low, medium, high (default: medium)
         self.completed = False  # Task completion status (default: False)
         self.subtasks = subtasks if subtasks else []  # List of subtasks (empty by default)
         self.parents = parents if parents else []  # List of parent tasks (empty by default)
         self.tags = tags if tags else []  # Optional tags (default: empty list)
-        self.migrations = []  # Keep a history of all migrations (dates task was moved forward)
         self.date_added = str(datetime.now().date())  # When the task was originally scheduled
         self.date_history = []  # Track any past due dates for this task
 
@@ -48,6 +46,7 @@ class Task:
     def edit_task(cls, task_id, **kwargs):
         """Edit an existing task's attributes."""
         tasks = cls.load_tasks()  # Load existing tasks
+        task_id = str(task_id)
         if task_id in tasks:  # Check if task exists
             task_data = tasks[task_id]  # Get task data
             # Update task attributes based on provided kwargs
@@ -79,13 +78,14 @@ def display_task(stdscr, task_key, selected, ls, indent=0):
     task = Task.load_tasks()[str(task_key)]
     # Display the task title with indentation
     stdscr.move(stdscr.getyx()[0] + 1, 2)
-    stdscr.addstr(f"{'  ' * indent}- {task['title']}", curses.color_pair(1 + 4 * (stdscr.getyx()[0] - 1 == selected)))
+    stdscr.addstr(f"{'  ' * indent}{'x' if task['completed'] else '•'} ", (curses.color_pair(4 if stdscr.getyx()[0] - 1 != selected and task['completed'] else (1 + 4 * (stdscr.getyx()[0] - 1 == selected)))))
+    stdscr.addstr(task['title'], (curses.color_pair(4 if stdscr.getyx()[0] - 1 != selected and task['completed'] else (1 + 4 * (stdscr.getyx()[0] - 1 == selected)))) | (curses.A_ITALIC if task['completed'] else 0))
     ls.append(task_key)
     # Display subtasks if any
     for subtask_key in task['subtasks']:
         display_task(stdscr, subtask_key, selected, ls, indent=indent + 1)
 
-def tasks(stdscr, option, selected, text_input, text_box):
+def tasks(stdscr, option, selected, tasks_vertical, text_input, text_box):
     match option:
         case 0:
             for y in range(3, stdscr.getmaxyx()[0] - 5):
@@ -96,7 +96,6 @@ def tasks(stdscr, option, selected, text_input, text_box):
 
             stdscr.move(2, 0)
             tasks = Task.load_tasks()
-            tasks_vertical = []
             for task_key in tasks:
                 if tasks[task_key]['parents'] == []:
                     display_task(stdscr, task_key, selected, tasks_vertical)

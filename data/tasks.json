@@ -2,10 +2,9 @@
     "1": {
         "id": 1,
         "title": "Finish assignment",
-        "description": "Finish the history assignment",
         "due_date": "2024-10-12",
         "priority": "high",
-        "completed": false,
+        "completed": true,
         "subtasks": [
             2,
             3
@@ -19,10 +18,9 @@
     "2": {
         "id": 2,
         "title": "Research topic",
-        "description": "Gather materials and information",
         "due_date": "2024-10-05",
         "priority": "medium",
-        "completed": false,
+        "completed": true,
         "subtasks": [],
         "parents": [
             1
@@ -35,7 +33,6 @@
     "3": {
         "id": 3,
         "title": "Write draft",
-        "description": "Create the first draft of the assignment",
         "due_date": "2024-10-10",
         "priority": "high",
         "completed": false,
@@ -53,7 +50,6 @@
     "4": {
         "id": 4,
         "title": "Revise draft",
-        "description": "Make improvements to the draft",
         "due_date": "2024-10-11",
         "priority": "high",
         "completed": false,
@@ -69,7 +65,6 @@
     "5": {
         "id": 5,
         "title": "Prepare presentation",
-        "description": "Create slides for the presentation",
         "due_date": "2024-10-15",
         "priority": "medium",
         "completed": false,
@@ -80,24 +75,9 @@
             "due_dates": []
         }
     },
-    "3c13dfc1-8d1c-488b-9d7a-28b47dff133b": {
-        "id": "3c13dfc1-8d1c-488b-9d7a-28b47dff133b",
-        "title": "",
-        "description": "",
-        "due_date": "",
-        "priority": "medium",
-        "completed": false,
-        "subtasks": [],
-        "parents": [],
-        "tags": [],
-        "migrations": [],
-        "date_added": "2024-10-06",
-        "date_history": []
-    },
-    "5eca552d-fdb9-47eb-941a-15e877c6697b": {
-        "id": "5eca552d-fdb9-47eb-941a-15e877c6697b",
-        "title": "ass",
-        "description": "",
+    "ba63c2c6-ac5c-4662-bebf-a2aa3fb5f44d": {
+        "id": "ba63c2c6-ac5c-4662-bebf-a2aa3fb5f44d",
+        "title": "if you're reading this i managed to add a task",
         "due_date": "",
         "priority": "medium",
         "completed": false,

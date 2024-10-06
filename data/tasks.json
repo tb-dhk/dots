@@ -1,90 +1,52 @@
 {
-    "1": {
-        "id": 1,
-        "title": "Finish assignment",
-        "due_date": "2024-10-12",
-        "priority": "high",
-        "completed": true,
-        "subtasks": [
-            2,
-            3
-        ],
-        "parents": [],
-        "history": {
-            "added": "2024-09-30",
-            "due_dates": []
-        }
-    },
-    "2": {
-        "id": 2,
-        "title": "Research topic",
-        "due_date": "2024-10-05",
-        "priority": "medium",
-        "completed": true,
-        "subtasks": [],
-        "parents": [
-            1
-        ],
-        "history": {
-            "added": "2024-09-30",
-            "due_dates": []
-        }
-    },
-    "3": {
-        "id": 3,
-        "title": "Write draft",
-        "due_date": "2024-10-10",
-        "priority": "high",
-        "completed": false,
-        "subtasks": [
-            4
-        ],
-        "parents": [
-            1
-        ],
-        "history": {
-            "added": "2024-09-30",
-            "due_dates": []
-        }
-    },
-    "4": {
-        "id": 4,
-        "title": "Revise draft",
-        "due_date": "2024-10-11",
-        "priority": "high",
-        "completed": false,
-        "subtasks": [],
-        "parents": [
-            3
-        ],
-        "history": {
-            "added": "2024-09-30",
-            "due_dates": []
-        }
-    },
-    "5": {
-        "id": 5,
-        "title": "Prepare presentation",
-        "due_date": "2024-10-15",
-        "priority": "medium",
-        "completed": false,
-        "subtasks": [],
-        "parents": [],
-        "history": {
-            "added": "2024-09-30",
-            "due_dates": []
-        }
-    },
     "ba63c2c6-ac5c-4662-bebf-a2aa3fb5f44d": {
         "id": "ba63c2c6-ac5c-4662-bebf-a2aa3fb5f44d",
-        "title": "if you're reading this i managed to add a task",
+        "name": "if you're reading this i managed to add a task",
         "due_date": "",
-        "priority": "medium",
+        "priority": 2,
         "completed": false,
-        "subtasks": [],
-        "parents": [],
+        "subtasks": [
+            "407c4a64-bd0e-40f6-8eec-35c842983069"
+        ],
+        "parent": null,
         "tags": [],
         "migrations": [],
+        "date_added": "2024-10-06",
+        "date_history": []
+    },
+    "407c4a64-bd0e-40f6-8eec-35c842983069": {
+        "id": "407c4a64-bd0e-40f6-8eec-35c842983069",
+        "name": "you walk like a bitch (when i was ten someone said that)",
+        "due_date": "2024-10-06",
+        "priority": 2,
+        "completed": false,
+        "subtasks": [],
+        "parent": "ba63c2c6-ac5c-4662-bebf-a2aa3fb5f44d",
+        "tags": [],
+        "date_added": "2024-10-06",
+        "date_history": []
+    },
+    "a449313b-8038-4026-88dd-6997b527987d": {
+        "id": "a449313b-8038-4026-88dd-6997b527987d",
+        "name": "uwu owo nya :3",
+        "due_date": "2024-10-07",
+        "priority": 2,
+        "completed": false,
+        "subtasks": [],
+        "parent": null, 
+        "tags": [],
+        "date_added": "2024-10-06",
+        "date_history": []
+    },
+    "7b35b581-858a-4d69-9969-57919e73a2f8": {
+        "id": "7b35b581-858a-4d69-9969-57919e73a2f8",
+        "name": "i fucked up",
+        "due_date": "",
+        "priority": 3,
+        "completed": false,
+        "subtasks": [],
+        "parent": null,
+        "tags": [],
         "date_added": "2024-10-06",
         "date_history": []
     }

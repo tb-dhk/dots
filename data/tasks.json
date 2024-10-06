@@ -12,7 +12,11 @@
         "tags": [],
         "migrations": [],
         "date_added": "2024-10-06",
-        "date_history": []
+        "date_history": [],
+        "recurrence": {
+            "interval": daily,
+            ""
+        }
     },
     "407c4a64-bd0e-40f6-8eec-35c842983069": {
         "id": "407c4a64-bd0e-40f6-8eec-35c842983069",
@@ -24,7 +28,11 @@
         "parent": "ba63c2c6-ac5c-4662-bebf-a2aa3fb5f44d",
         "tags": [],
         "date_added": "2024-10-06",
-        "date_history": []
+        "date_history": [],
+        "recurrence": {
+            "interval": daily,
+            ""
+        }
     },
     "a449313b-8038-4026-88dd-6997b527987d": {
         "id": "a449313b-8038-4026-88dd-6997b527987d",
@@ -36,7 +44,11 @@
         "parent": null, 
         "tags": [],
         "date_added": "2024-10-06",
-        "date_history": []
+        "date_history": [],
+        "recurrence": {
+            "interval": daily,
+            ""
+        }
     },
     "7b35b581-858a-4d69-9969-57919e73a2f8": {
         "id": "7b35b581-858a-4d69-9969-57919e73a2f8",
@@ -48,6 +60,10 @@
         "parent": null,
         "tags": [],
         "date_added": "2024-10-06",
-        "date_history": []
+        "date_history": [],
+        "recurrence": {
+            "interval": daily,
+            ""
+        }
     }
 }

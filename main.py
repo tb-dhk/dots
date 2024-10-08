@@ -5,7 +5,7 @@ from datetime import datetime as dt, date, timedelta
 import toml
 import calendar
 
-from content import Task, get_task_list, display_tasks, day_view, tasks_for_day, week_view, tasks_for_week, month_view, tasks_for_month, year_view, tasks_for_year
+from tasks import Task, get_task_list, display_tasks, day_view, tasks_for_day, week_view, tasks_for_week, month_view, tasks_for_month, year_view, tasks_for_year
 from points import points
 
 config = toml.load("config.toml")

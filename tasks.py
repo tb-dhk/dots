@@ -314,8 +314,8 @@ def draw_table(window, data, start_y, start_x, selected):
         window.addstr(start_y + 2, start_x + sum(column_widths[:i]) + i, '+' + '-' * column_widths[i])
         window.addstr(start_y + len(data) + 2, start_x + sum(column_widths[:i]) + i, '+' + '-' * column_widths[i])
     for row in range(3):
-        window.addstr(start_y + row, start_x + sum(column_widths) + 4, '|' if row % 2 else '+')
-    window.addstr(start_y + len(data) + 2, start_x + sum(column_widths) + 4, '+')
+        window.addstr(start_y + row, start_x + sum(column_widths) + 5, '|' if row % 2 else '+')
+    window.addstr(start_y + len(data) + 2, start_x + sum(column_widths) + 5, '+')
 
     # Draw table rows
     for row_idx, row in enumerate(data[1:]):
@@ -332,7 +332,7 @@ def draw_table(window, data, start_y, start_x, selected):
                 if item == "":
                     item = " " * (column_widths[i] - 2)
                 window.addstr(str(item), curses.color_pair(1 + 4 * ((selected[0] - 3) == row_idx and (selected[1] + 1) == i)))
-        window.addstr(start_y + row_idx + 3, start_x + sum(column_widths) + 4, '|')
+        window.addstr(start_y + row_idx + 3, start_x + sum(column_widths) + 5, '|')
 
 def day_view(window, selected, day, text_input, text_mode, text_box):
     display_borders(window, selected)
@@ -341,7 +341,7 @@ def day_view(window, selected, day, text_input, text_mode, text_box):
     window.addstr(f"< {day} >", curses.color_pair(1 + 4 * (selected[0] == 2)))
 
     tasks = tasks_for_day(day)
-    data = [['id', '', 'task', 'due', 'priority']]
+    data = [['id', '', 'task', 'due', 'priority', 'part of']]
 
     for task in tasks:
         important = "! " if task['priority'] == 3 else "  "
@@ -351,7 +351,11 @@ def day_view(window, selected, day, text_input, text_mode, text_box):
             bullet = ">"
         else:
             bullet = "x" if task['completed'] else "•"
-        data.append([task['id'], important + bullet, task['name'], task['due_date'], task['priority']])
+        try:
+            parent_name = Task.get_task(task['parent'])['name']
+        except:
+            parent_name = ""
+        data.append([task['id'], important + bullet, task['name'], task['due_date'], task['priority'], parent_name])
     draw_table(window, data, 4, 5, selected)
 
     due_today = [task for task in tasks if task['due_date'] == day]
@@ -370,7 +374,7 @@ def week_view(window, selected, day, text_input, text_mode, text_box):
     window.addstr(f"< {start} - {end} >", curses.color_pair(1 + 4 * (selected[0] == 2)))
 
     tasks = tasks_for_week(day)
-    data = [['id', '', 'task', 'due', 'priority']]
+    data = [['id', '', 'task', 'due', 'priority', 'part of']]
 
     for task in tasks:
         important = "! " if task['priority'] == 3 else "  "
@@ -380,7 +384,11 @@ def week_view(window, selected, day, text_input, text_mode, text_box):
             bullet = ">"
         else:
             bullet = "x" if task['completed'] else "•"
-        data.append([task['id'], important + bullet, task['name'], task['due_date'], task['priority']])
+        try:
+            parent_name = Task.get_task(task['parent'])['name']
+        except:
+            parent_name = ""
+        data.append([task['id'], important + bullet, task['name'], task['due_date'], task['priority'], parent_name])
     draw_table(window, data, 4, 5, selected)
 
     due_this_week = [task for task in tasks if task['due_date'] in [start, end]]
@@ -399,7 +407,7 @@ def month_view(window, selected, day, text_input, text_mode, text_box):
     window.addstr(f"< {start} - {end} >", curses.color_pair(1 + 4 * (selected[0] == 2)))
 
     tasks = tasks_for_month(day)
-    data = [['id', '', 'task', 'due', 'priority']]
+    data = [['id', '', 'task', 'due', 'priority', 'part of']]
 
     for task in tasks:
         important = "! " if task['priority'] == 3 else "  "
@@ -409,7 +417,11 @@ def month_view(window, selected, day, text_input, text_mode, text_box):
             bullet = ">"
         else:
             bullet = "x" if task['completed'] else "•"
-        data.append([task['id'], important + bullet, task['name'], task['due_date'], task['priority']])
+        try:
+            parent_name = Task.get_task(task['parent'])['name']
+        except:
+            parent_name = ""
+        data.append([task['id'], important + bullet, task['name'], task['due_date'], task['priority'], parent_name])
     draw_table(window, data, 4, 5, selected)
 
     due_this_month = [task for task in tasks if task['due_date'] in [start, end]]
@@ -428,7 +440,7 @@ def year_view(window, selected, day, text_input, text_mode, text_box):
     window.addstr(f"< {start} - {end} >", curses.color_pair(1 + 4 * (selected[0] == 2)))
 
     tasks = tasks_for_year(day)
-    data = [['id', '', 'task', 'due', 'priority']]
+    data = [['id', '', 'task', 'due', 'priority', 'part of']]
 
     for task in tasks:
         important = "! " if task['priority'] == 3 else "  "
@@ -438,7 +450,11 @@ def year_view(window, selected, day, text_input, text_mode, text_box):
             bullet = ">"
         else:
             bullet = "x" if task['completed'] else "•"
-        data.append([task['id'], important + bullet, task['name'], task['due_date'], task['priority']])
+        try:
+            parent_name = Task.get_task(task['parent'])['name']
+        except:
+            parent_name = ""
+        data.append([task['id'], important + bullet, task['name'], task['due_date'], task['priority'], parent_name])
     draw_table(window, data, 4, 5, selected)
 
     due_this_year = [task for task in tasks if task['due_date'] in [start, end]]

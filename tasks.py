@@ -1,6 +1,7 @@
 import json
 import uuid
 import curses
+import calendar
 from datetime import datetime as dt, date, timedelta
 import toml
 
@@ -116,7 +117,6 @@ def tasks_for_day(day=None):
     if day is None:
         day = date.today().strftime("%Y-%m-%d")
     tasks = [task for _, task in Task.load_tasks().items() if task['due_date'] == day or task['date_added'] == day or check_migrated(task['date_history'], day)]
-    tasks.sort(key=lambda x: x['priority'], reverse=True)
     return tasks
 
 def tasks_for_days(start, end):
@@ -128,7 +128,6 @@ def tasks_for_days(start, end):
         for task in tasks_for_day(date):
             if task not in tasks:
                 tasks.append(task)
-    tasks.sort(key=lambda x: x['priority'], reverse=True)
     return tasks
 
 def tasks_for_week(day):
@@ -334,6 +333,38 @@ def draw_table(window, data, start_y, start_x, selected):
                 window.addstr(str(item), curses.color_pair(1 + 4 * ((selected[0] - 3) == row_idx and (selected[1] + 1) == i)))
         window.addstr(start_y + row_idx + 3, start_x + sum(column_widths) + 5, '|')
 
+
+def render_task_and_children(window, data, task, tasks_by_parent, indent, day):
+    """Recursively render task and its children with appropriate indentation."""
+    important = "! " if task['priority'] == 3 else "  "
+    if check_migrated(task['date_history'], day):
+        bullet = "<"
+    elif task['due_date'] != task['date_added'] and task['date_added'] == day:
+        bullet = ">"
+    else:
+        bullet = "x" if task['completed'] else "•"
+
+    # Prepare the parent name if it exists
+    try:
+        parent_name = Task.get_task(task['parent'])['name']
+    except:
+        parent_name = ""
+
+    # Append the task to the data list with appropriate indentation
+    data.append([
+        task['id'],
+        important,
+        '  ' * indent + bullet + " " + task['name'],  # indent for child tasks
+        task['due_date'],
+        task['priority'],
+        parent_name
+    ])
+
+    # Recursively render child tasks
+    if task['id'] in tasks_by_parent:
+        for child in tasks_by_parent[task['id']]:
+            render_task_and_children(window, data, child, tasks_by_parent, indent + 1, day)
+
 def day_view(window, selected, day, text_input, text_mode, text_box):
     display_borders(window, selected)
 
@@ -341,27 +372,38 @@ def day_view(window, selected, day, text_input, text_mode, text_box):
     window.addstr(f"< {day} >", curses.color_pair(1 + 4 * (selected[0] == 2)))
 
     tasks = tasks_for_day(day)
-    data = [['id', '', 'task', 'due', 'priority', 'part of']]
+    
+    # Group tasks by parent ID
+    tasks_by_parent = {}
+    orphaned_tasks = []
 
     for task in tasks:
-        important = "! " if task['priority'] == 3 else "  "
-        if check_migrated(task['date_history'], day):
-            bullet = "<"
-        elif task['due_date'] != task['date_added'] and task['date_added'] == day:
-            bullet = ">"
+        parent_id = task['parent']
+        if not parent_id or parent_id not in [t['id'] for t in tasks]:
+            orphaned_tasks.append(task)  # Task has no parent in today's tasks
         else:
-            bullet = "x" if task['completed'] else "•"
-        try:
-            parent_name = Task.get_task(task['parent'])['name']
-        except:
-            parent_name = ""
-        data.append([task['id'], important + bullet, task['name'], task['due_date'], task['priority'], parent_name])
+            tasks_by_parent.setdefault(parent_id, []).append(task)
+
+    # Data table for display
+    data = [['id', '', 'task', 'due', 'priority', 'part of']]
+
+    # Recursively render orphaned tasks and their children
+    for task in orphaned_tasks:
+        render_task_and_children(window, data, task, tasks_by_parent, 0, day)
+
+    # Draw the table
     draw_table(window, data, 4, 5, selected)
 
+    # Calculate and display completed tasks for today
     due_today = [task for task in tasks if task['due_date'] == day]
     completed_today = len([task for task in due_today if task['completed']])
-    window.addstr(len(data) + 8, 5, f"completed tasks due today: ({completed_today}/{len(due_today)}) ({str(round(completed_today / len(due_today) * 100, 2)) + '%' if len(due_today) else 'n/a'})")
+    window.addstr(
+        len(data) + 8, 5, 
+        f"completed tasks due today: ({completed_today}/{len(due_today)}) " +
+        f"({str(round(completed_today / len(due_today) * 100, 2)) + '%' if len(due_today) else 'n/a'})"
+    )
 
+    # Display text box input (for text entry mode)
     display_text_box(window, text_input, text_mode, text_box)
 
 def week_view(window, selected, day, text_input, text_mode, text_box):
@@ -374,60 +416,85 @@ def week_view(window, selected, day, text_input, text_mode, text_box):
     window.addstr(f"< {start} - {end} >", curses.color_pair(1 + 4 * (selected[0] == 2)))
 
     tasks = tasks_for_week(day)
-    data = [['id', '', 'task', 'due', 'priority', 'part of']]
+
+    # Group tasks by parent ID
+    tasks_by_parent = {}
+    orphaned_tasks = []
 
     for task in tasks:
-        important = "! " if task['priority'] == 3 else "  "
-        if check_migrated(task['date_history'], start):
-            bullet = "<"
-        elif task['due_date'] != task['date_added'] and task['date_added'] == start:
-            bullet = ">"
+        parent_id = task['parent']
+        if not parent_id or parent_id not in [t['id'] for t in tasks]:
+            orphaned_tasks.append(task)  # Task has no parent in today's tasks
         else:
-            bullet = "x" if task['completed'] else "•"
-        try:
-            parent_name = Task.get_task(task['parent'])['name']
-        except:
-            parent_name = ""
-        data.append([task['id'], important + bullet, task['name'], task['due_date'], task['priority'], parent_name])
+            tasks_by_parent.setdefault(parent_id, []).append(task)
+
+    # Data table for display
+    data = [['id', '', 'task', 'due', 'priority', 'part of']]
+
+    # Recursively render orphaned tasks and their children
+    for task in orphaned_tasks:
+        render_task_and_children(window, data, task, tasks_by_parent, 0, day)
+
+    # Draw the table
     draw_table(window, data, 4, 5, selected)
 
-    due_this_week = [task for task in tasks if task['due_date'] in [start, end]]
-    completed_this_week = len([task for task in due_this_week if task['completed']])
-    window.addstr(len(data) + 8, 5, f"completed tasks due this week: ({completed_this_week}/{len(due_this_week)}) ({str(round(completed_this_week / len(due_this_week) * 100, 2)) + '%' if len(due_this_week) else 'n/a'})")
+    # Calculate and display completed tasks for today
+    due_today = [task for task in tasks if task['due_date'] == day]
+    completed_today = len([task for task in due_today if task['completed']])
+    window.addstr(
+        len(data) + 8, 5, 
+        f"completed tasks due today: ({completed_today}/{len(due_today)}) " +
+        f"({str(round(completed_today / len(due_today) * 100, 2)) + '%' if len(due_today) else 'n/a'})"
+    )
 
+    # Display text box input (for text entry mode)
     display_text_box(window, text_input, text_mode, text_box)
 
 def month_view(window, selected, day, text_input, text_mode, text_box):
     display_borders(window, selected)
 
     start = dt.strptime(day, "%Y-%m-%d").replace(day=1).strftime("%Y-%m-%d")
-    end = (dt.strptime(start, "%Y-%m-%d") + timedelta(days=31)).strftime("%Y-%m-%d")
+    end = dt.strptime(start, "%Y-%m-%d").replace(day=calendar.monthrange(dt.strptime(day, "%Y-%m-%d").year, dt.strptime(day, "%Y-%m-%d").month)[1]).strftime("%Y-%m-%d")
 
     window.addstr(2, 5, f"tasks for ")
     window.addstr(f"< {start} - {end} >", curses.color_pair(1 + 4 * (selected[0] == 2)))
 
     tasks = tasks_for_month(day)
-    data = [['id', '', 'task', 'due', 'priority', 'part of']]
+    
+    tasks_by_parent = {}
+    orphaned_tasks = []
 
     for task in tasks:
-        important = "! " if task['priority'] == 3 else "  "
-        if check_migrated(task['date_history'], start):
-            bullet = "<"
-        elif task['due_date'] != task['date_added'] and task['date_added'] == start:
-            bullet = ">"
+        if task['due_type'] == "month":
+            task['due_date'] = task['due_date'][:7]
+        elif task['due_type'] == "year":
+            task['due_date'] = task['due_date'][:4]
+        parent_id = task['parent']
+        if not parent_id or parent_id not in [t['id'] for t in tasks]:
+            orphaned_tasks.append(task)  # Task has no parent in today's tasks
         else:
-            bullet = "x" if task['completed'] else "•"
-        try:
-            parent_name = Task.get_task(task['parent'])['name']
-        except:
-            parent_name = ""
-        data.append([task['id'], important + bullet, task['name'], task['due_date'], task['priority'], parent_name])
+            tasks_by_parent.setdefault(parent_id, []).append(task)
+
+    # Data table for display
+    data = [['id', '', 'task', 'due', 'priority', 'part of']]
+
+    # Recursively render orphaned tasks and their children
+    for task in orphaned_tasks:
+        render_task_and_children(window, data, task, tasks_by_parent, 0, day)
+
+    # Draw the table
     draw_table(window, data, 4, 5, selected)
 
-    due_this_month = [task for task in tasks if task['due_date'] in [start, end]]
-    completed_this_month = len([task for task in due_this_month if task['completed']])
-    window.addstr(len(data) + 8, 5, f"completed tasks due this month: ({completed_this_month}/{len(due_this_month)}) ({str(round(completed_this_month / len(due_this_month) * 100, 2)) + '%' if len(due_this_month) else 'n/a'})")
+    # Calculate and display completed tasks for today
+    due_today = [task for task in tasks if task['due_date'] == day]
+    completed_today = len([task for task in due_today if task['completed']])
+    window.addstr(
+        len(data) + 8, 5, 
+        f"completed tasks due today: ({completed_today}/{len(due_today)}) " +
+        f"({str(round(completed_today / len(due_today) * 100, 2)) + '%' if len(due_today) else 'n/a'})"
+    )
 
+    # Display text box input (for text entry mode)
     display_text_box(window, text_input, text_mode, text_box)
 
 def year_view(window, selected, day, text_input, text_mode, text_box):
@@ -440,25 +507,40 @@ def year_view(window, selected, day, text_input, text_mode, text_box):
     window.addstr(f"< {start} - {end} >", curses.color_pair(1 + 4 * (selected[0] == 2)))
 
     tasks = tasks_for_year(day)
-    data = [['id', '', 'task', 'due', 'priority', 'part of']]
+    
+    tasks_by_parent = {}
+    orphaned_tasks = []
 
     for task in tasks:
-        important = "! " if task['priority'] == 3 else "  "
-        if check_migrated(task['date_history'], start):
-            bullet = "<"
-        elif task['due_date'] != task['date_added'] and task['date_added'] == start:
-            bullet = ">"
+        if task['due_type'] == "month":
+            task['due_date'] = task['due_date'][:7]
+        elif task['due_type'] == "year":
+            task['due_date'] = task['due_date'][:4]
+        parent_id = task['parent']
+        if not parent_id or parent_id not in [t['id'] for t in tasks]:
+            orphaned_tasks.append(task)  # Task has no parent in today's tasks
         else:
-            bullet = "x" if task['completed'] else "•"
-        try:
-            parent_name = Task.get_task(task['parent'])['name']
-        except:
-            parent_name = ""
-        data.append([task['id'], important + bullet, task['name'], task['due_date'], task['priority'], parent_name])
+            tasks_by_parent.setdefault(parent_id, []).append(task)
+
+    # Data table for display
+    data = [['id', '', 'task', 'due', 'priority', 'part of']]
+
+    # Recursively render orphaned tasks and their children
+    for task in orphaned_tasks:
+        render_task_and_children(window, data, task, tasks_by_parent, 0, day)
+
+    # Draw the table
     draw_table(window, data, 4, 5, selected)
 
-    due_this_year = [task for task in tasks if task['due_date'] in [start, end]]
-    completed_this_year = len([task for task in due_this_year if task['completed']])
-    window.addstr(len(data) + 8, 5, f"completed tasks due this year: ({completed_this_year}/{len(due_this_year)}) ({str(round(completed_this_year / len(due_this_year) * 100, 2)) + '%' if len(due_this_year) else 'n/a'})")
+    # Calculate and display completed tasks for today
+    due_today = [task for task in tasks if task['due_date'] == day]
+    completed_today = len([task for task in due_today if task['completed']])
+    window.addstr(
+        len(data) + 8, 5, 
+        f"completed tasks due today: ({completed_today}/{len(due_today)}) " +
+        f"({str(round(completed_today / len(due_today) * 100, 2)) + '%' if len(due_today) else 'n/a'})"
+    )
 
+    # Display text box input (for text entry mode)
     display_text_box(window, text_input, text_mode, text_box)
+

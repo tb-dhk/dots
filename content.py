@@ -89,10 +89,10 @@ def display_text_box(window, text_input, text_mode, text_box):
         window.addstr(max_y - 2, len(text_box) + 2, " ", curses.color_pair(1))
 
 def display_borders(window, selected):
-    """Draw the border for the task list. If selected >= 2, split the window in half."""
+    """Draw the border for the task list. If selected[0] >= 2, split the window in half."""
     max_y, max_x = window.getmaxyx()
     
-    if selected >= 2:
+    if selected[0] >= 2:
         split_x = max_x // 2 - 1
         # Left box border
         window.addstr(0, 0, "╔" + "═" * (split_x - 2) + "╗" + " ")
@@ -133,8 +133,8 @@ def display_task(window, task_key, selected, task_list, text_mode, indent=0, spl
     symbol = 'x' if completed else '•'
 
     if removing != task_key and not removing_subtask:
-        window.addstr(f"{'  ' * indent}{symbol} ", curses.color_pair(4 if window.getyx()[0] + 1 != selected and task['completed'] else (1 + 4 * (window.getyx()[0] + 1 == selected))))
-        window.addstr(task['name'], curses.color_pair(4 if window.getyx()[0] + 1 != selected and task['completed'] else (1 + 4 * (window.getyx()[0] + 1 == selected))) | (curses.A_ITALIC if task['completed'] else 0))
+        window.addstr(f"{'  ' * indent}{symbol} ", curses.color_pair(4 if window.getyx()[0] + 1 != selected[0] and task['completed'] else (1 + 4 * (window.getyx()[0] + 1 == selected[0]))))
+        window.addstr(task['name'], curses.color_pair(4 if window.getyx()[0] + 1 != selected[0] and task['completed'] else (1 + 4 * (window.getyx()[0] + 1 == selected[0]))) | (curses.A_ITALIC if task['completed'] else 0))
     else:
         window.addstr('  ' * indent)
         window.addstr(f"{symbol} ", curses.color_pair(7))
@@ -150,17 +150,24 @@ def display_task(window, task_key, selected, task_list, text_mode, indent=0, spl
     for subtask_key in task['subtasks']:
         display_task(window, subtask_key, selected, task_list, text_mode, indent + 1, split_x, box, removing, bool(removing == task_key))
 
-def display_task_details(window, task_id, split_x):
+def display_task_details(window, task_id, split_x, selected):
     """Display the attributes of the selected task in the right box, with aligned colons and edit commands."""
     task = Task.load_tasks()[str(task_id)]
     if not task:
         return
+
+    try:
+        due_date = datetime.strptime(task['due_date'], '%Y-%m-%d')
+    except:
+        passed = False
+    else:
+        passed = due_date.date() < datetime.now().date()
     
     # Define the edit commands for each task attribute
     edit_commands = {
         "name": "n",
         "completed": "x",
-        "due date": "<" if task['due_date'] == "today" else ">",
+        "due date": "<" if passed else ">",
         "parent": "m",
         "priority": "p",
         "tags": "t",
@@ -182,11 +189,13 @@ def display_task_details(window, task_id, split_x):
     
     # Display each detail line with aligned colons and edit commands
     window.move(1, split_x + 3)
+    count = 0
     for key, value in details.items():
         # Format with right-aligned colons and edit commands
         line = f"{key.ljust(max_key_length)} ({edit_commands[key]}) : {value}"
-        window.addstr(line, curses.color_pair(1))
+        window.addstr(line, curses.color_pair(1 + (selected[1] == count) ))
         window.move(window.getyx()[0] + 2, split_x + 3)
+        count += 1
 
 def display_tasks(window, option, selected, text_input, text_mode, text_box, removing):
     """Main function to display tasks, with task details in the right box when selected."""
@@ -195,10 +204,10 @@ def display_tasks(window, option, selected, text_input, text_mode, text_box, rem
         display_borders(window, selected)
         tasks = Task.load_tasks()
 
-        split_x = max_x // 2 - 1 if selected >= 2 else 0 
+        split_x = max_x // 2 - 1 if selected[0] >= 2 else 0 
         task_list = []
 
-        if selected >= 2:
+        if selected[0] >= 2:
             # Display tasks in the left box
             window.move(0, 0)  # Changed to start at row 3
             for task_key in tasks:
@@ -206,8 +215,8 @@ def display_tasks(window, option, selected, text_input, text_mode, text_box, rem
                     display_task(window, task_key, selected, task_list, text_mode, split_x=split_x, box='left', removing=removing)
 
             # Find the selected task and display its details in the right box
-            selected_task_key = task_list[selected - 2]
-            display_task_details(window, selected_task_key, split_x)
+            selected_task_key = task_list[selected[0] - 2]
+            display_task_details(window, selected_task_key, split_x, selected)
         else:
             # Single full-width box display
             window.move(0, 0)  # Changed to start at row 3
@@ -215,7 +224,7 @@ def display_tasks(window, option, selected, text_input, text_mode, text_box, rem
                 if not tasks[task_key]['parent']:
                     display_task(window, task_key, selected, task_list, text_mode)
 
-            # Clear or avoid calling display_task_details() if selected < 2
+            # Clear or avoid calling display_task_details() if selected[0] < 2
             window.move(1, split_x + 3)  # Ensure cursor is placed properly after task display
             
         display_text_box(window, text_input, text_mode, text_box)

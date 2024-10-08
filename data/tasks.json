@@ -14,8 +14,8 @@
         "date_added": "2024-10-06",
         "date_history": [],
         "recurrence": {
-            "interval": daily,
-            ""
+            "interval": "daily",
+            "days": []
         }
     },
     "407c4a64-bd0e-40f6-8eec-35c842983069": {
@@ -30,8 +30,8 @@
         "date_added": "2024-10-06",
         "date_history": [],
         "recurrence": {
-            "interval": daily,
-            ""
+            "interval": "daily",
+            "days": []
         }
     },
     "a449313b-8038-4026-88dd-6997b527987d": {
@@ -46,8 +46,8 @@
         "date_added": "2024-10-06",
         "date_history": [],
         "recurrence": {
-            "interval": daily,
-            ""
+            "interval": "daily",
+            "days": []
         }
     },
     "7b35b581-858a-4d69-9969-57919e73a2f8": {
@@ -62,8 +62,8 @@
         "date_added": "2024-10-06",
         "date_history": [],
         "recurrence": {
-            "interval": daily,
-            ""
+            "interval": "daily",
+            "days": []
         }
     }
 }

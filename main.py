@@ -69,12 +69,12 @@ def change_task_parent(task_id, new_parent_id):
 
 def edit_task_parent(selected, text_box, task_list):
     """Process the input to edit the parent of the selected task."""
-    task_id = task_list[selected - 2]  # Task to edit
+    task_id = task_list[selected[0] - 2]  # Task to edit
     task_name = Task.get_task(task_id)['name']
 
     if text_box.isdigit():
         new_parent_index = int(text_box)
-        if 0 <= new_parent_index < len(task_list) and new_parent_index != selected - 2:
+        if 0 <= new_parent_index < len(task_list) and new_parent_index != selected[0][0] - 2:
             new_parent_id = task_list[new_parent_index]
             change_task_parent(task_id, new_parent_id)
             message = f"Parent of task '{task_name}' changed to '{Task.get_task(new_parent_id)['name']}'"
@@ -91,10 +91,10 @@ def edit_task_parent(selected, text_box, task_list):
 
 def outer_navbar(stdscr, outer_option, selected):
     options = ["tasks", "lists", "trackers", "journals"]
-    stdscr.addstr(0, 0, " " * stdscr.getmaxyx()[1], curses.color_pair(2 + 4 * (selected == 0)))
+    stdscr.addstr(0, 0, " " * stdscr.getmaxyx()[1], curses.color_pair(2 + 4 * (selected[0] == 0)))
     stdscr.move(0, 0)
     for i, option in enumerate(options):
-        stdscr.addstr(f" {option} ", curses.color_pair(1 + int(i != outer_option) + 4 * (selected == 0)))
+        stdscr.addstr(f" {option} ", curses.color_pair(1 + int(i != outer_option) + 4 * (selected[0] == 0)))
 
 def inner_options(outer_option):
     if outer_option == 0:
@@ -105,17 +105,17 @@ def inner_options(outer_option):
         return ["new"]
 
 def inner_navbar(stdscr, outer_option, inner_option, selected):
-    stdscr.addstr(1, 0, " " * stdscr.getmaxyx()[1], curses.color_pair(2 + 4 * (selected == 1)))
+    stdscr.addstr(1, 0, " " * stdscr.getmaxyx()[1], curses.color_pair(2 + 4 * (selected[0] == 1)))
     stdscr.move(1, 0)
     options = inner_options(outer_option)
     for i, option in enumerate(options):
-        stdscr.addstr(f" {option} ", curses.color_pair(1 + (i != inner_option) + 4 * (selected == 1)))
+        stdscr.addstr(f" {option} ", curses.color_pair(1 + (i != inner_option) + 4 * (selected[0] == 1)))
 
 def content(window, outer_option, inner_option, selected, text_input, text_mode, text_box, removing):
     if outer_option == 0:
         display_tasks(window, inner_option, selected, text_input, text_mode, text_box, removing)
-        if selected >= 2:
-            display_task_details(window, get_task_list()[selected - 2], window.getmaxyx()[1] // 2 - 1 if selected >= 2 else None)
+        if selected[0] >= 2:
+            display_task_details(window, get_task_list()[selected[0] - 2], window.getmaxyx()[1] // 2 - 1 if selected[0] >= 2 else None, selected)
     window.refresh()
 
 def status_bar(stdscr, outer_option, inner_option, selected, text_mode, message):
@@ -163,7 +163,8 @@ def main(stdscr):
     # Initial states
     height, width = stdscr.getmaxyx()
     started = False
-    outer_option = inner_option = selected = 0
+    selected = [0, -1]
+    outer_option = inner_option = 0
     text_input = False
     text_mode = ""
     text_box = ""
@@ -250,34 +251,36 @@ def main(stdscr):
                     text_input = False
                     text_box = ""
                     text_mode = ""
+                    if outer_option == 0 and inner_option == 0:
+                        selected[1] = -1
                 elif key == 13:  # Enter key
-                    if outer_option == 0 and inner_option == 0 and selected >= 2:
+                    if outer_option == 0 and inner_option == 0 and selected[0] >= 2:
                         clear = True
-                        task_name = Task.load_tasks()[get_task_list()[selected - 2]]["name"] if selected >= 2 else None
+                        task_name = Task.load_tasks()[get_task_list()[selected[0] - 2]]["name"] if selected[0] >= 2 else None
                         text_box = text_box.strip()
                         if text_box:
                             if text_mode == "new task":
                                 Task.add_task(text_box)
                                 message = f"new task '{text_box}' added"
                             elif text_mode == "edit task":
-                                Task.edit_task(get_task_list()[selected - 2], name=text_box)
+                                Task.edit_task(get_task_list()[selected[0] - 2], name=text_box)
                                 message = f"name of task '{task_name}' changed to '{text_box}'"
                             elif text_mode in ["migrate", "schedule"]:
                                 if text_box and re.match(r"\d{4}-\d{2}-\d{2}", text_box) and check_date(text_box):
-                                    Task.edit_task(get_task_list()[selected - 2], due_date=text_box)
+                                    Task.edit_task(get_task_list()[selected[0] - 2], due_date=text_box)
                                     message = f"task '{task_name}' scheduled for {text_box}"
                                 else:
                                     message = "invalid date format. try again!"
                                     clear = False
                             elif text_mode == "edit priority":
                                 if text_box in ["1", "2", "3"]:
-                                    Task.edit_task(get_task_list()[selected - 2], priority=int(text_box))
+                                    Task.edit_task(get_task_list()[selected[0] - 2], priority=int(text_box))
                                     message = f"priority of task '{task_name}' changed to {text_box}"
                                 else:
                                     message = "invalid priority. try again!"
                                     clear = False
                             elif text_mode == "edit tags":
-                                original_tags = list(set(Task.load_tasks()[get_task_list()[selected - 2]]["tags"]))
+                                original_tags = list(set(Task.load_tasks()[get_task_list()[selected[0] - 2]]["tags"]))
                                 if text_box[0] in ["+", "-"]:
                                     tags = [tag.strip() for tag in text_box[1:].split(",")]
                                     if text_box[0] == "+":
@@ -288,7 +291,7 @@ def main(stdscr):
                                         non_existing_tags = [i for i in tags if i not in original_tags]
                                         new_tags = [i for i in original_tags if i not in tags]
                                         message = f"tags {', '.join(existing_tags)} removed from task '{task_name}' (tags {', '.join(non_existing_tags)} not found)"
-                                    Task.edit_task(get_task_list()[selected - 2], tags=new_tags)
+                                    Task.edit_task(get_task_list()[selected[0] - 2], tags=new_tags)
                                 else:
                                     message = "invalid tag operation. try again!"
                                     clear = False
@@ -299,47 +302,49 @@ def main(stdscr):
                             text_input = False
                             text_box = ""
                             text_mode = ""
+                            if outer_option == 0 and inner_option == 0:
+                                selected[1] = -1
                     content_window.clear()
                 else:
                     text_box += chr(key)
             elif key == curses.KEY_DOWN:
                 content_window.clear()
-                selected += 1
+                selected[0] += 1
                 if outer_option == 0:
                     if inner_option == 0:
-                        if selected == 2 + len(get_task_list()):
-                            selected = 0
+                        if selected[0] == 2 + len(get_task_list()):
+                            selected[0] = 0
                 else:
-                    if selected == 3:
-                        selected = 0
+                    if selected[0] == 3:
+                        selected[0] = 0
             elif key == curses.KEY_UP:
                 content_window.clear()
-                selected -= 1
-                if selected == -1:
-                    selected = 2
+                selected[0] -= 1
+                if selected[0] == -1:
+                    selected[0] = 2
             elif key == curses.KEY_END:
                 if outer_option == 0:
                     if inner_option == 0:
-                        selected = 2 + len(get_task_list())
+                        selected[0] = 2 + len(get_task_list())
                 else:
-                    selected = 3
+                    selected[0] = 3
             elif key == curses.KEY_LEFT:
-                if selected == 0:
+                if selected[0] == 0:
                     outer_option -= 1
                     if outer_option == -1:
                         outer_option = 3
                     inner_option = 0
-                elif selected == 1:
+                elif selected[0] == 1:
                     inner_option -= 1
                     if inner_option == -1:
                         inner_option = len(inner_options(outer_option)) - 1
             elif key == curses.KEY_RIGHT:
-                if selected == 0:
+                if selected[0] == 0:
                     outer_option += 1
                     if outer_option == 4:
                         outer_option = 0
                     inner_option = 0
-                elif selected == 1:
+                elif selected[0] == 1:
                     inner_option += 1
                     if inner_option == len(inner_options(outer_option)):
                         inner_option = 0
@@ -350,8 +355,8 @@ def main(stdscr):
                     case " ":
                         started = True
                         stdscr.clear()
-            elif outer_option == 0 and inner_option == 0 and selected >= 2:
-                task = get_task_list()[selected - 2]
+            elif outer_option == 0 and inner_option == 0 and selected[0] >= 2:
+                task = get_task_list()[selected[0] - 2]
                 task_name = Task.get_task(task)["name"] 
                 match chr(key):
                     case ":":
@@ -362,24 +367,30 @@ def main(stdscr):
                     case "n":
                         text_input = True
                         text_mode = "edit task"
+                        selected[1] = 0
                     case ".":
                         Task.edit_task(task, due_date=datetime.date.today().strftime("%Y-%m-%d"))
                         message = f"task '{task_name}' scheduled for today"
                     case "p":
                         text_input = True
                         text_mode = "edit priority"
+                        selected[1] = 4
                     case ">":
                         text_input = True
                         text_mode = "migrate"
+                        selected[1] = 2
                     case "<":
                         text_input = True
                         text_mode = "schedule"
+                        selected[1] = 2
                     case "t":
                         text_input = True
                         text_mode = "edit tags"
+                        selected[1] = 5
                     case "m":
                         text_input = True
                         text_mode = "edit parent"
+                        selected[1] = 3
                     case "r":
                         removing = task
                         content_window.clear()

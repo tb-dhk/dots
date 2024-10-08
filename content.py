@@ -11,6 +11,7 @@ class Task:
         self.id = str(uuid.uuid4())  # Unique identifier for the task
         self.name = name  # Task name
         self.due_date = due_date  # Task due date (string, could be a day/week/month-based format)
+        self.due_type = "day"
         self.priority = priority  # Priority: low, medium, high (default: medium)
         self.completed = False  # Task completion status (default: False)
         self.subtasks = subtasks if subtasks else []  # List of subtasks (empty by default)
@@ -276,7 +277,7 @@ def draw_table(window, data, start_y, start_x, selected, day):
                     item = "yes" if item else "no"
                 if item == "":
                     item = " " * (column_widths[i] - 2)
-                window.addstr(str(item), curses.color_pair(1 + ((selected[0] - 3) == row_idx and (selected[1] - 1) == i)))
+                window.addstr(str(item), curses.color_pair(1 + ((selected[0] - 3) == row_idx and (selected[1] + 1) == i)))
         window.addstr(start_y + row_idx + 3, start_x + sum(column_widths) + 4, '|')
 
 def day_view(window, selected, day, text_input, text_mode, text_box):
@@ -293,7 +294,7 @@ def day_view(window, selected, day, text_input, text_mode, text_box):
         important = "! " if task['priority'] == 3 else "  "
         if check_migrated(task['date_history'], day):
             bullet = "<"
-        elif task['due_date'] != task['date_added']:
+        elif task['due_date'] != task['date_added'] and task['date_added'] == day:
             bullet = ">"
         else:
             bullet = "x" if task['completed'] else "•"

@@ -403,11 +403,11 @@ def main(stdscr):
                         inner_option = len(inner_options(outer_option)) - 1
                 elif outer_option == 0 and inner_option == 1:
                     if selected[0] == 2:
-                        day = (dt.strptime(day, "%Y-%m-%d") - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+                        day = (dt.strptime(day, "%Y-%m-%d") - timedelta(days=1)).strftime("%Y-%m-%d")
                     else:
                         selected[1] -= 1
                         if selected[1] == -1:
-                            selected[1] = 3
+                            selected[1] = len(config["tasks"]["day"]["details"]) - 1
                 if selected[0] < 2:
                     if outer_option == 0:
                         if inner_option == 0:
@@ -426,10 +426,10 @@ def main(stdscr):
                         inner_option = 0
                 elif outer_option == 0 and inner_option == 1:
                     if selected[0] == 2:
-                        day = (dt.strptime(day, "%Y-%m-%d") + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+                        day = (dt.strptime(day, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
                     else:
                         selected[1] += 1
-                        if selected[1] == 4:
+                        if selected[1] == len(config["tasks"]["day"]["details"]):
                             selected[1] = 0
                 if selected[0] < 2:
                     if outer_option == 0:

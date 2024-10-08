@@ -334,10 +334,12 @@ def draw_table(window, data, start_y, start_x, selected):
         window.addstr(start_y + row_idx + 3, start_x + sum(column_widths) + 5, '|')
 
 
-def render_task_and_children(window, data, task, tasks_by_parent, indent, day):
+def render_task_and_children(window, data, task, tasks_by_parent, indent, day, bullets=False):
     """Recursively render task and its children with appropriate indentation."""
     important = "! " if task['priority'] == 3 else "  "
-    if check_migrated(task['date_history'], day):
+    if not bullets:
+        bullet = "x" if task['completed'] else "•"
+    elif check_migrated(task['date_history'], day):
         bullet = "<"
     elif task['due_date'] != task['date_added'] and task['date_added'] == day:
         bullet = ">"
@@ -389,7 +391,7 @@ def day_view(window, selected, day, text_input, text_mode, text_box):
 
     # Recursively render orphaned tasks and their children
     for task in orphaned_tasks:
-        render_task_and_children(window, data, task, tasks_by_parent, 0, day)
+        render_task_and_children(window, data, task, tasks_by_parent, 0, day, bullets=True)
 
     # Draw the table
     draw_table(window, data, 4, 5, selected)

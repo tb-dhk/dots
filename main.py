@@ -515,7 +515,7 @@ def main(stdscr):
                                 case "r":
                                     removing = task
                                     content_window.clear()
-                    elif inner_option == 1:
+                    elif inner_option in [1, 2, 3, 4]:
                         task = tasks_for_day(day)[selected[0] - 3]
                         task_name = task["name"]
                         match chr(key):
@@ -543,8 +543,8 @@ def main(stdscr):
                                         text_mode = "edit priority"
                                     case "tags":
                                         text_mode = "edit tags"
-                                    case "parent":
-                                        text_mode = "edit parent"
+                                    case _:
+                                        text_input = False
                             case "x":
                                 Task.edit_task(task["id"], completed=not task["completed"])
                                 content_window.clear()

@@ -1,9 +1,9 @@
 import curses
 import re
 import time
-import datetime
-from datetime import date
+from datetime import datetime as dt, date, timedelta
 import toml
+import calendar
 
 from content import Task, display_task_details, display_tasks, day_view, tasks_for_day
 from points import points
@@ -35,7 +35,7 @@ def get_task_list():
 
 def check_date(string):
     try: 
-        datetime.datetime.strptime(string, "%Y-%m-%d")
+        dt.strptime(string, "%Y-%m-%d")
     except:
         return False
     else:
@@ -126,25 +126,28 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
             day_view(window, selected, day, text_input, text_mode, text_box)
     window.refresh()
 
-def status_bar(stdscr, outer_option, inner_option, selected, text_mode, message):
-    match text_mode:
-        case "new task" | "edit task":
-            display = "enter new task name"
-        case "migrate":
-            display = "enter due date to migrate to in the format yyyy-mm-dd"
-        case "schedule":
-            display = "enter due date to schedule for in the format yyyy-mm-dd"
-        case "edit priority":
-            display = "enter a number from 1 (low) to 3 (high)"
-        case "edit tags":
-            display = "enter + to add or - to remove, followed by tags (comma-separated)"
-        case "edit parent":
-            display = "enter the number to the right of the task you would like to set as the new parent (-1 for no parent)"
-        case "choose date":
-            display = "enter the date in the format yyyy-mm-dd"
-        case _:
-            display = str(message)
-    stdscr.addstr(stdscr.getmaxyx()[0] - 1, 0, display)  # Placeholder for future status bar implementation
+def status_bar(window, outer_option, inner_option, selected, text_mode, message):
+    if message: 
+        display = message
+    else:
+        match text_mode:
+            case "new task" | "edit task":
+                display = "enter new task name"
+            case "migrate":
+                display = "enter due date to migrate to in the format yyyy-mm-dd"
+            case "schedule":
+                display = "enter due date to schedule for in the format yyyy-mm-dd"
+            case "edit priority":
+                display = "enter a number from 1 (low) to 3 (high)"
+            case "edit tags":
+                display = "enter + to add or - to remove, followed by tags (comma-separated)"
+            case "edit parent":
+                display = "enter the number to the right of the task you would like to set as the new parent (-1 for no parent)"
+            case "choose date":
+                display = "enter the date in the format yyyy-mm-dd"
+            case _:
+                display = str(message)
+    window.addstr(window.getmaxyx()[0] - 1, 0, display)  # Placeholder for future status bar implementation
 
 def main(stdscr):
     # Screen setup
@@ -169,6 +172,7 @@ def main(stdscr):
         curses.init_pair(5, curses.COLOR_WHITE, 20)
         curses.init_pair(6, 20, curses.COLOR_WHITE)
         curses.init_pair(7, curses.COLOR_WHITE, curses.COLOR_RED)
+        curses.init_pair(8, curses.COLOR_RED, curses.COLOR_BLACK)
 
     # Initial states
     height, width = stdscr.getmaxyx()
@@ -283,11 +287,29 @@ def main(stdscr):
                                 message = f"name of task '{task_name}' changed to '{text_box}'"
                             elif text_mode in ["migrate", "schedule"]:
                                 if text_box and re.match(r"\d{4}-\d{2}-\d{2}", text_box) and check_date(text_box):
-                                    Task.edit_task(task_id, due_date=text_box)
-                                    Task.edit_task(task_id, date_history=Task.get_task(task_id)["date_history"] + [(datetime.date.today().strftime("%Y-%m-%d"), Task.get_task(task_id)["due_date"])])
-                                    message = f"task '{task_name}' scheduled for {text_box}"
+                                    move_day = text_box
+                                elif text_box and re.match(r"\d{4}-\d{2}", text_box) and int(text_box[-2:]) <= 12 and int(text_box[-2:]) >= 1:
+                                    move_day = f"{text_box}-{calendar.monthrange(int(text_box[:4]), int(text_box[-2:]))[1]}"
+                                elif text_box and re.match(r"\d{4}", text_box):
+                                    move_day = f"{text_box}-12-31"
                                 else:
+                                    move_day = ""
+
+                                task_due_date = dt.strptime(move_day, "%Y-%m-%d")
+                                try:
+                                    parent_due_date = dt.strptime(Task.get_task(Task.get_task(task_id)["parent"])["due_date"], "%Y-%m-%d")
+                                except:
+                                    parent_due_date = task_due_date
+
+                                if move_day and task_due_date <= parent_due_date:
+                                    Task.edit_task(task_id, due_date=move_day)
+                                    Task.edit_task(task_id, date_history=Task.get_task(task_id)["date_history"] + [(date.today().strftime("%Y-%m-%d"), move_day)])
+                                    message = f"task '{task_name}' scheduled for {move_day}"
+                                elif not move_day:
                                     message = "invalid date format. try again!"
+                                    clear = False
+                                else:
+                                    message = f"task due date cannot be later than parent's ({Task.get_task(Task.get_task(task_id)['parent'])['due_date']}). try again!"
                                     clear = False
                             elif text_mode == "edit priority":
                                 if text_box in ["1", "2", "3"]:
@@ -318,6 +340,12 @@ def main(stdscr):
                                 if text_box and re.match(r"\d{4}-\d{2}-\d{2}", text_box) and check_date(text_box):
                                     day = text_box
                                     message = f"moved to date {text_box}"
+                                elif text_box and re.match(r"\d{4}-\d{2}", text_box) and int(text_box[-2:]) <= 12 and int(text_box[-2:]) >= 1:
+                                    day = f"{text_box}-{calendar.monthrange(int(text_box[:4]), int(text_box[-2:]))[1]}" 
+                                    message = f"moved to month {text_box}"
+                                elif text_box and re.match(r"\d{4}", text_box) and check_date(text_box):
+                                    day = f"{text_box}-12-31"
+                                    message = f"moved to year {text_box}"
                                 else:
                                     message = "invalid date format. try again!"
                                     clear = False
@@ -375,7 +403,7 @@ def main(stdscr):
                         inner_option = len(inner_options(outer_option)) - 1
                 elif outer_option == 0 and inner_option == 1:
                     if selected[0] == 2:
-                        day = (datetime.datetime.strptime(day, "%Y-%m-%d") - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+                        day = (dt.strptime(day, "%Y-%m-%d") - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
                     else:
                         selected[1] -= 1
                         if selected[1] == -1:
@@ -398,7 +426,7 @@ def main(stdscr):
                         inner_option = 0
                 elif outer_option == 0 and inner_option == 1:
                     if selected[0] == 2:
-                        day = (datetime.datetime.strptime(day, "%Y-%m-%d") + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+                        day = (dt.strptime(day, "%Y-%m-%d") + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
                     else:
                         selected[1] += 1
                         if selected[1] == 4:
@@ -432,8 +460,15 @@ def main(stdscr):
                                 text_mode = "edit task"
                                 selected[1] = 0
                             case ".":
-                                Task.edit_task(task, due_date=datetime.date.today().strftime("%Y-%m-%d"))
+                                Task.edit_task(task, due_date=date.today().strftime("%Y-%m-%d"))
                                 message = f"task '{task_name}' scheduled for today"
+                            case "i":
+                                if Task.get_task(task)["priority"] != 3:
+                                    Task.edit_task(task, priority=3)
+                                    message = f"task '{task_name}' set to high priority"
+                                else:
+                                    Task.edit_task(task, priority=2)
+                                    message = f"task '{task_name}' set to normal priority"
                             case "p":
                                 text_input = True
                                 text_mode = "edit priority"
@@ -475,7 +510,7 @@ def main(stdscr):
                                 except:
                                     passed = False
                                 else:
-                                    passed = due_date < datetime.date.today().strftime("%Y-%m-%d")
+                                    passed = due_date < date.today().strftime("%Y-%m-%d")
                                 match config["tasks"]["day"]["details"][selected[1]]:
                                     case "name":
                                         text_mode = "edit task"

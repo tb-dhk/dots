@@ -2,7 +2,7 @@
     "ba63c2c6-ac5c-4662-bebf-a2aa3fb5f44d": {
         "id": "ba63c2c6-ac5c-4662-bebf-a2aa3fb5f44d",
         "name": "if you're reading this i managed to add a task",
-        "due_date": "2024-10-10",
+        "due_date": "2024-11-30",
         "priority": 2,
         "completed": false,
         "subtasks": [
@@ -16,6 +16,18 @@
             [
                 "2024-10-08",
                 "2024-10-10"
+            ],
+            [
+                "2024-10-08",
+                "2024-11-30"
+            ],
+            [
+                "2024-10-08",
+                "2024-12-31"
+            ],
+            [
+                "2024-10-08",
+                "2024-11-30"
             ]
         ],
         "recurrence": {
@@ -26,14 +38,35 @@
     "407c4a64-bd0e-40f6-8eec-35c842983069": {
         "id": "407c4a64-bd0e-40f6-8eec-35c842983069",
         "name": "you walk like a bitch (when i was ten someone said that)",
-        "due_date": "2024-10-09",
+        "due_date": "2024-11-05",
         "priority": 2,
         "completed": false,
         "subtasks": [],
         "parent": "ba63c2c6-ac5c-4662-bebf-a2aa3fb5f44d",
         "tags": [],
         "date_added": "2024-10-08",
-        "date_history": [],
+        "date_history": [
+            [
+                "2024-10-08",
+                "2024-10-31"
+            ],
+            [
+                "2024-10-08",
+                "2024-09-30"
+            ],
+            [
+                "2024-10-08",
+                "2024-10-31"
+            ],
+            [
+                "2024-10-08",
+                "2024-12-31"
+            ],
+            [
+                "2024-10-08",
+                "2024-11-05"
+            ]
+        ],
         "recurrence": {
             "interval": "daily",
             "days": []

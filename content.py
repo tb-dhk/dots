@@ -146,7 +146,9 @@ def display_task(window, task_key, selected, task_list, text_mode, indent=0, spl
     window.move(window.getyx()[0] + 1, start_col)
     completed = task['completed']
     symbol = 'x' if completed else '•'
+    important = "! " if task['priority'] == 3 else "  "
 
+    window.addstr(important, curses.color_pair(8))
     if removing != task_key and not removing_subtask:
         window.addstr(f"{'  ' * indent}{symbol} ", curses.color_pair(4 if window.getyx()[0] + 1 != selected[0] and task['completed'] else (1 + 4 * (window.getyx()[0] + 1 == selected[0]))))
         window.addstr(task['name'], curses.color_pair(4 if window.getyx()[0] + 1 != selected[0] and task['completed'] else (1 + 4 * (window.getyx()[0] + 1 == selected[0]))) | (curses.A_ITALIC if task['completed'] else 0))
@@ -248,7 +250,6 @@ def display_tasks(window, option, selected, text_input, text_mode, text_box, rem
 def draw_table(window, data, start_y, start_x, selected, day):
     # Calculate the maximum width of each column
     column_widths = [max(len(str(item)) for item in column) + 2 for column in zip(*data)][1:]
-    column_widths[0] += 2
 
     # Draw table header
     for i, header in enumerate(data[0][1:]):
@@ -264,20 +265,18 @@ def draw_table(window, data, start_y, start_x, selected, day):
     for row_idx, row in enumerate(data[1:]):
         task = Task.load_tasks()[row[0]]
         for i, item in enumerate(row[1:]):
-            if check_migrated(task['date_history'], day):
-                bullet = "<"
-            elif task['due_date'] != task['date_added']:
-                bullet = ">"
-            else:
-                bullet = "x" if task['completed'] else "•"
             window.addstr(start_y + row_idx + 3, start_x + sum(column_widths[:i]) + i, "| ")
-            if data[0][i+1] == "priority":
-                item = ["low", "medium", "high"][item - 1]
-            elif data[0][i+1] == "completed":
-                item = "yes" if item else "no"
-            if item == "":
-                item = " " * (column_widths[i] - 2)
-            window.addstr((bullet + " " if not i else "") + str(item), curses.color_pair(1 + ((selected[0] - 3) == row_idx and selected[1] == i)))
+            if i == 0:
+                window.addstr(item[:2], curses.color_pair(8))
+                window.addstr(item[2:], curses.color_pair(1 + (selected[0] - 3) == row_idx))
+            else:
+                if data[0][i+1] == "priority":
+                    item = ["low", "medium", "high"][item - 1]
+                elif data[0][i+1] == "completed":
+                    item = "yes" if item else "no"
+                if item == "":
+                    item = " " * (column_widths[i] - 2)
+                window.addstr(str(item), curses.color_pair(1 + ((selected[0] - 3) == row_idx and (selected[1] - 1) == i)))
         window.addstr(start_y + row_idx + 3, start_x + sum(column_widths) + 4, '|')
 
 def day_view(window, selected, day, text_input, text_mode, text_box):
@@ -288,9 +287,17 @@ def day_view(window, selected, day, text_input, text_mode, text_box):
 
     tasks = tasks_for_day(day)
     tasks.sort(key=lambda x: x['priority'])
-    data = [['id', 'name', 'due', 'priority']]
+    data = [['id', '', 'task', 'due', 'priority']]
+
     for task in tasks:
-        data.append([task['id'], task['name'], task['due_date'], task['priority']])
+        important = "! " if task['priority'] == 3 else "  "
+        if check_migrated(task['date_history'], day):
+            bullet = "<"
+        elif task['due_date'] != task['date_added']:
+            bullet = ">"
+        else:
+            bullet = "x" if task['completed'] else "•"
+        data.append([task['id'], important + bullet, task['name'], task['due_date'], task['priority']])
     draw_table(window, data, 4, 5, selected, day)
 
     due_today = [task for task in tasks if task['due_date'] == day]

@@ -99,13 +99,13 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
         if inner_option == 0:
             display_tasks(window, inner_option, selected, text_input, text_mode, text_box, removing)
         elif inner_option == 1:
-            day_view(window, selected, day, text_input, text_mode, text_box)
+            day_view(window, selected, day, text_input, text_mode, text_box, removing)
         elif inner_option == 2:
-            week_view(window, selected, day, text_input, text_mode, text_box)
+            week_view(window, selected, day, text_input, text_mode, text_box, removing)
         elif inner_option == 3:
-            month_view(window, selected, day, text_input, text_mode, text_box)
+            month_view(window, selected, day, text_input, text_mode, text_box, removing)
         elif inner_option == 4:
-            year_view(window, selected, day, text_input, text_mode, text_box)
+            year_view(window, selected, day, text_input, text_mode, text_box, removing)
             
     window.refresh()
 
@@ -506,11 +506,9 @@ def main(stdscr):
                                     text_input = True
                                     text_mode = "edit parent"
                                     selected[1] = 3
-                                case "r":
-                                    removing = task
-                                    content_window.clear()
+
                     elif inner_option in [1, 2, 3, 4]:
-                        task = tasks_for_day(day)[selected[0] - 3]
+                        task = [tasks_for_day, tasks_for_week, tasks_for_month, tasks_for_year][inner_option - 1](day)[selected[0] - 3]
                         task_name = task["name"]
                         match chr(key):
                             case "v":
@@ -549,6 +547,12 @@ def main(stdscr):
                                 if selected[0] == 2:
                                     text_input = True
                                     text_mode = "choose date"
+                            case ".":
+                                Task.edit_task(task, due_date=date.today().strftime("%Y-%m-%d"))
+                                message = f"task '{task_name}' scheduled for today"
+                            case "r":
+                                removing = task["id"]
+                                content_window.clear()
             else:
                 pass
 

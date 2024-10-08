@@ -302,9 +302,9 @@ def display_tasks(window, option, selected, text_input, text_mode, text_box, rem
         display_text_box(window, text_input, text_mode, text_box)
 
 
-def draw_table(window, data, start_y, start_x, selected):
+def draw_table(window, data, start_y, start_x, selected, removing):
     # Calculate the maximum width of each column
-    column_widths = [max(len(str(item)) for item in column) + 2 for column in zip(*data)][1:]
+    column_widths = [max(len(str(item)) for item in column) + 3 for column in zip(*data)][1:]
 
     # Draw table header
     for i, header in enumerate(data[0][1:]):
@@ -318,7 +318,7 @@ def draw_table(window, data, start_y, start_x, selected):
 
     # Draw table rows
     for row_idx, row in enumerate(data[1:]):
-        for i, item in enumerate(row[1:]):
+        for i, item in enumerate(row[1:-1]):
             window.addstr(start_y + row_idx + 3, start_x + sum(column_widths[:i]) + i, "| ")
             if i == 0:
                 window.addstr(item[:2], curses.color_pair(8))
@@ -330,11 +330,12 @@ def draw_table(window, data, start_y, start_x, selected):
                     item = "yes" if item else "no"
                 if item == "":
                     item = " " * (column_widths[i] - 2)
-                window.addstr(str(item), curses.color_pair(1 + 4 * ((selected[0] - 3) == row_idx and (selected[1] + 1) == i)))
+                if row[-1] and i == 1:
+                    item = "press r to remove, ESC to cancel" if row[0] == removing else "this subtask will be removed"
+                window.addstr(str(item), curses.color_pair((1 + 4 * ((selected[0] - 3) == row_idx and (selected[1] + 1) == i))) if not row[-1] else curses.color_pair(7))
         window.addstr(start_y + row_idx + 3, start_x + sum(column_widths) + 5, '|')
 
-
-def render_task_and_children(window, data, task, tasks_by_parent, indent, day, bullets=False):
+def render_task_and_children(window, data, task, tasks_by_parent, indent, day, removing, bullets=False, removing_subtask=False):
     """Recursively render task and its children with appropriate indentation."""
     important = "! " if task['priority'] == 3 else "  "
     if not bullets:
@@ -359,15 +360,16 @@ def render_task_and_children(window, data, task, tasks_by_parent, indent, day, b
         '  ' * indent + bullet + " " + task['name'],  # indent for child tasks
         task['due_date'],
         task['priority'],
-        parent_name
+        parent_name,
+        (removing == task['id']) or removing_subtask
     ])
 
     # Recursively render child tasks
     if task['id'] in tasks_by_parent:
         for child in tasks_by_parent[task['id']]:
-            render_task_and_children(window, data, child, tasks_by_parent, indent + 1, day)
+            render_task_and_children(window, data, child, tasks_by_parent, indent + 1, day, removing, bullets=bullets, removing_subtask=task['id']==removing)
 
-def day_view(window, selected, day, text_input, text_mode, text_box):
+def day_view(window, selected, day, text_input, text_mode, text_box, removing):
     display_borders(window, selected)
 
     window.addstr(2, 5, f"tasks for ")
@@ -387,14 +389,14 @@ def day_view(window, selected, day, text_input, text_mode, text_box):
             tasks_by_parent.setdefault(parent_id, []).append(task)
 
     # Data table for display
-    data = [['id', '', 'task', 'due', 'priority', 'part of']]
+    data = [['id', '', 'task', 'due', 'priority', 'part of', 'removing']]
 
     # Recursively render orphaned tasks and their children
     for task in orphaned_tasks:
-        render_task_and_children(window, data, task, tasks_by_parent, 0, day, bullets=True)
+        render_task_and_children(window, data, task, tasks_by_parent, 0, day, removing, bullets=True)
 
     # Draw the table
-    draw_table(window, data, 4, 5, selected)
+    draw_table(window, data, 4, 5, selected, removing)
 
     # Calculate and display completed tasks for today
     due_today = [task for task in tasks if task['due_date'] == day]
@@ -408,10 +410,10 @@ def day_view(window, selected, day, text_input, text_mode, text_box):
     # Display text box input (for text entry mode)
     display_text_box(window, text_input, text_mode, text_box)
 
-def week_view(window, selected, day, text_input, text_mode, text_box):
+def week_view(window, selected, day, text_input, text_mode, text_box, removing):
     display_borders(window, selected)
 
-    start = (dt.strptime(day, "%Y-%m-%d") - timedelta(days=dt.strptime(day, "%Y-%m-%d").weekday()-1)).strftime("%Y-%m-%d")
+    start = (dt.strptime(day, "%Y-%m-%d") - timedelta(days=dt.strptime(day, "%Y-%m-%d").weekday() + 1)).strftime("%Y-%m-%d")
     end = (dt.strptime(start, "%Y-%m-%d") + timedelta(days=6)).strftime("%Y-%m-%d")
 
     window.addstr(2, 5, f"tasks for ")
@@ -431,14 +433,14 @@ def week_view(window, selected, day, text_input, text_mode, text_box):
             tasks_by_parent.setdefault(parent_id, []).append(task)
 
     # Data table for display
-    data = [['id', '', 'task', 'due', 'priority', 'part of']]
+    data = [['id', '', 'task', 'due', 'priority', 'part of', 'removing']]
 
     # Recursively render orphaned tasks and their children
     for task in orphaned_tasks:
-        render_task_and_children(window, data, task, tasks_by_parent, 0, day)
+        render_task_and_children(window, data, task, tasks_by_parent, 0, day, removing)
 
     # Draw the table
-    draw_table(window, data, 4, 5, selected)
+    draw_table(window, data, 4, 5, selected, removing)
 
     # Calculate and display completed tasks for today
     due_today = [task for task in tasks if task['due_date'] == day]
@@ -452,7 +454,7 @@ def week_view(window, selected, day, text_input, text_mode, text_box):
     # Display text box input (for text entry mode)
     display_text_box(window, text_input, text_mode, text_box)
 
-def month_view(window, selected, day, text_input, text_mode, text_box):
+def month_view(window, selected, day, text_input, text_mode, text_box, removing):
     display_borders(window, selected)
 
     start = dt.strptime(day, "%Y-%m-%d").replace(day=1).strftime("%Y-%m-%d")
@@ -478,14 +480,14 @@ def month_view(window, selected, day, text_input, text_mode, text_box):
             tasks_by_parent.setdefault(parent_id, []).append(task)
 
     # Data table for display
-    data = [['id', '', 'task', 'due', 'priority', 'part of']]
+    data = [['id', '', 'task', 'due', 'priority', 'part of', 'removing']]
 
     # Recursively render orphaned tasks and their children
     for task in orphaned_tasks:
-        render_task_and_children(window, data, task, tasks_by_parent, 0, day)
+        render_task_and_children(window, data, task, tasks_by_parent, 0, day, removing)
 
     # Draw the table
-    draw_table(window, data, 4, 5, selected)
+    draw_table(window, data, 4, 5, selected, removing)
 
     # Calculate and display completed tasks for today
     due_today = [task for task in tasks if task['due_date'] == day]
@@ -499,7 +501,7 @@ def month_view(window, selected, day, text_input, text_mode, text_box):
     # Display text box input (for text entry mode)
     display_text_box(window, text_input, text_mode, text_box)
 
-def year_view(window, selected, day, text_input, text_mode, text_box):
+def year_view(window, selected, day, text_input, text_mode, text_box, removing):
     display_borders(window, selected)
 
     start = dt.strptime(day, "%Y-%m-%d").replace(month=1, day=1).strftime("%Y-%m-%d")
@@ -525,14 +527,14 @@ def year_view(window, selected, day, text_input, text_mode, text_box):
             tasks_by_parent.setdefault(parent_id, []).append(task)
 
     # Data table for display
-    data = [['id', '', 'task', 'due', 'priority', 'part of']]
+    data = [['id', '', 'task', 'due', 'priority', 'part of', 'removing']]
 
     # Recursively render orphaned tasks and their children
     for task in orphaned_tasks:
-        render_task_and_children(window, data, task, tasks_by_parent, 0, day)
+        render_task_and_children(window, data, task, tasks_by_parent, 0, day, removing)
 
     # Draw the table
-    draw_table(window, data, 4, 5, selected)
+    draw_table(window, data, 4, 5, selected, removing)
 
     # Calculate and display completed tasks for today
     due_today = [task for task in tasks if task['due_date'] == day]

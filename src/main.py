@@ -4,6 +4,7 @@ import time
 from datetime import datetime as dt, date, timedelta
 import toml
 import calendar
+import sys
 
 from tasks import Task, get_task_list, display_tasks, day_view, tasks_for_day, week_view, tasks_for_week, month_view, tasks_for_month, year_view, tasks_for_year
 from points import points
@@ -158,7 +159,7 @@ def main(stdscr):
 
     # Initial states
     height, width = stdscr.getmaxyx()
-    started = False
+    started = "-n" in sys.argv or "--no-home-screen" in sys.argv
     selected = [0, -1]
     outer_option = inner_option = 0
     text_input = False
@@ -175,12 +176,13 @@ def main(stdscr):
     content_window = curses.newwin(content_height, content_width, 2, 0)  # Starting from row 2
 
     # Initial screen design (before starting)
-    for x in range(width):
-        for y in range(height):
-            try:
-                stdscr.addch(y, x, "•", curses.color_pair(4))
-            except:
-                stdscr.insstr(y, x - 1, "•", curses.color_pair(4))
+    if not started:
+        for x in range(width):
+            for y in range(height):
+                try:
+                    stdscr.addch(y, x, "•", curses.color_pair(4))
+                except:
+                    stdscr.insstr(y, x - 1, "•", curses.color_pair(4))
 
     while True:
         # Update special color
@@ -254,6 +256,7 @@ def main(stdscr):
                 elif key == 13:  # Enter key
                     clear = True
                     if selected[0] >= 2:
+                        task_id = ""
                         if outer_option == 0:
                             if inner_option == 0:
                                 try:
@@ -485,17 +488,8 @@ def main(stdscr):
                                 case ".":
                                     Task.edit_task(task, due_date=date.today().strftime("%Y-%m-%d"))
                                     message = f"task '{task_name}' scheduled for today"
-                                case "i":
-                                    if Task.get_task(task)["priority"] != 3:
-                                        Task.edit_task(task, priority=3)
-                                        message = f"task '{task_name}' set to high priority"
-                                    else:
-                                        Task.edit_task(task, priority=2)
-                                        message = f"task '{task_name}' set to normal priority"
-                                case "p":
-                                    text_input = True
-                                    text_mode = "edit priority"
-                                    selected[1] = 4
+                                case "1" | "2" | "3":
+                                    Task.edit_task(task, priority=int(chr(key)))
                                 case ">":
                                     text_input = True
                                     text_mode = "migrate"
@@ -547,6 +541,9 @@ def main(stdscr):
                                         text_input = False
                             case "x":
                                 Task.edit_task(task["id"], completed=not task["completed"])
+                                content_window.clear()
+                            case "1" | "2" | "3":
+                                Task.edit_task(task["id"], priority=int(chr(key)))
                                 content_window.clear()
                             case "d":
                                 if selected[0] == 2:

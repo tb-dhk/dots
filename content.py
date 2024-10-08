@@ -2,6 +2,9 @@ import json
 import uuid
 import curses
 from datetime import datetime, date
+import toml
+
+config = toml.load("config.toml")
 
 class Task:
     def __init__(self, name, due_date=date.today().strftime("%Y%m%d"), priority=2, tags=[], subtasks=[], parent=[]):
@@ -88,11 +91,11 @@ def display_text_box(window, text_input, text_mode, text_box):
     else:
         window.addstr(max_y - 2, len(text_box) + 2, " ", curses.color_pair(1))
 
-def display_borders(window, selected):
+def display_borders(window, selected, split=False):
     """Draw the border for the task list. If selected[0] >= 2, split the window in half."""
     max_y, max_x = window.getmaxyx()
     
-    if selected[0] >= 2:
+    if selected[0] >= 2 and split:
         split_x = max_x // 2 - 1
         # Left box border
         window.addstr(0, 0, "╔" + "═" * (split_x - 2) + "╗" + " ")
@@ -201,7 +204,7 @@ def display_tasks(window, option, selected, text_input, text_mode, text_box, rem
     """Main function to display tasks, with task details in the right box when selected."""
     if option == 0:
         max_y, max_x = window.getmaxyx()
-        display_borders(window, selected)
+        display_borders(window, selected, split=True)
         tasks = Task.load_tasks()
 
         split_x = max_x // 2 - 1 if selected[0] >= 2 else 0 
@@ -230,39 +233,48 @@ def display_tasks(window, option, selected, text_input, text_mode, text_box, rem
         display_text_box(window, text_input, text_mode, text_box)
 
 
-def draw_table(window, data):
-    # Clear screen
-    window.clear()
-
+def draw_table(window, data, start_y, start_x, selected):
     # Calculate the maximum width of each column
-    max_lengths = [max(len(str(item)) for item in column) for column in zip(*data)]
-
-    # Get the width of the window
-    height, width = window.getmaxyx()
-
-    # Calculate total width and scale column widths to fit within the terminal width
-    total_length = sum(max_lengths) + len(max_lengths) - 1  # account for spaces between columns
-    scale_factor = (width - 2) / total_length  # subtract for table borders
-
-    # Calculate actual widths for each column
-    column_widths = [int(length * scale_factor) for length in max_lengths]
+    column_widths = [max(len(str(item)) for item in column) + 2 for column in zip(*data)]
 
     # Draw table header
-    window.addstr(0, 0, '+' + '-' * (width - 2) + '+')
     for i, header in enumerate(data[0]):
-        window.addstr(1, sum(column_widths[:i]) + i, header.ljust(column_widths[i]))
-    window.addstr(2, 0, '+' + '-' * (width - 2) + '+')
+        window.addstr(start_y + 0, start_x + sum(column_widths[:i]) + i, '+' + '-' * column_widths[i])
+        window.addstr(start_y + 1, start_x + sum(column_widths[:i]) + i, "| " + header.ljust(column_widths[i]))
+        window.addstr(start_y + 2, start_x + sum(column_widths[:i]) + i, '+' + '-' * column_widths[i])
+        window.addstr(start_y + len(data) + 2, start_x + sum(column_widths[:i]) + i, '+' + '-' * column_widths[i])
+    for row in range(3):
+        window.addstr(start_y + row, start_x + sum(column_widths) + 4, '|' if row % 2 else '+')
+    window.addstr(start_y + len(data) + 2, start_x + sum(column_widths) + 4, '+')
 
     # Draw table rows
-    for row_idx, row in enumerate(data[1:], start=3):
-        window.addstr(row_idx, 0, '|')  # left border
+    for row_idx, row in enumerate(data[1:]):
         for i, item in enumerate(row):
-            window.addstr(row_idx, sum(column_widths[:i]) + i + 1, str(item).ljust(column_widths[i]))
-            window.addstr(row_idx, sum(column_widths[:i + 1]) + i + 1, '|')  # right border
-        window.addstr(row_idx, 0, '+' + '-' * (width - 2) + '+')
+            window.addstr(start_y + row_idx + 3, start_x + sum(column_widths[:i]) + i, "| ")
+            if data[0][i] == "priority":
+                item = ["low", "medium", "high"][item - 1]
+            elif data[0][i] == "completed":
+                item = "yes" if item else "no"
+            if item == "":
+                item = " " * (column_widths[i] - 2)
+            window.addstr(str(item), curses.color_pair(1 + ((selected[0] - 3) == row_idx and selected[1] == i)))
+        window.addstr(start_y + row_idx + 3, start_x + sum(column_widths) + 4, '|')
 
-    # Refresh the screen to display the table
-    window.refresh()
-    window.getch()  # Wait for user input
+def day_view(window, selected, day, text_input, text_mode, text_box):
+    display_borders(window, selected)
 
+    window.addstr(2, 5, f"tasks for ")
+    window.addstr(f"< {day} >", curses.color_pair(1 + (selected[0] == 2)))
 
+    tasks = [task for _, task in Task.load_tasks().items() if task['due_date'] == day or task['date_added'] == day]
+    tasks.sort(key=lambda x: x['priority'])
+    data = [['name', 'completed', 'due', 'priority']]
+    for task in tasks:
+        data.append([task['name'], task['completed'], task['due_date'], task['priority']])
+    draw_table(window, data, 4, 5, selected)
+
+    due_today = [task for task in tasks if task['due_date'] == day]
+    completed_today = len([task for task in due_today if task['completed']])
+    window.addstr(len(data) + 8, 5, f"completed tasks due today: ({completed_today}/{len(due_today)}) ({str(round(completed_today / len(due_today) * 100, 2)) + '%' if len(due_today) else 'n/a'})")
+
+    display_text_box(window, text_input, text_mode, text_box)

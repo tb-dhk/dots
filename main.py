@@ -2,8 +2,13 @@ import curses
 import re
 import time
 import datetime
-from content import Task, display_task_details, display_tasks
+from datetime import date
+import toml
+
+from content import Task, display_task_details, display_tasks, day_view
 from points import points
+
+config = toml.load("config.toml")
 
 def traverse_tasks(task_key, tasks, clean_list):
     """Recursively traverse through the task and its subtasks, adding them to the clean list."""
@@ -15,6 +20,14 @@ def traverse_tasks(task_key, tasks, clean_list):
             traverse_tasks(subtask_key, tasks, clean_list)  # Recursively add subtasks
     except:
         pass
+
+def tasks_for_day(day=None):
+    if day is None:
+        day = date.today().strftime("%Y-%m-%d")
+    else:
+        day = day.strptime("%Y-%m-%d")
+    tasks = [task for _, task in Task.load_tasks().items() if task['due_date'] == day or task['date_added'] == day]
+    return tasks
 
 def get_task_list():
     """Return a clean list of tasks and their subtasks in a structured order."""
@@ -111,20 +124,23 @@ def inner_navbar(stdscr, outer_option, inner_option, selected):
     for i, option in enumerate(options):
         stdscr.addstr(f" {option} ", curses.color_pair(1 + (i != inner_option) + 4 * (selected[0] == 1)))
 
-def content(window, outer_option, inner_option, selected, text_input, text_mode, text_box, removing):
+def content(window, outer_option, inner_option, selected, text_input, text_mode, text_box, removing, day):
     if outer_option == 0:
-        display_tasks(window, inner_option, selected, text_input, text_mode, text_box, removing)
-        if selected[0] >= 2:
-            display_task_details(window, get_task_list()[selected[0] - 2], window.getmaxyx()[1] // 2 - 1 if selected[0] >= 2 else None, selected)
+        if inner_option == 0:
+            display_tasks(window, inner_option, selected, text_input, text_mode, text_box, removing)
+            if selected[0] >= 2:
+                display_task_details(window, get_task_list()[selected[0] - 2], window.getmaxyx()[1] // 2 - 1 if selected[0] >= 2 else None, selected)
+        elif inner_option == 1:
+            day_view(window, selected, day, text_input, text_mode, text_box)
     window.refresh()
 
 def status_bar(stdscr, outer_option, inner_option, selected, text_mode, message):
     match text_mode:
         case "new task" | "edit task":
             display = "enter new task name"
-        case "migrating":
+        case "migrate":
             display = "enter due date to migrate to in the format yyyy-mm-dd"
-        case "scheduling":
+        case "schedule":
             display = "enter due date to schedule for in the format yyyy-mm-dd"
         case "edit priority":
             display = "enter a number from 1 (low) to 3 (high)"
@@ -132,6 +148,8 @@ def status_bar(stdscr, outer_option, inner_option, selected, text_mode, message)
             display = "enter + to add or - to remove, followed by tags (comma-separated)"
         case "edit parent":
             display = "enter the number to the right of the task you would like to set as the new parent (-1 for no parent)"
+        case "choose date":
+            display = "enter the date in the format yyyy-mm-dd"
         case _:
             display = str(message)
     stdscr.addstr(stdscr.getmaxyx()[0] - 1, 0, display)  # Placeholder for future status bar implementation
@@ -170,6 +188,7 @@ def main(stdscr):
     text_box = ""
     message = ""
     removing = "" 
+    day = date.today().strftime("%Y-%m-%d")
 
     # Create a window for content
     content_height = height - 3  # Adjust based on your layout
@@ -222,7 +241,7 @@ def main(stdscr):
         else:
             outer_navbar(stdscr, outer_option, selected)
             inner_navbar(stdscr, outer_option, inner_option, selected)
-            content(content_window, outer_option, inner_option, selected, text_input, text_mode, text_box, removing)
+            content(content_window, outer_option, inner_option, selected, text_input, text_mode, text_box, removing, day)
             status_bar(stdscr, outer_option, inner_option, selected, text_mode, message)
 
         # Non-blocking check for key input
@@ -254,27 +273,32 @@ def main(stdscr):
                     if outer_option == 0 and inner_option == 0:
                         selected[1] = -1
                 elif key == 13:  # Enter key
-                    if outer_option == 0 and inner_option == 0 and selected[0] >= 2:
-                        clear = True
-                        task_name = Task.load_tasks()[get_task_list()[selected[0] - 2]]["name"] if selected[0] >= 2 else None
+                    clear = True
+                    if selected[0] >= 2:
+                        if outer_option == 0:
+                            if inner_option == 0:
+                                task_id = get_task_list()[selected[0] - 2]
+                            elif inner_option == 1:
+                                task_id = tasks_for_day()[selected[0] - 3]["id"]
+                        task_name = Task.get_task(task_id)["name"] 
                         text_box = text_box.strip()
                         if text_box:
                             if text_mode == "new task":
                                 Task.add_task(text_box)
                                 message = f"new task '{text_box}' added"
                             elif text_mode == "edit task":
-                                Task.edit_task(get_task_list()[selected[0] - 2], name=text_box)
+                                Task.edit_task(task_id, name=text_box)
                                 message = f"name of task '{task_name}' changed to '{text_box}'"
                             elif text_mode in ["migrate", "schedule"]:
                                 if text_box and re.match(r"\d{4}-\d{2}-\d{2}", text_box) and check_date(text_box):
-                                    Task.edit_task(get_task_list()[selected[0] - 2], due_date=text_box)
+                                    Task.edit_task(task_id, due_date=text_box)
                                     message = f"task '{task_name}' scheduled for {text_box}"
                                 else:
                                     message = "invalid date format. try again!"
                                     clear = False
                             elif text_mode == "edit priority":
                                 if text_box in ["1", "2", "3"]:
-                                    Task.edit_task(get_task_list()[selected[0] - 2], priority=int(text_box))
+                                    Task.edit_task(task_id, priority=int(text_box))
                                     message = f"priority of task '{task_name}' changed to {text_box}"
                                 else:
                                     message = "invalid priority. try again!"
@@ -291,19 +315,26 @@ def main(stdscr):
                                         non_existing_tags = [i for i in tags if i not in original_tags]
                                         new_tags = [i for i in original_tags if i not in tags]
                                         message = f"tags {', '.join(existing_tags)} removed from task '{task_name}' (tags {', '.join(non_existing_tags)} not found)"
-                                    Task.edit_task(get_task_list()[selected[0] - 2], tags=new_tags)
+                                    Task.edit_task(task_id, tags=new_tags)
                                 else:
                                     message = "invalid tag operation. try again!"
                                     clear = False
                             elif text_mode == "edit parent":
                                 message = edit_task_parent(selected, text_box, get_task_list())
-                  
-                        if clear:
-                            text_input = False
-                            text_box = ""
-                            text_mode = ""
-                            if outer_option == 0 and inner_option == 0:
-                                selected[1] = -1
+                            elif text_mode == "choose date":
+                                if text_box and re.match(r"\d{4}-\d{2}-\d{2}", text_box) and check_date(text_box):
+                                    day = text_box
+                                    message = f"moved to date {text_box}"
+                                else:
+                                    message = "invalid date format. try again!"
+                                    clear = False
+                      
+                            if clear:
+                                text_input = False
+                                text_box = ""
+                                text_mode = ""
+                                if outer_option == 0 and inner_option == 0:
+                                    selected[1] = -1
                     content_window.clear()
                 else:
                     text_box += chr(key)
@@ -314,14 +345,25 @@ def main(stdscr):
                     if inner_option == 0:
                         if selected[0] == 2 + len(get_task_list()):
                             selected[0] = 0
+                    elif inner_option == 1:
+                        if selected[0] == len(tasks_for_day()) + 3:
+                            selected[0] = 0
                 else:
                     if selected[0] == 3:
                         selected[0] = 0
             elif key == curses.KEY_UP:
                 content_window.clear()
                 selected[0] -= 1
-                if selected[0] == -1:
-                    selected[0] = 2
+                if outer_option == 0:
+                    if inner_option == 0:
+                        if selected[0] == -1:
+                            selected[0] = 1 + len(get_task_list())
+                    elif inner_option == 1:
+                        if selected[0] == -1:
+                            selected[0] = len(tasks_for_day()) + 2
+                else:
+                    if selected[0] == -1:
+                        selected[0] = 2
             elif key == curses.KEY_END:
                 if outer_option == 0:
                     if inner_option == 0:
@@ -338,6 +380,19 @@ def main(stdscr):
                     inner_option -= 1
                     if inner_option == -1:
                         inner_option = len(inner_options(outer_option)) - 1
+                elif outer_option == 0 and inner_option == 1:
+                    if selected[0] == 2:
+                        day = (datetime.datetime.strptime(day, "%Y-%m-%d") - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+                    else:
+                        selected[1] -= 1
+                        if selected[1] == -1:
+                            selected[1] = 3
+                if selected[0] < 2:
+                    if outer_option == 0:
+                        if inner_option == 0:
+                            selected[1] = -1
+                        elif inner_option == 1:
+                            selected[1] = 0
             elif key == curses.KEY_RIGHT:
                 if selected[0] == 0:
                     outer_option += 1
@@ -348,57 +403,109 @@ def main(stdscr):
                     inner_option += 1
                     if inner_option == len(inner_options(outer_option)):
                         inner_option = 0
-            elif chr(key) == "q":
+                elif outer_option == 0 and inner_option == 1:
+                    if selected[0] == 2:
+                        day = (datetime.datetime.strptime(day, "%Y-%m-%d") + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+                    else:
+                        selected[1] += 1
+                        if selected[1] == 4:
+                            selected[1] = 0
+                if selected[0] < 2:
+                    if outer_option == 0:
+                        if inner_option == 0:
+                            selected[1] = -1
+                        elif inner_option == 1:
+                            selected[1] = 0
+            elif chr(key) == "q" or key == 27:
                 break
             elif not started:
                 match chr(key):
                     case " ":
                         started = True
                         stdscr.clear()
-            elif outer_option == 0 and inner_option == 0 and selected[0] >= 2:
-                task = get_task_list()[selected[0] - 2]
-                task_name = Task.get_task(task)["name"] 
-                match chr(key):
-                    case ":":
-                        text_input = True
-                        text_mode = "new task"
-                    case "x":
-                        Task.edit_task(task, completed=not Task.get_task(str(task))["completed"])
-                    case "n":
-                        text_input = True
-                        text_mode = "edit task"
-                        selected[1] = 0
-                    case ".":
-                        Task.edit_task(task, due_date=datetime.date.today().strftime("%Y-%m-%d"))
-                        message = f"task '{task_name}' scheduled for today"
-                    case "p":
-                        text_input = True
-                        text_mode = "edit priority"
-                        selected[1] = 4
-                    case ">":
-                        text_input = True
-                        text_mode = "migrate"
-                        selected[1] = 2
-                    case "<":
-                        text_input = True
-                        text_mode = "schedule"
-                        selected[1] = 2
-                    case "t":
-                        text_input = True
-                        text_mode = "edit tags"
-                        selected[1] = 5
-                    case "m":
-                        text_input = True
-                        text_mode = "edit parent"
-                        selected[1] = 3
-                    case "r":
-                        removing = task
-                        content_window.clear()
+            elif selected[0] >= 2:
+                if outer_option == 0:
+                    if inner_option == 0:
+                        task = get_task_list()[selected[0] - 2]
+                        task_name = Task.get_task(task)["name"] 
+                        match chr(key):
+                            case ":":
+                                text_input = True
+                                text_mode = "new task"
+                            case "x":
+                                Task.edit_task(task, completed=not Task.get_task(str(task))["completed"])
+                            case "n":
+                                text_input = True
+                                text_mode = "edit task"
+                                selected[1] = 0
+                            case ".":
+                                Task.edit_task(task, due_date=datetime.date.today().strftime("%Y-%m-%d"))
+                                message = f"task '{task_name}' scheduled for today"
+                            case "p":
+                                text_input = True
+                                text_mode = "edit priority"
+                                selected[1] = 4
+                            case ">":
+                                text_input = True
+                                text_mode = "migrate"
+                                selected[1] = 2
+                            case "<":
+                                text_input = True
+                                text_mode = "schedule"
+                                selected[1] = 2
+                            case "t":
+                                text_input = True
+                                text_mode = "edit tags"
+                                selected[1] = 5
+                            case "m":
+                                text_input = True
+                                text_mode = "edit parent"
+                                selected[1] = 3
+                            case "r":
+                                removing = task
+                                content_window.clear()
+                    elif inner_option == 1:
+                        task = tasks_for_day()[selected[0] - 3]
+                        task_name = task["name"]
+                        match chr(key):
+                            case "v":
+                                outer_option = 0
+                                inner_option = 0
+                                selected[0] = 2 + get_task_list().index(task["id"])
+                                selected[1] = -1
+                                content_window.clear()
+                            case "e":
+                                if selected[0] != config["tasks"]["day"]["details"].index("completed"):
+                                    text_input = True
+                                    content_window.clear()
+                                    try:
+                                        due_date = task["due_date"].strftime("%Y-%m-%d")
+                                    except:
+                                        passed = False
+                                    else:
+                                        passed = due_date < datetime.date.today().strftime("%Y-%m-%d")
+                                    match config["tasks"]["day"]["details"][selected[1]]:
+                                        case "name":
+                                            text_mode = "edit task"
+                                        case "due_date":
+                                            text_mode = "migrate" if passed else "schedule"
+                                        case "priority":
+                                            text_mode = "edit priority"
+                                        case "tags":
+                                            text_mode = "edit tags"
+                                        case "parent":
+                                            text_mode = "edit parent"
+                            case "x":
+                                Task.edit_task(task["id"], completed=not task["completed"])
+                                content_window.clear()
+                            case "d":
+                                if selected[0] == 2:
+                                    text_input = True
+                                    text_mode = "choose date"
             else:
                 pass
 
         stdscr.refresh()
-        time.sleep(0.001)  # Optional delay for CPU usage control
 
 if __name__ == "__main__":
     curses.wrapper(main)

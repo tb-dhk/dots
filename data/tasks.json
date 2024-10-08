@@ -2,7 +2,7 @@
     "ba63c2c6-ac5c-4662-bebf-a2aa3fb5f44d": {
         "id": "ba63c2c6-ac5c-4662-bebf-a2aa3fb5f44d",
         "name": "if you're reading this i managed to add a task",
-        "due_date": "",
+        "due_date": "2024-10-10",
         "priority": 2,
         "completed": false,
         "subtasks": [
@@ -12,7 +12,12 @@
         "tags": [],
         "migrations": [],
         "date_added": "2024-10-08",
-        "date_history": [],
+        "date_history": [
+            [
+                "2024-10-08",
+                "2024-10-10"
+            ]
+        ],
         "recurrence": {
             "interval": "daily",
             "days": []
@@ -53,14 +58,27 @@
     "7b35b581-858a-4d69-9969-57919e73a2f8": {
         "id": "7b35b581-858a-4d69-9969-57919e73a2f8",
         "name": "testing name change",
-        "due_date": "2024-10-08",
+        "due_date": "2024-10-09",
         "priority": 3,
         "completed": false,
         "subtasks": [],
         "parent": null,
         "tags": [],
         "date_added": "2024-10-08",
-        "date_history": [],
+        "date_history": [
+            [
+                "2024-10-08",
+                "2024-10-09"
+            ],
+            [
+                "2024-10-08",
+                "2024-10-08"
+            ],
+            [
+                "2024-10-08",
+                "2024-10-09"
+            ]
+        ],
         "recurrence": {
             "interval": "daily",
             "days": []

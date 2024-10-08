@@ -2,4 +2,4 @@
 details = ['name', 'completed', 'due_date', 'parent', 'priority', 'tags']
 
 [tasks.day]
-details = ['name', 'completed', 'due_date', 'priority']
+details = ['name', 'due_date', 'priority']

@@ -5,7 +5,7 @@ import datetime
 from datetime import date
 import toml
 
-from content import Task, display_task_details, display_tasks, day_view
+from content import Task, display_task_details, display_tasks, day_view, tasks_for_day
 from points import points
 
 config = toml.load("config.toml")
@@ -20,14 +20,6 @@ def traverse_tasks(task_key, tasks, clean_list):
             traverse_tasks(subtask_key, tasks, clean_list)  # Recursively add subtasks
     except:
         pass
-
-def tasks_for_day(day=None):
-    if day is None:
-        day = date.today().strftime("%Y-%m-%d")
-    else:
-        day = day.strptime("%Y-%m-%d")
-    tasks = [task for _, task in Task.load_tasks().items() if task['due_date'] == day or task['date_added'] == day]
-    return tasks
 
 def get_task_list():
     """Return a clean list of tasks and their subtasks in a structured order."""
@@ -115,7 +107,7 @@ def inner_options(outer_option):
     elif outer_option == 4:
         return ["main"]
     else:
-        return ["new"]
+        return ["+ new"]
 
 def inner_navbar(stdscr, outer_option, inner_option, selected):
     stdscr.addstr(1, 0, " " * stdscr.getmaxyx()[1], curses.color_pair(2 + 4 * (selected[0] == 1)))
@@ -279,7 +271,7 @@ def main(stdscr):
                             if inner_option == 0:
                                 task_id = get_task_list()[selected[0] - 2]
                             elif inner_option == 1:
-                                task_id = tasks_for_day()[selected[0] - 3]["id"]
+                                task_id = tasks_for_day(day)[selected[0] - 3]["id"]
                         task_name = Task.get_task(task_id)["name"] 
                         text_box = text_box.strip()
                         if text_box:
@@ -292,6 +284,7 @@ def main(stdscr):
                             elif text_mode in ["migrate", "schedule"]:
                                 if text_box and re.match(r"\d{4}-\d{2}-\d{2}", text_box) and check_date(text_box):
                                     Task.edit_task(task_id, due_date=text_box)
+                                    Task.edit_task(task_id, date_history=Task.get_task(task_id)["date_history"] + [(datetime.date.today().strftime("%Y-%m-%d"), Task.get_task(task_id)["due_date"])])
                                     message = f"task '{task_name}' scheduled for {text_box}"
                                 else:
                                     message = "invalid date format. try again!"
@@ -346,7 +339,7 @@ def main(stdscr):
                         if selected[0] == 2 + len(get_task_list()):
                             selected[0] = 0
                     elif inner_option == 1:
-                        if selected[0] == len(tasks_for_day()) + 3:
+                        if selected[0] == len(tasks_for_day(day)) + 3:
                             selected[0] = 0
                 else:
                     if selected[0] == 3:
@@ -360,7 +353,7 @@ def main(stdscr):
                             selected[0] = 1 + len(get_task_list())
                     elif inner_option == 1:
                         if selected[0] == -1:
-                            selected[0] = len(tasks_for_day()) + 2
+                            selected[0] = len(tasks_for_day(day)) + 2
                 else:
                     if selected[0] == -1:
                         selected[0] = 2
@@ -465,7 +458,7 @@ def main(stdscr):
                                 removing = task
                                 content_window.clear()
                     elif inner_option == 1:
-                        task = tasks_for_day()[selected[0] - 3]
+                        task = tasks_for_day(day)[selected[0] - 3]
                         task_name = task["name"]
                         match chr(key):
                             case "v":
@@ -475,26 +468,25 @@ def main(stdscr):
                                 selected[1] = -1
                                 content_window.clear()
                             case "e":
-                                if selected[0] != config["tasks"]["day"]["details"].index("completed"):
-                                    text_input = True
-                                    content_window.clear()
-                                    try:
-                                        due_date = task["due_date"].strftime("%Y-%m-%d")
-                                    except:
-                                        passed = False
-                                    else:
-                                        passed = due_date < datetime.date.today().strftime("%Y-%m-%d")
-                                    match config["tasks"]["day"]["details"][selected[1]]:
-                                        case "name":
-                                            text_mode = "edit task"
-                                        case "due_date":
-                                            text_mode = "migrate" if passed else "schedule"
-                                        case "priority":
-                                            text_mode = "edit priority"
-                                        case "tags":
-                                            text_mode = "edit tags"
-                                        case "parent":
-                                            text_mode = "edit parent"
+                                text_input = True
+                                content_window.clear()
+                                try:
+                                    due_date = task["due_date"].strftime("%Y-%m-%d")
+                                except:
+                                    passed = False
+                                else:
+                                    passed = due_date < datetime.date.today().strftime("%Y-%m-%d")
+                                match config["tasks"]["day"]["details"][selected[1]]:
+                                    case "name":
+                                        text_mode = "edit task"
+                                    case "due_date":
+                                        text_mode = "migrate" if passed else "schedule"
+                                    case "priority":
+                                        text_mode = "edit priority"
+                                    case "tags":
+                                        text_mode = "edit tags"
+                                    case "parent":
+                                        text_mode = "edit parent"
                             case "x":
                                 Task.edit_task(task["id"], completed=not task["completed"])
                                 content_window.clear()

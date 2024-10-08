@@ -264,10 +264,10 @@ def draw_table(window, data, start_y, start_x, selected, day):
     for row_idx, row in enumerate(data[1:]):
         task = Task.load_tasks()[row[0]]
         for i, item in enumerate(row[1:]):
-            if check_migrated(task['date_history'], day):
-                bullet = "<"
-            elif task['due_date'] != task['date_added']:
+            if task['due_date'] != task['date_added']:
                 bullet = ">"
+            elif check_migrated(task['date_history'], day):
+                bullet = "<"
             else:
                 bullet = "x" if task['completed'] else "•"
             window.addstr(start_y + row_idx + 3, start_x + sum(column_widths[:i]) + i, "| ")
@@ -277,7 +277,7 @@ def draw_table(window, data, start_y, start_x, selected, day):
                 item = "yes" if item else "no"
             if item == "":
                 item = " " * (column_widths[i] - 2)
-            window.addstr((bullet + " " if not i else "") + str(item), curses.color_pair(1 + ((selected[0] - 3) == row_idx and selected[1] == i)))
+            window.addstr(bullet + str(item), curses.color_pair(1 + ((selected[0] - 3) == row_idx and selected[1] == i)))
         window.addstr(start_y + row_idx + 3, start_x + sum(column_widths) + 4, '|')
 
 def day_view(window, selected, day, text_input, text_mode, text_box):

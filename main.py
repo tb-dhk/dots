@@ -5,33 +5,10 @@ from datetime import datetime as dt, date, timedelta
 import toml
 import calendar
 
-from content import Task, display_task_details, display_tasks, day_view, tasks_for_day
+from content import Task, get_task_list, display_tasks, day_view, tasks_for_day, week_view, tasks_for_week, month_view, tasks_for_month, year_view, tasks_for_year
 from points import points
 
 config = toml.load("config.toml")
-
-def traverse_tasks(task_key, tasks, clean_list):
-    """Recursively traverse through the task and its subtasks, adding them to the clean list."""
-    clean_list.append(task_key)  # Add the parent task key
-
-    # Get the subtasks (children) of the current task
-    try:
-        for subtask_key in tasks[task_key]['subtasks']:
-            traverse_tasks(subtask_key, tasks, clean_list)  # Recursively add subtasks
-    except:
-        pass
-
-def get_task_list():
-    """Return a clean list of tasks and their subtasks in a structured order."""
-    tasks = Task.load_tasks()  # Load all tasks
-    clean_list = []
-
-    # Find tasks without parents (root tasks)
-    for task_key in tasks:
-        if not tasks[task_key]['parent']:
-            traverse_tasks(task_key, tasks, clean_list)
-
-    return clean_list
 
 def check_date(string):
     try: 
@@ -120,10 +97,15 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
     if outer_option == 0:
         if inner_option == 0:
             display_tasks(window, inner_option, selected, text_input, text_mode, text_box, removing)
-            if selected[0] >= 2:
-                display_task_details(window, get_task_list()[selected[0] - 2], window.getmaxyx()[1] // 2 - 1 if selected[0] >= 2 else None, selected)
         elif inner_option == 1:
             day_view(window, selected, day, text_input, text_mode, text_box)
+        elif inner_option == 2:
+            week_view(window, selected, day, text_input, text_mode, text_box)
+        elif inner_option == 3:
+            month_view(window, selected, day, text_input, text_mode, text_box)
+        elif inner_option == 4:
+            year_view(window, selected, day, text_input, text_mode, text_box)
+            
     window.refresh()
 
 def status_bar(window, outer_option, inner_option, selected, text_mode, message):
@@ -185,6 +167,7 @@ def main(stdscr):
     message = ""
     removing = "" 
     day = date.today().strftime("%Y-%m-%d")
+    day2 = day
 
     # Create a window for content
     content_height = height - 3  # Adjust based on your layout
@@ -273,10 +256,16 @@ def main(stdscr):
                     if selected[0] >= 2:
                         if outer_option == 0:
                             if inner_option == 0:
-                                task_id = get_task_list()[selected[0] - 2]
+                                try:
+                                    task_id = get_task_list()[selected[0] - 2]
+                                except:
+                                    task_id = ""
                             elif inner_option == 1:
                                 task_id = tasks_for_day(day)[selected[0] - 3]["id"]
-                        task_name = Task.get_task(task_id)["name"] 
+                        if task_id:
+                            task_name = Task.get_task(task_id)["name"] 
+                        else:
+                            task_name = ""
                         text_box = text_box.strip()
                         if text_box:
                             if text_mode == "new task":
@@ -364,10 +353,19 @@ def main(stdscr):
                 selected[0] += 1
                 if outer_option == 0:
                     if inner_option == 0:
-                        if selected[0] == 2 + len(get_task_list()):
+                        if selected[0] == 3 + len(get_task_list()):
                             selected[0] = 0
                     elif inner_option == 1:
                         if selected[0] == len(tasks_for_day(day)) + 3:
+                            selected[0] = 0
+                    elif inner_option == 2:
+                        if selected[0] == len(tasks_for_week(day)) + 3:
+                            selected[0] = 0
+                    elif inner_option == 3:
+                        if selected[0] == len(tasks_for_month(day)) + 3:
+                            selected[0] = 0             
+                    elif inner_option == 4:
+                        if selected[0] == len(tasks_for_year(day)) + 3:
                             selected[0] = 0
                 else:
                     if selected[0] == 3:
@@ -375,13 +373,18 @@ def main(stdscr):
             elif key == curses.KEY_UP:
                 content_window.clear()
                 selected[0] -= 1
-                if outer_option == 0:
-                    if inner_option == 0:
-                        if selected[0] == -1:
-                            selected[0] = 1 + len(get_task_list())
-                    elif inner_option == 1:
-                        if selected[0] == -1:
+                if selected[0] == -1:
+                    if outer_option == 0:
+                        if inner_option == 0:
+                            selected[0] = 2 + len(get_task_list())
+                        elif inner_option == 1:
                             selected[0] = len(tasks_for_day(day)) + 2
+                        elif inner_option == 2:
+                            selected[0] = len(tasks_for_week(day)) + 2
+                        elif inner_option == 3:
+                            selected[0] = len(tasks_for_month(day)) + 2
+                        elif inner_option == 4:
+                            selected[0] = len(tasks_for_year(day)) + 2
                 else:
                     if selected[0] == -1:
                         selected[0] = 2
@@ -401,9 +404,16 @@ def main(stdscr):
                     inner_option -= 1
                     if inner_option == -1:
                         inner_option = len(inner_options(outer_option)) - 1
-                elif outer_option == 0 and inner_option == 1:
+                elif outer_option == 0:
                     if selected[0] == 2:
-                        day = (dt.strptime(day, "%Y-%m-%d") - timedelta(days=1)).strftime("%Y-%m-%d")
+                        if inner_option == 1:
+                            day = (dt.strptime(day, "%Y-%m-%d") - timedelta(days=1)).strftime("%Y-%m-%d")
+                        elif inner_option == 2:
+                            day = (dt.strptime(day, "%Y-%m-%d") - timedelta(weeks=1)).strftime("%Y-%m-%d")
+                        elif inner_option == 3:
+                            day = (dt.strptime(day, "%Y-%m-%d") - timedelta(days=calendar.monthrange(int(day[:4]), int(day[5:7]))[1])).strftime("%Y-%m-%d")
+                        elif inner_option == 4:
+                            day = (dt.strptime(day, "%Y-%m-%d") - timedelta(days=365)).strftime("%Y-%m-%d")
                     else:
                         selected[1] -= 1
                         if selected[1] == -1:
@@ -412,7 +422,7 @@ def main(stdscr):
                     if outer_option == 0:
                         if inner_option == 0:
                             selected[1] = -1
-                        elif inner_option == 1:
+                        elif inner_option in [1, 2]:
                             selected[1] = 0
             elif key == curses.KEY_RIGHT:
                 if selected[0] == 0:
@@ -424,9 +434,16 @@ def main(stdscr):
                     inner_option += 1
                     if inner_option == len(inner_options(outer_option)):
                         inner_option = 0
-                elif outer_option == 0 and inner_option == 1:
+                elif outer_option == 0:
                     if selected[0] == 2:
-                        day = (dt.strptime(day, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
+                        if inner_option == 1:
+                            day = (dt.strptime(day, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
+                        elif inner_option == 2:
+                            day = (dt.strptime(day, "%Y-%m-%d") + timedelta(weeks=1)).strftime("%Y-%m-%d")
+                        elif inner_option == 3:
+                            day = (dt.strptime(day, "%Y-%m-%d") + timedelta(days=calendar.monthrange(int(day[:4]), int(day[5:7]))[1])).strftime("%Y-%m-%d")
+                        elif inner_option == 4:
+                            day = (dt.strptime(day, "%Y-%m-%d") + timedelta(days=365)).strftime("%Y-%m-%d")
                     else:
                         selected[1] += 1
                         if selected[1] == len(config["tasks"]["day"]["details"]):
@@ -435,7 +452,7 @@ def main(stdscr):
                     if outer_option == 0:
                         if inner_option == 0:
                             selected[1] = -1
-                        elif inner_option == 1:
+                        elif inner_option in [1, 2]:
                             selected[1] = 0
             elif chr(key) == "q" or key == 27:
                 break
@@ -447,51 +464,57 @@ def main(stdscr):
             elif selected[0] >= 2:
                 if outer_option == 0:
                     if inner_option == 0:
-                        task = get_task_list()[selected[0] - 2]
-                        task_name = Task.get_task(task)["name"] 
-                        match chr(key):
-                            case ":":
+                        try:
+                            task = get_task_list()[selected[0] - 2]
+                        except:
+                            if key == ord(":"):
                                 text_input = True
                                 text_mode = "new task"
-                            case "x":
-                                Task.edit_task(task, completed=not Task.get_task(str(task))["completed"])
-                            case "n":
-                                text_input = True
-                                text_mode = "edit task"
-                                selected[1] = 0
-                            case ".":
-                                Task.edit_task(task, due_date=date.today().strftime("%Y-%m-%d"))
-                                message = f"task '{task_name}' scheduled for today"
-                            case "i":
-                                if Task.get_task(task)["priority"] != 3:
-                                    Task.edit_task(task, priority=3)
-                                    message = f"task '{task_name}' set to high priority"
-                                else:
-                                    Task.edit_task(task, priority=2)
-                                    message = f"task '{task_name}' set to normal priority"
-                            case "p":
-                                text_input = True
-                                text_mode = "edit priority"
-                                selected[1] = 4
-                            case ">":
-                                text_input = True
-                                text_mode = "migrate"
-                                selected[1] = 2
-                            case "<":
-                                text_input = True
-                                text_mode = "schedule"
-                                selected[1] = 2
-                            case "t":
-                                text_input = True
-                                text_mode = "edit tags"
-                                selected[1] = 5
-                            case "m":
-                                text_input = True
-                                text_mode = "edit parent"
-                                selected[1] = 3
-                            case "r":
-                                removing = task
-                                content_window.clear()
+                        else:
+                            task_name = Task.get_task(task)["name"] 
+                            match chr(key):
+                                case ":":
+                                    text_input = True
+                                    text_mode = "new task"
+                                case "x":
+                                    Task.edit_task(task, completed=not Task.get_task(str(task))["completed"])
+                                case "n":
+                                    text_input = True
+                                    text_mode = "edit task"
+                                    selected[1] = 0
+                                case ".":
+                                    Task.edit_task(task, due_date=date.today().strftime("%Y-%m-%d"))
+                                    message = f"task '{task_name}' scheduled for today"
+                                case "i":
+                                    if Task.get_task(task)["priority"] != 3:
+                                        Task.edit_task(task, priority=3)
+                                        message = f"task '{task_name}' set to high priority"
+                                    else:
+                                        Task.edit_task(task, priority=2)
+                                        message = f"task '{task_name}' set to normal priority"
+                                case "p":
+                                    text_input = True
+                                    text_mode = "edit priority"
+                                    selected[1] = 4
+                                case ">":
+                                    text_input = True
+                                    text_mode = "migrate"
+                                    selected[1] = 2
+                                case "<":
+                                    text_input = True
+                                    text_mode = "schedule"
+                                    selected[1] = 2
+                                case "t":
+                                    text_input = True
+                                    text_mode = "edit tags"
+                                    selected[1] = 5
+                                case "m":
+                                    text_input = True
+                                    text_mode = "edit parent"
+                                    selected[1] = 3
+                                case "r":
+                                    removing = task
+                                    content_window.clear()
                     elif inner_option == 1:
                         task = tasks_for_day(day)[selected[0] - 3]
                         task_name = task["name"]

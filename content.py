@@ -1,13 +1,13 @@
 import json
 import uuid
 import curses
-from datetime import datetime, date
+from datetime import datetime as dt, date, timedelta
 import toml
 
 config = toml.load("config.toml")
 
 class Task:
-    def __init__(self, name, due_date=date.today().strftime("%Y%m%d"), priority=2, tags=[], subtasks=[], parent=[]):
+    def __init__(self, name, due_date=date.today().strftime("%Y-%m-%d"), priority=2, tags=[], subtasks=[], parent=[]):
         self.id = str(uuid.uuid4())  # Unique identifier for the task
         self.name = name  # Task name
         self.due_date = due_date  # Task due date (string, could be a day/week/month-based format)
@@ -17,7 +17,7 @@ class Task:
         self.subtasks = subtasks if subtasks else []  # List of subtasks (empty by default)
         self.parent = None  # List of parent tasks (empty by default)
         self.tags = tags if tags else []  # Optional tags (default: empty list)
-        self.date_added = str(datetime.now().date())  # When the task was originally scheduled
+        self.date_added = str(dt.now().date())  # When the task was originally scheduled
         self.date_history = []  # Track any past due dates for this task
         self.recurrence = {
             "interval": None,
@@ -42,9 +42,9 @@ class Task:
             json.dump(tasks, file, indent=4)  # Save tasks in a pretty format
 
     @classmethod
-    def add_task(cls, name, due_date="", priority="medium", tags=[], subtasks=[], parent=None):
+    def add_task(cls, name):
         """Create a new task and add it to the tasks dictionary."""
-        task = cls(name, due_date, priority, tags, subtasks, parent)  # Create new task instance
+        task = cls(name)  # Create new task instance
         tasks = cls.load_tasks()  # Load existing tasks
         tasks[task.id] = vars(task)  # Add task to the dictionary
         cls.save_tasks(tasks)  # Save updated tasks to JSON
@@ -82,6 +82,30 @@ class Task:
         tasks = cls.load_tasks()  # Load existing tasks
         return tasks[task_id]  # Return the task if it exists, else None
 
+def traverse_tasks(task_key, tasks, clean_list):
+    """Recursively traverse through the task and its subtasks, adding them to the clean list."""
+    clean_list.append(task_key)  # Add the parent task key
+
+    # Get the subtasks (children) of the current task
+    try:
+        for subtask_key in tasks[task_key]['subtasks']:
+            traverse_tasks(subtask_key, tasks, clean_list)  # Recursively add subtasks
+    except:
+        pass
+
+
+def get_task_list():
+    """Return a clean list of tasks and their subtasks in a structured order."""
+    tasks = Task.load_tasks()  # Load all tasks
+    clean_list = []
+
+    # Find tasks without parents (root tasks)
+    for task_key in tasks:
+        if not tasks[task_key]['parent']:
+            traverse_tasks(task_key, tasks, clean_list)
+
+    return clean_list
+
 def check_migrated(history, date):
     for record in range(len(history)-1):
         if history[record][1] == history[record+1][0] and history[record][1] == date:
@@ -92,6 +116,37 @@ def tasks_for_day(day=None):
     if day is None:
         day = date.today().strftime("%Y-%m-%d")
     tasks = [task for _, task in Task.load_tasks().items() if task['due_date'] == day or task['date_added'] == day or check_migrated(task['date_history'], day)]
+    tasks.sort(key=lambda x: x['priority'], reverse=True)
+    return tasks
+
+def tasks_for_days(start, end):
+    tasks = []
+    start = dt.strptime(start, "%Y-%m-%d")
+    end = dt.strptime(end, "%Y-%m-%d")
+    for day in range((end - start).days + 1):
+        date = (start + timedelta(days=day)).strftime("%Y-%m-%d")
+        for task in tasks_for_day(date):
+            if task not in tasks:
+                tasks.append(task)
+    tasks.sort(key=lambda x: x['priority'], reverse=True)
+    return tasks
+
+def tasks_for_week(day):
+    start = (dt.strptime(day, "%Y-%m-%d") - timedelta(days=dt.strptime(day, "%Y-%m-%d").weekday()-1)).strftime("%Y-%m-%d")
+    end = (dt.strptime(start, "%Y-%m-%d") + timedelta(days=6)).strftime("%Y-%m-%d")
+    tasks = tasks_for_days(start, end)
+    return tasks
+
+def tasks_for_month(day):
+    start = dt.strptime(day, "%Y-%m-%d").replace(day=1).strftime("%Y-%m-%d")
+    end = (dt.strptime(start, "%Y-%m-%d") + timedelta(days=31)).strftime("%Y-%m-%d")
+    tasks = tasks_for_days(start, end)
+    return tasks
+
+def tasks_for_year(day):
+    start = dt.strptime(day, "%Y-%m-%d").replace(month=1, day=1).strftime("%Y-%m-%d")
+    end = dt.strptime(start, "%Y-%m-%d").replace(month=12, day=31).strftime("%Y-%m-%d")
+    tasks = tasks_for_days(start, end)
     return tasks
 
 def display_text_box(window, text_input, text_mode, text_box):
@@ -108,7 +163,7 @@ def display_borders(window, selected, split=False):
     """Draw the border for the task list. If selected[0] >= 2, split the window in half."""
     max_y, max_x = window.getmaxyx()
     
-    if selected[0] >= 2 and split:
+    if selected[0] >= 2 and selected[0] < len(get_task_list()) + 2 and split:
         split_x = max_x // 2 - 1
         # Left box border
         window.addstr(0, 0, "╔" + "═" * (split_x - 2) + "╗" + " ")
@@ -175,11 +230,11 @@ def display_task_details(window, task_id, split_x, selected):
         return
 
     try:
-        due_date = datetime.strptime(task['due_date'], '%Y-%m-%d')
+        due_date = dt.strptime(task['due_date'], '%Y-%m-%d')
     except:
         passed = False
     else:
-        passed = due_date.date() < datetime.now().date()
+        passed = due_date.date() < dt.now().date()
     
     # Define the edit commands for each task attribute
     edit_commands = {
@@ -198,7 +253,7 @@ def display_task_details(window, task_id, split_x, selected):
         "completed": 'yes' if task['completed'] else 'no',
         "due date": task['due_date'],
         "parent": Task.load_tasks()[task['parent']]['name'] if task['parent'] else "none",
-        "priority": ["low", "medium", "high"][task['priority'] - 1],
+        "priority": ["low", "medium", "high"][int(task['priority']) - 1],
         "tags": ', '.join(task['tags']),
     }
 
@@ -225,7 +280,7 @@ def display_tasks(window, option, selected, text_input, text_mode, text_box, rem
         split_x = max_x // 2 - 1 if selected[0] >= 2 else 0 
         task_list = []
 
-        if selected[0] >= 2:
+        if selected[0] >= 2 and selected[0] < len(get_task_list()) + 2:
             # Display tasks in the left box
             window.move(0, 0)  # Changed to start at row 3
             for task_key in tasks:
@@ -242,13 +297,13 @@ def display_tasks(window, option, selected, text_input, text_mode, text_box, rem
                 if not tasks[task_key]['parent']:
                     display_task(window, task_key, selected, task_list, text_mode)
 
-            # Clear or avoid calling display_task_details() if selected[0] < 2
-            window.move(1, split_x + 3)  # Ensure cursor is placed properly after task display
+        window.move(len(get_task_list()) + 1, 4)
+        window.addstr("+ press : to enter a new task", curses.color_pair(4 + 1 * (selected[0] == len(get_task_list()) + 2)))
             
         display_text_box(window, text_input, text_mode, text_box)
 
 
-def draw_table(window, data, start_y, start_x, selected, day):
+def draw_table(window, data, start_y, start_x, selected):
     # Calculate the maximum width of each column
     column_widths = [max(len(str(item)) for item in column) + 2 for column in zip(*data)][1:]
 
@@ -264,7 +319,6 @@ def draw_table(window, data, start_y, start_x, selected, day):
 
     # Draw table rows
     for row_idx, row in enumerate(data[1:]):
-        task = Task.load_tasks()[row[0]]
         for i, item in enumerate(row[1:]):
             window.addstr(start_y + row_idx + 3, start_x + sum(column_widths[:i]) + i, "| ")
             if i == 0:
@@ -277,17 +331,16 @@ def draw_table(window, data, start_y, start_x, selected, day):
                     item = "yes" if item else "no"
                 if item == "":
                     item = " " * (column_widths[i] - 2)
-                window.addstr(str(item), curses.color_pair(1 + ((selected[0] - 3) == row_idx and (selected[1] + 1) == i)))
+                window.addstr(str(item), curses.color_pair(1 + 4 * ((selected[0] - 3) == row_idx and (selected[1] + 1) == i)))
         window.addstr(start_y + row_idx + 3, start_x + sum(column_widths) + 4, '|')
 
 def day_view(window, selected, day, text_input, text_mode, text_box):
     display_borders(window, selected)
 
     window.addstr(2, 5, f"tasks for ")
-    window.addstr(f"< {day} >", curses.color_pair(1 + (selected[0] == 2)))
+    window.addstr(f"< {day} >", curses.color_pair(1 + 4 * (selected[0] == 2)))
 
     tasks = tasks_for_day(day)
-    tasks.sort(key=lambda x: x['priority'])
     data = [['id', '', 'task', 'due', 'priority']]
 
     for task in tasks:
@@ -299,10 +352,97 @@ def day_view(window, selected, day, text_input, text_mode, text_box):
         else:
             bullet = "x" if task['completed'] else "•"
         data.append([task['id'], important + bullet, task['name'], task['due_date'], task['priority']])
-    draw_table(window, data, 4, 5, selected, day)
+    draw_table(window, data, 4, 5, selected)
 
     due_today = [task for task in tasks if task['due_date'] == day]
     completed_today = len([task for task in due_today if task['completed']])
     window.addstr(len(data) + 8, 5, f"completed tasks due today: ({completed_today}/{len(due_today)}) ({str(round(completed_today / len(due_today) * 100, 2)) + '%' if len(due_today) else 'n/a'})")
+
+    display_text_box(window, text_input, text_mode, text_box)
+
+def week_view(window, selected, day, text_input, text_mode, text_box):
+    display_borders(window, selected)
+
+    start = (dt.strptime(day, "%Y-%m-%d") - timedelta(days=dt.strptime(day, "%Y-%m-%d").weekday()-1)).strftime("%Y-%m-%d")
+    end = (dt.strptime(start, "%Y-%m-%d") + timedelta(days=6)).strftime("%Y-%m-%d")
+
+    window.addstr(2, 5, f"tasks for ")
+    window.addstr(f"< {start} - {end} >", curses.color_pair(1 + 4 * (selected[0] == 2)))
+
+    tasks = tasks_for_week(day)
+    data = [['id', '', 'task', 'due', 'priority']]
+
+    for task in tasks:
+        important = "! " if task['priority'] == 3 else "  "
+        if check_migrated(task['date_history'], start):
+            bullet = "<"
+        elif task['due_date'] != task['date_added'] and task['date_added'] == start:
+            bullet = ">"
+        else:
+            bullet = "x" if task['completed'] else "•"
+        data.append([task['id'], important + bullet, task['name'], task['due_date'], task['priority']])
+    draw_table(window, data, 4, 5, selected)
+
+    due_this_week = [task for task in tasks if task['due_date'] in [start, end]]
+    completed_this_week = len([task for task in due_this_week if task['completed']])
+    window.addstr(len(data) + 8, 5, f"completed tasks due this week: ({completed_this_week}/{len(due_this_week)}) ({str(round(completed_this_week / len(due_this_week) * 100, 2)) + '%' if len(due_this_week) else 'n/a'})")
+
+    display_text_box(window, text_input, text_mode, text_box)
+
+def month_view(window, selected, day, text_input, text_mode, text_box):
+    display_borders(window, selected)
+
+    start = dt.strptime(day, "%Y-%m-%d").replace(day=1).strftime("%Y-%m-%d")
+    end = (dt.strptime(start, "%Y-%m-%d") + timedelta(days=31)).strftime("%Y-%m-%d")
+
+    window.addstr(2, 5, f"tasks for ")
+    window.addstr(f"< {start} - {end} >", curses.color_pair(1 + 4 * (selected[0] == 2)))
+
+    tasks = tasks_for_month(day)
+    data = [['id', '', 'task', 'due', 'priority']]
+
+    for task in tasks:
+        important = "! " if task['priority'] == 3 else "  "
+        if check_migrated(task['date_history'], start):
+            bullet = "<"
+        elif task['due_date'] != task['date_added'] and task['date_added'] == start:
+            bullet = ">"
+        else:
+            bullet = "x" if task['completed'] else "•"
+        data.append([task['id'], important + bullet, task['name'], task['due_date'], task['priority']])
+    draw_table(window, data, 4, 5, selected)
+
+    due_this_month = [task for task in tasks if task['due_date'] in [start, end]]
+    completed_this_month = len([task for task in due_this_month if task['completed']])
+    window.addstr(len(data) + 8, 5, f"completed tasks due this month: ({completed_this_month}/{len(due_this_month)}) ({str(round(completed_this_month / len(due_this_month) * 100, 2)) + '%' if len(due_this_month) else 'n/a'})")
+
+    display_text_box(window, text_input, text_mode, text_box)
+
+def year_view(window, selected, day, text_input, text_mode, text_box):
+    display_borders(window, selected)
+
+    start = dt.strptime(day, "%Y-%m-%d").replace(month=1, day=1).strftime("%Y-%m-%d")
+    end = dt.strptime(start, "%Y-%m-%d").replace(month=12, day=31).strftime("%Y-%m-%d")
+
+    window.addstr(2, 5, f"tasks for ")
+    window.addstr(f"< {start} - {end} >", curses.color_pair(1 + 4 * (selected[0] == 2)))
+
+    tasks = tasks_for_year(day)
+    data = [['id', '', 'task', 'due', 'priority']]
+
+    for task in tasks:
+        important = "! " if task['priority'] == 3 else "  "
+        if check_migrated(task['date_history'], start):
+            bullet = "<"
+        elif task['due_date'] != task['date_added'] and task['date_added'] == start:
+            bullet = ">"
+        else:
+            bullet = "x" if task['completed'] else "•"
+        data.append([task['id'], important + bullet, task['name'], task['due_date'], task['priority']])
+    draw_table(window, data, 4, 5, selected)
+
+    due_this_year = [task for task in tasks if task['due_date'] in [start, end]]
+    completed_this_year = len([task for task in due_this_year if task['completed']])
+    window.addstr(len(data) + 8, 5, f"completed tasks due this year: ({completed_this_year}/{len(due_this_year)}) ({str(round(completed_this_year / len(due_this_year) * 100, 2)) + '%' if len(due_this_year) else 'n/a'})")
 
     display_text_box(window, text_input, text_mode, text_box)

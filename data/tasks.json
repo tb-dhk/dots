@@ -120,5 +120,22 @@
             "interval": "daily",
             "days": []
         }
+    },
+    "985a4c04-a24a-4531-9d53-4b8541c769a6": {
+        "id": "985a4c04-a24a-4531-9d53-4b8541c769a6",
+        "name": "now i'm testing the new task button LOL",
+        "due_date": "2024-10-08",
+        "due_type": "day",
+        "priority": 2,
+        "completed": false,
+        "subtasks": [],
+        "parent": null,
+        "tags": [],
+        "date_added": "2024-10-08",
+        "date_history": [],
+        "recurrence": {
+            "interval": null,
+            "days": []
+        }
     }
 }

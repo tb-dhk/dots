@@ -41,7 +41,7 @@
         "name": "you walk like a bitch (when i was ten someone said that)",
         "due_date": "2024-11-05",
         "due_type": "day",
-        "priority": 1,
+        "priority": 2,
         "completed": false,
         "subtasks": [],
         "parent": "ba63c2c6-ac5c-4662-bebf-a2aa3fb5f44d",
@@ -93,7 +93,7 @@
     },
     "7b35b581-858a-4d69-9969-57919e73a2f8": {
         "id": "7b35b581-858a-4d69-9969-57919e73a2f8",
-        "name": "testing name change",
+        "name": "lorem ipsum dolor sit amet a a a a a a d f sdf sdf sdf sadf sadf sdf sadf sadf adf asdf asdf sadf asdf sadf df sdf sadf sadf sadf asdf sadf asdf asdf asdf sadf asdf asdf sadf asdf sadf asdfsa dfasdf sad sadf sadf asdf sadf asdf asdf",
         "due_date": "2024-10-09",
         "due_type": "day",
         "priority": 3,

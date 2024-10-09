@@ -192,31 +192,56 @@ def display_borders(window, selected, split=False):
 def display_task(window, task_key, selected, task_list, text_mode, indent=0, split_x=0, box='wide', removing="", removing_subtask=False):
     """Display a task and its subtasks with indentation, adapted for two split boxes."""
     task = Task.load_tasks()[str(task_key)]
-    if not task:
+    if not task or window.getyx()[0] + 1 > window.getmaxyx()[0] - 5:
         return  # Skip if task not found
+
+    task_number = get_task_list().index(task_key) 
 
     # Choose the starting column based on the box ('left' or 'right')
     start_col = 2 if box != 'right' else split_x + 3
-    end_col = split_x - 1 if box == 'left' else window.getmaxyx()[1] - 2
+    end_col = split_x - 13 if box == 'left' else window.getmaxyx()[1] - 13
     window.move(window.getyx()[0] + 1, start_col)
     completed = task['completed']
     symbol = 'x' if completed else '•'
     important = "! " if task['priority'] == 3 else "  "
 
-    window.addstr(important, curses.color_pair(8))
-    if removing != task_key and not removing_subtask:
-        window.addstr(f"{'  ' * indent}{symbol} ", curses.color_pair(4 if window.getyx()[0] + 1 != selected[0] and task['completed'] else (1 + 4 * (window.getyx()[0] + 1 == selected[0]))))
-        window.addstr(task['name'], curses.color_pair(4 if window.getyx()[0] + 1 != selected[0] and task['completed'] else (1 + 4 * (window.getyx()[0] + 1 == selected[0]))) | (curses.A_ITALIC if task['completed'] else 0))
-    else:
-        window.addstr('  ' * indent)
-        window.addstr(f"{symbol} ", curses.color_pair(7))
-        window.addstr("this subtask will be removed" if removing_subtask else "press r to remove, ESC to cancel", curses.color_pair(7))
-
     if text_mode == "edit parent":
         number = len(task_list)
         window.addstr(window.getyx()[0], end_col - 3 - len(str(number)), f"({number})", curses.color_pair(1))
     else:
-        window.addstr(window.getyx()[0], end_col - 13, f"[{task['due_date'].ljust(10)}]", curses.color_pair(1))
+        window.addstr(window.getyx()[0], end_col - 1, f"[{task['due_date'].ljust(10)}]", curses.color_pair(1))
+    window.move(window.getyx()[0], start_col)
+
+    task_color_pair = 4 if task_number + 2 != selected[0] and task['completed'] else (1 + 4 * (task_number + 2 == selected[0]))
+
+    window.addstr(important, curses.color_pair(8))
+    if removing != task_key and not removing_subtask:
+        window.addstr(f"{'  ' * indent}{symbol} ", curses.color_pair(task_color_pair))
+
+        # Wrap text if it exceeds the column width (end_col)
+        task_name = task['name']
+        available_width = end_col - window.getyx()[1]  # Calculate remaining space on the line
+
+        # Split task name into words for wrapping
+        words = task_name.split(' ')
+        current_line = ""
+        for word in words:
+            # If adding the next word exceeds the available width, print the current line and move to the next
+            if len(current_line) + len(word) + 1 > available_width:  # +1 accounts for the space
+                window.addstr(current_line.strip(), curses.color_pair(task_color_pair))
+                window.move(window.getyx()[0] + 1, start_col + indent * 2 + len(symbol) + 3)  # Move to the next line
+                current_line = word + " "  # Start a new line with the current word
+            else:
+                current_line += word + " "  # Append the word to the current line
+
+        # Print the last line after exiting the loop
+        if current_line:
+            window.addstr(current_line.strip(), curses.color_pair(task_color_pair))
+
+    else:
+        window.addstr('  ' * indent)
+        window.addstr(f"{symbol} ", curses.color_pair(7))
+        window.addstr("this subtask will be removed" if removing_subtask else "press r to remove, ESC to cancel", curses.color_pair(7))
 
     task_list.append(task_key)
     for subtask_key in task['subtasks']:
@@ -258,15 +283,35 @@ def display_task_details(window, task_id, split_x, selected):
 
     # Calculate the maximum key length for proper alignment
     max_key_length = max(len(key) for key in details.keys())
+    max_width = window.getmaxyx()[1] - split_x - 7  # Available space for wrapping
     
     # Display each detail line with aligned colons and edit commands
     window.move(1, split_x + 3)
     count = 0
     for key, value in details.items():
-        # Format with right-aligned colons and edit commands
-        line = f"{key.ljust(max_key_length)} ({edit_commands[key]}) : {value}"
-        window.addstr(line, curses.color_pair(1 + (selected[1] == count) ))
-        window.move(window.getyx()[0] + 2, split_x + 3)
+        # Construct the base line with key, edit command, and colon
+        base_line = f"{key.ljust(max_key_length)} ({edit_commands[key]}) : "
+        base_len = len(base_line)
+        
+        # Split the value into lines if it exceeds the available width
+        lines = []
+        value_str = str(value)
+        while len(value_str) > max_width - base_len:
+            lines.append(value_str[:max_width - base_len].rstrip())
+            value_str = value_str[max_width - base_len:].lstrip()
+        lines.append(value_str)  # Add the remaining part
+        
+        # Display the first line with the base formatting
+        window.addstr(base_line + lines[0], curses.color_pair(1 + (selected[1] == count)))
+        window.move(window.getyx()[0] + 1, split_x + 3)
+        
+        # Display any additional wrapped lines for the value
+        for line in lines[1:]:
+            window.addstr(" " * base_len + line, curses.color_pair(1 + (selected[1] == count)))
+            window.move(window.getyx()[0] + 1, split_x + 3)
+        
+        # Add extra spacing between each task detail
+        window.move(window.getyx()[0] + 1, split_x + 3)
         count += 1
 
 def display_tasks(window, option, selected, text_input, text_mode, text_box, removing):
@@ -286,6 +331,9 @@ def display_tasks(window, option, selected, text_input, text_mode, text_box, rem
                 if not tasks[task_key]['parent']:
                     display_task(window, task_key, selected, task_list, text_mode, split_x=split_x, box='left', removing=removing)
 
+            window.move(window.getyx()[0] + 1, 4)
+            window.addstr("+ press : to enter a new task", curses.color_pair(4 + 1 * (selected[0] == len(get_task_list()) + 2)))
+            
             # Find the selected task and display its details in the right box
             selected_task_key = task_list[selected[0] - 2]
             display_task_details(window, selected_task_key, split_x, selected)
@@ -296,18 +344,67 @@ def display_tasks(window, option, selected, text_input, text_mode, text_box, rem
                 if not tasks[task_key]['parent']:
                     display_task(window, task_key, selected, task_list, text_mode)
 
-        window.move(len(get_task_list()) + 1, 4)
-        window.addstr("+ press : to enter a new task", curses.color_pair(4 + 1 * (selected[0] == len(get_task_list()) + 2)))
-            
+            window.move(window.getyx()[0] + 1, 4)
+            window.addstr("+ press : to enter a new task", curses.color_pair(4 + 1 * (selected[0] == len(get_task_list()) + 2)))
+                
         display_text_box(window, text_input, text_mode, text_box)
-
-
 def draw_table(window, data, start_y, start_x, selected, removing):
     # Calculate the maximum width of each column
-    column_widths = [max(len(str(item)) for item in column) + 3 for column in zip(*data)][1:]
+    column_widths = [max(len(str(item)) for item in column) + 2 for column in zip(*data)][1:-1]
+
+    # Identify specific columns for prioritization
+    headers = data[0][1:-1]
+    try:
+        tag_index = headers.index("tags")
+    except:
+        tag_index = -1
+    try:
+        name_index = headers.index("task")
+    except:
+        name_index = -1
+    try:
+        parent_index = headers.index("part of")
+    except:
+        parent_index = -1
+
+    table_width = sum(column_widths) + len(column_widths) + 5  # Total width of the table
+    max_width = window.getmaxyx()[1] - 10  # Max width allowed for the table
+
+    # Prioritize the columns by allocating space to "everything else" first
+    if table_width > max_width:
+        # First, allocate full width to "everything else" columns (non-prioritized columns)
+        everything_else_indexes = [i for i in range(len(column_widths)) if i not in [tag_index, name_index, parent_index]]
+        allocated_width = sum(column_widths[i] for i in everything_else_indexes)
+        
+        # Calculate remaining space for prioritized columns
+        remaining_width = max_width - (allocated_width + len(column_widths) + 5)
+        
+        # Ensure "tags," "name," and "parent" get a minimum width (header length + 3)
+        prioritized_columns = [tag_index, name_index, parent_index]
+        min_widths = {col: len(headers[col]) + 3 for col in prioritized_columns if col != -1}
+        
+        # Calculate total prioritized column widths
+        total_prioritized_width = sum(column_widths[i] for i in prioritized_columns if i != -1)
+        
+        # Proportionally reduce the widths of prioritized columns ("tags," "name," and "parent")
+        if remaining_width > 0:
+            if total_prioritized_width > remaining_width:
+                # Scale down prioritized columns proportionally but respect minimum widths
+                for col_index in prioritized_columns:
+                    if col_index != -1:
+                        new_width = max(min_widths[col_index], int(column_widths[col_index] * (remaining_width / total_prioritized_width)))
+                        column_widths[col_index] = new_width
+            else:
+                # If there's enough remaining width, keep the prioritized columns at full size
+                pass
+        else:
+            # Not enough space even after everything else, forcefully reduce the prioritized columns
+            for col_index in prioritized_columns:
+                if col_index != -1:
+                    column_widths[col_index] = max(min_widths[col_index], remaining_width // len(prioritized_columns))
 
     # Draw table header
-    for i, header in enumerate(data[0][1:]):
+    for i, header in enumerate(data[0][1:-1]):
         window.addstr(start_y + 0, start_x + sum(column_widths[:i]) + i, '+' + '-' * column_widths[i])
         window.addstr(start_y + 1, start_x + sum(column_widths[:i]) + i, "| " + header.ljust(column_widths[i]))
         window.addstr(start_y + 2, start_x + sum(column_widths[:i]) + i, '+' + '-' * column_widths[i])
@@ -320,9 +417,10 @@ def draw_table(window, data, start_y, start_x, selected, removing):
     for row_idx, row in enumerate(data[1:]):
         for i, item in enumerate(row[1:-1]):
             window.addstr(start_y + row_idx + 3, start_x + sum(column_widths[:i]) + i, "| ")
+            
+            # Handle priority and completed columns
             if i == 0:
                 window.addstr(item[:2], curses.color_pair(8))
-                window.addstr(item[2:], curses.color_pair(1 + (selected[0] - 3) == row_idx))
             else:
                 if data[0][i+1] == "priority":
                     item = ["low", "medium", "high"][item - 1]
@@ -330,9 +428,18 @@ def draw_table(window, data, start_y, start_x, selected, removing):
                     item = "yes" if item else "no"
                 if item == "":
                     item = " " * (column_widths[i] - 2)
+
+                # Handle removing subtasks
                 if row[-1] and i == 1:
                     item = "press r to remove, ESC to cancel" if row[0] == removing else "this subtask will be removed"
-                window.addstr(str(item), curses.color_pair((1 + 4 * ((selected[0] - 3) == row_idx and (selected[1] + 1) == i))) if not row[-1] else curses.color_pair(7))
+                
+                # Truncate text and add ellipses if it exceeds column width
+                item_str = str(item)
+                if len(item_str) > column_widths[i]:
+                    item_str = item_str[:column_widths[i] - 5] + "..."
+                
+                window.addstr(item_str.ljust(column_widths[i]), curses.color_pair((1 + 4 * ((selected[0] - 3) == row_idx and (selected[1] + 1) == i))) if not row[-1] else curses.color_pair(7))
+
         window.addstr(start_y + row_idx + 3, start_x + sum(column_widths) + 5, '|')
 
 def render_task_and_children(window, data, task, tasks_by_parent, indent, day, removing, bullets=False, removing_subtask=False):

@@ -130,7 +130,7 @@ def status_bar(window, outer_option, inner_option, selected, text_mode, message)
                 display = "enter the date in the format yyyy-mm-dd"
             case _:
                 display = str(message)
-    window.addstr(window.getmaxyx()[0] - 1, 0, display)  # Placeholder for future status bar implementation
+    window.addstr(window.getmaxyx()[0] - 1, 0, display[:window.getmaxyx()[1] - 1])
 
 def main(stdscr):
     # Screen setup

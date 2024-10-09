@@ -5,11 +5,12 @@ from datetime import datetime as dt, date, timedelta
 import toml
 import calendar
 import sys
+import os
 
 from tasks import Task, get_task_list, display_tasks, day_view, tasks_for_day, week_view, tasks_for_week, month_view, tasks_for_month, year_view, tasks_for_year
 from points import points
 
-config = toml.load("config.toml")
+config = toml.load(os.path.join(sys.path[0], "config.toml"))
 
 def check_date(string):
     try: 

@@ -4,8 +4,10 @@ import curses
 import calendar
 from datetime import datetime as dt, date, timedelta
 import toml
+import os
+import sys
 
-config = toml.load("config.toml")
+config = toml.load(os.path.join(sys.path[0], "config.toml"))
 
 class Task:
     def __init__(self, name, due_date=date.today().strftime("%Y-%m-%d"), priority=2, tags=[], subtasks=[], parent=[]):
@@ -16,7 +18,7 @@ class Task:
         self.priority = priority  # Priority: low, medium, high (default: medium)
         self.completed = False  # Task completion status (default: False)
         self.subtasks = subtasks if subtasks else []  # List of subtasks (empty by default)
-        self.parent = None  # List of parent tasks (empty by default)
+        self.parent = []  # List of parent tasks (empty by default)
         self.tags = tags if tags else []  # Optional tags (default: empty list)
         self.date_added = str(dt.now().date())  # When the task was originally scheduled
         self.date_history = []  # Track any past due dates for this task

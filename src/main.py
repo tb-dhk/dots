@@ -10,8 +10,8 @@ import os
 from tasks import Task, get_task_list, display_tasks, day_view, tasks_for_day, week_view, tasks_for_week, month_view, tasks_for_month, year_view, tasks_for_year
 from points import points
 
-config = toml.load(os.path.join(sys.path[0], "config.toml"))
-
+config = toml.load(os.path.join(os.path.expanduser("~"), ".config", "dots.toml"))
+    
 def check_date(string):
     try: 
         dt.strptime(string, "%Y-%m-%d")

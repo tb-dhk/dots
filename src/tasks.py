@@ -209,7 +209,7 @@ def display_task(window, task_key, selected, task_list, text_mode, indent=0, spl
 
     if text_mode == "edit parent":
         number = len(task_list)
-        window.addstr(window.getyx()[0], end_col - 3 - len(str(number)), f"({number})", curses.color_pair(1))
+        window.addstr(window.getyx()[0], end_col - 1, f"({number})".rjust(12) if selected[0] != task_number + 2 else " " * 12)
     else:
         window.addstr(window.getyx()[0], end_col - 1, f"[{task['due_date'].ljust(10)}]", curses.color_pair(1))
     window.move(window.getyx()[0], start_col)
@@ -243,7 +243,7 @@ def display_task(window, task_key, selected, task_list, text_mode, indent=0, spl
     else:
         window.addstr('  ' * indent)
         window.addstr(f"{symbol} ", curses.color_pair(7))
-        window.addstr("this subtask will be removed" if removing_subtask else "press r to remove, ESC to cancel", curses.color_pair(7))
+        window.addstr("this subtask will be removed" if removing_subtask else "press r to confirm removal, esc to cancel", curses.color_pair(7))
 
     task_list.append(task_key)
     for subtask_key in task['subtasks']:
@@ -350,24 +350,16 @@ def display_tasks(window, option, selected, text_input, text_mode, text_box, rem
             window.addstr("+ press : to enter a new task", curses.color_pair(4 + 1 * (selected[0] == len(get_task_list()) + 2)))
                 
         display_text_box(window, text_input, text_mode, text_box)
+
 def draw_table(window, data, start_y, start_x, selected, removing):
     # Calculate the maximum width of each column
     column_widths = [max(len(str(item)) for item in column) + 2 for column in zip(*data)][1:-1]
 
     # Identify specific columns for prioritization
     headers = data[0][1:-1]
-    try:
-        tag_index = headers.index("tags")
-    except:
-        tag_index = -1
-    try:
-        name_index = headers.index("task")
-    except:
-        name_index = -1
-    try:
-        parent_index = headers.index("part of")
-    except:
-        parent_index = -1
+    tag_index = headers.index("tags") if "tags" in headers else -1
+    name_index = headers.index("task") if "task" in headers else -1
+    parent_index = headers.index("part of") if "part of" in headers else -1
 
     table_width = sum(column_widths) + len(column_widths) + 5  # Total width of the table
     max_width = window.getmaxyx()[1] - 10  # Max width allowed for the table
@@ -377,33 +369,24 @@ def draw_table(window, data, start_y, start_x, selected, removing):
         # First, allocate full width to "everything else" columns (non-prioritized columns)
         everything_else_indexes = [i for i in range(len(column_widths)) if i not in [tag_index, name_index, parent_index]]
         allocated_width = sum(column_widths[i] for i in everything_else_indexes)
-        
+
         # Calculate remaining space for prioritized columns
         remaining_width = max_width - (allocated_width + len(column_widths) + 5)
-        
+
         # Ensure "tags," "name," and "parent" get a minimum width (header length + 3)
         prioritized_columns = [tag_index, name_index, parent_index]
         min_widths = {col: len(headers[col]) + 3 for col in prioritized_columns if col != -1}
-        
+
         # Calculate total prioritized column widths
         total_prioritized_width = sum(column_widths[i] for i in prioritized_columns if i != -1)
-        
-        # Proportionally reduce the widths of prioritized columns ("tags," "name," and "parent")
+
+        # Distribute remaining width to prioritized columns fairly
         if remaining_width > 0:
-            if total_prioritized_width > remaining_width:
-                # Scale down prioritized columns proportionally but respect minimum widths
-                for col_index in prioritized_columns:
-                    if col_index != -1:
-                        new_width = max(min_widths[col_index], int(column_widths[col_index] * (remaining_width / total_prioritized_width)))
-                        column_widths[col_index] = new_width
-            else:
-                # If there's enough remaining width, keep the prioritized columns at full size
-                pass
-        else:
-            # Not enough space even after everything else, forcefully reduce the prioritized columns
             for col_index in prioritized_columns:
                 if col_index != -1:
-                    column_widths[col_index] = max(min_widths[col_index], remaining_width // len(prioritized_columns))
+                    # Scale down prioritized columns proportionally but respect minimum widths
+                    extra_space = (remaining_width / len(prioritized_columns)) if total_prioritized_width > 0 else 0
+                    column_widths[col_index] += max(min_widths[col_index], int(extra_space))
 
     # Draw table header
     for i, header in enumerate(data[0][1:-1]):
@@ -433,16 +416,17 @@ def draw_table(window, data, start_y, start_x, selected, removing):
 
                 # Handle removing subtasks
                 if row[-1] and i == 1:
-                    item = "press r to remove, ESC to cancel" if row[0] == removing else "this subtask will be removed"
+                    item = "this task will be removed" if row[0] == removing else "this subtask will be removed"
                 
                 # Truncate text and add ellipses if it exceeds column width
                 item_str = str(item)
                 if len(item_str) > column_widths[i]:
                     item_str = item_str[:column_widths[i] - 5] + "..."
                 
-                window.addstr(item_str.ljust(column_widths[i]), curses.color_pair((1 + 4 * ((selected[0] - 3) == row_idx and (selected[1] + 1) == i))) if not row[-1] else curses.color_pair(7))
+                window.addstr(item_str[:column_widths[i] - 2], curses.color_pair((1 + 4 * ((selected[0] - 3) == row_idx and (selected[1] + 1) == i))) if not row[-1] else curses.color_pair(7)) 
 
         window.addstr(start_y + row_idx + 3, start_x + sum(column_widths) + 5, '|')
+
 
 def render_task_and_children(window, data, task, tasks_by_parent, indent, day, removing, bullets=False, removing_subtask=False):
     """Recursively render task and its children with appropriate indentation."""
@@ -510,11 +494,18 @@ def day_view(window, selected, day, text_input, text_mode, text_box, removing):
     # Calculate and display completed tasks for today
     due_today = [task for task in tasks if task['due_date'] == day]
     completed_today = len([task for task in due_today if task['completed']])
-    window.addstr(
-        len(data) + 8, 5, 
-        f"completed tasks due today: ({completed_today}/{len(due_today)}) " +
-        f"({str(round(completed_today / len(due_today) * 100, 2)) + '%' if len(due_today) else 'n/a'})"
-    )
+    if removing:
+        window.addstr(
+            len(data) + 8, 5,
+            "press r to confirm removal, esc to cancel",
+            curses.color_pair(7)
+        )
+    else:
+        window.addstr(
+            len(data) + 8, 5, 
+            f"completed tasks due today: ({completed_today}/{len(due_today)}) " +
+            f"({str(round(completed_today / len(due_today) * 100, 2)) + '%' if len(due_today) else 'n/a'})"
+        )
 
     # Display text box input (for text entry mode)
     display_text_box(window, text_input, text_mode, text_box)

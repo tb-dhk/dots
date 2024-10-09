@@ -58,7 +58,7 @@ def edit_task_parent(selected, text_box, task_list):
 
     if text_box.isdigit():
         new_parent_index = int(text_box)
-        if 0 <= new_parent_index < len(task_list) and new_parent_index != selected[0][0] - 2:
+        if 0 <= new_parent_index < len(task_list) and new_parent_index != selected[0] - 2:
             new_parent_id = task_list[new_parent_index]
             change_task_parent(task_id, new_parent_id)
             message = f"Parent of task '{task_name}' changed to '{Task.get_task(new_parent_id)['name']}'"
@@ -243,6 +243,7 @@ def main(stdscr):
                     content_window.clear()
                 elif key == 27:
                     removing = ""
+                    content_window.clear()
                 elif key == ord("q"):
                     break
             elif text_input:
@@ -285,6 +286,8 @@ def main(stdscr):
                                     move_day = f"{text_box}-{calendar.monthrange(int(text_box[:4]), int(text_box[-2:]))[1]}"
                                 elif text_box and re.match(r"\d{4}", text_box):
                                     move_day = f"{text_box}-12-31"
+                                elif not text_box:
+                                    move_day = ""
                                 else:
                                     move_day = ""
 
@@ -299,8 +302,12 @@ def main(stdscr):
                                     Task.edit_task(task_id, date_history=Task.get_task(task_id)["date_history"] + [(date.today().strftime("%Y-%m-%d"), move_day)])
                                     message = f"task '{task_name}' scheduled for {move_day}"
                                 elif not move_day:
-                                    message = "invalid date format. try again!"
-                                    clear = False
+                                    if not text_box:
+                                        Task.edit_task(task_id, due_date=None)
+                                        message = f"task '{task_name}' unscheduled"
+                                    else:
+                                        message = "invalid date format. try again!"
+                                        clear = False
                                 else:
                                     message = f"task due date cannot be later than parent's ({Task.get_task(Task.get_task(task_id)['parent'])['due_date']}). try again!"
                                     clear = False
@@ -507,6 +514,9 @@ def main(stdscr):
                                     text_input = True
                                     text_mode = "edit parent"
                                     selected[1] = 3
+                                case "r":
+                                    removing = task
+                                    content_window.clear()
 
                     elif inner_option in [1, 2, 3, 4]:
                         task = [tasks_for_day, tasks_for_week, tasks_for_month, tasks_for_year][inner_option - 1](day)[selected[0] - 3]

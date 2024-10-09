@@ -8,9 +8,18 @@ install:
 	@if [ ! -f dist/dots ]; then \
 		echo "error: dist/dots does not exist. please build the project first." && exit 1; \
 	fi
-	@sudo mv dist/dots /usr/local/bin/dots || { echo "error: you do not have root access. please run with appropriate permissions."; exit 1; }
-	@mv src/config.toml ~/.config/dots.toml || { echo "error: failed to move config.toml to ~/.config/dots.toml."; exit 1; }
-	@echo "{}" > ~/.dots/tasks.json || { echo "error: failed to create tasks.json in ~/.dots."; exit 1; }
+	@sudo cp dist/dots /usr/local/bin/dots || { echo "error: you do not have root access. please run with appropriate permissions."; exit 1; }
+	@if [ ! -f ~/.config/dots.toml ]; then \
+		cp src/config.toml ~/.config/dots.toml || { echo "error: failed to move config.toml to ~/.config/dots.toml."; exit 1; }; \
+	else \
+		echo "warning: ~/.config/dots.toml already exists. skipping..."; \
+	fi
+	@mkdir -p ~/.dots || { echo "error: failed to create ~/.dots."; exit 1; }
+	@if [ ! -f ~/.dots/tasks.json ]; then \
+		echo "{}" > ~/.dots/tasks.json || { echo "error: failed to create tasks.json in ~/.dots."; exit 1; }; \
+	else \
+		echo "warning: ~/.dots/tasks.json already exists. skipping..."; \
+	fi
 	@echo "dots installed successfully."
 
 .PHONY: build install

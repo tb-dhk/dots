@@ -10,20 +10,6 @@ dots incorporates the four main types of bullet journal spreads:
 only tasks are implemented at the moment, but i plan to add the other components in the near future.
 
 ## installation
-
-### basic installation
-```
-curl -L -o dots https://github.com/tb-dhk/dots/releases/latest/download/dots
-chmod +x dots
-``````
-
-### installation into PATH (for linux users)
-```
-sudo curl -L -o /usr/local/bin/dots https://github.com/tb-dhk/dots/releases/latest/download/dots
-sudo chmod +x /usr/local/bin/dots
-```
-
-### source installation
 ```
 git clone https://github.com/tb-dhk/dots
 cd dots

@@ -10,7 +10,7 @@ import os
 from tasks import Task, get_task_list, display_tasks, day_view, tasks_for_day, week_view, tasks_for_week, month_view, tasks_for_month, year_view, tasks_for_year
 from points import points
 
-config = toml.load(os.path.join(os.path.expanduser("~"), ".config", "dots.toml"))
+config = toml.load(os.path.join(os.path.expanduser("~"), ".dots", "config.toml"))
     
 def check_date(string):
     try: 
@@ -230,7 +230,7 @@ def main(stdscr):
         key = stdscr.getch()
         if key != -1:  # -1 means no key was pressed
             if started:
-                stdscr.clear()
+                stdscr.refresh()
             if removing:
                 if key == ord("r"):
                     parent = Task.get_task(removing)["parent"]
@@ -274,7 +274,14 @@ def main(stdscr):
                         text_box = text_box.strip()
                         if text_box:
                             if text_mode == "new task":
-                                Task.add_task(text_box)
+                                if inner_option == 1:
+                                    Task.add_task(text_box)
+                                elif inner_option == 2: 
+                                    Task.add_task(text_box, due_date=(dt.strptime(day, "%Y-%m-%d") + timedelta(days=(5 - dt.strptime(day, "%Y-%m-%d").weekday()))).strftime("%Y-%m-%d"))
+                                elif inner_option == 3:
+                                    Task.add_task(text_box, due_date=f"{day[:7]}-{calendar.monthrange(int(day[:4]), int(day[5:7]))[1]}", due_type="month")
+                                elif inner_option == 4:
+                                    Task.add_task(text_box, due_date=f"{day[:4]}-12-31", due_type="year")
                                 message = f"new task '{text_box}' added"
                             elif text_mode == "edit task":
                                 Task.edit_task(task_id, name=text_box)
@@ -548,6 +555,9 @@ def main(stdscr):
                                         text_mode = "edit tags"
                                     case _:
                                         text_input = False
+                            case ":":
+                                text_input = True
+                                text_mode = "new task"
                             case "x":
                                 Task.edit_task(task["id"], completed=not task["completed"])
                                 content_window.clear()

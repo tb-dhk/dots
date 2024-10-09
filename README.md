@@ -6,6 +6,7 @@ dots incorporates the four main types of bullet journal spreads:
 - lists (inspired by collections)
 - habits (based on [habitmap](https://github.com/tb-dhk/habitmap))
 - journals (such as daily reflections, mood logs, etc.)
+
 only tasks are implemented at the moment, but i plan to add the other components in the near future.
 
 ## installation
@@ -20,6 +21,13 @@ chmod +x dots
 ```
 sudo curl -L -o /usr/local/bin/dots https://github.com/tb-dhk/dots/releases/latest/download/dots
 sudo chmod +x /usr/local/bin/dots
+```
+
+### source installation
+```
+git clone https://github.com/tb-dhk/dots
+cd dots
+make build && make install
 ```
 
 ## usage

@@ -54,7 +54,7 @@ these are available in all task views.
 - `x`: toggle completion status
 - `.`: schedule a task for today
 - `1`, `2`, `3`: set priority to low, normal, or high (respectively)
-- `r`: remove/delete the task
+- `r`: remove/delete the task (press again to confirm)
 - `Esc`: cancel the removal of a task or exit input field
 
 #### task editing keybindings
@@ -66,5 +66,8 @@ all of these keybindings require text input and are only available in list view.
 
 #### non-list task view keybindings
 - `v`: view the task in list view
-- `e`: edit the task (navigates to the input field, edits the attribute that the cursor is on)
+- `e`: edit the task (navigates to the input field, edits the attribute that the cursor is on. cannot be used to move tasks)
 - `d`: navigates to another date if cursor is on the date (if not on day view, navigates to relevant week, month or year)
+
+## configuration
+configuration is not yet available, but there is a `config.toml` file in the `~/.dots` directory that you can edit manually. the file is created when you run the app for the first time.

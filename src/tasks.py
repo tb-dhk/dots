@@ -7,7 +7,7 @@ import toml
 import os
 import sys
 
-config = toml.load(os.path.join(os.path.expanduser("~"), ".config", "dots.toml"))
+config = toml.load(os.path.join(os.path.expanduser("~"), ".dots", "config.toml"))
 
 class Task:
     def __init__(self, name, due_date=date.today().strftime("%Y-%m-%d"), priority=2, tags=[], subtasks=[], parent=[]):

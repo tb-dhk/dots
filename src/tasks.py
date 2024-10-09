@@ -28,7 +28,7 @@ class Task:
         }
 
     @staticmethod
-    def load_tasks(filename='data/tasks.json'):
+    def load_tasks(filename=os.path.join(os.path.expanduser("~"), ".dots", "tasks.json")):
         """Load tasks from a JSON file."""
         try:
             with open(filename, 'r') as file:
@@ -39,7 +39,7 @@ class Task:
             return {}  # Return empty dict if JSON is invalid
 
     @staticmethod
-    def save_tasks(tasks, filename='data/tasks.json'):
+    def save_tasks(tasks, filename=os.path.join(os.path.expanduser("~"), ".dots", "tasks.json")):
         """Save tasks to a JSON file."""
         with open(filename, 'w') as file:
             json.dump(tasks, file, indent=4)  # Save tasks in a pretty format

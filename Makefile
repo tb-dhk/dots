@@ -10,6 +10,7 @@ install:
 	fi
 	@sudo mv dist/dots /usr/local/bin/dots || { echo "error: you do not have root access. please run with appropriate permissions."; exit 1; }
 	@mv src/config.toml ~/.config/dots.toml || { echo "error: failed to move config.toml to ~/.config/dots.toml."; exit 1; }
+	@echo "{}" > ~/.dots/tasks.json || { echo "error: failed to create tasks.json in ~/.dots."; exit 1; }
 	@echo "dots installed successfully."
 
 .PHONY: build install

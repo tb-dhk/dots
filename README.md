@@ -31,13 +31,15 @@ options:
 the arrow keys can be used to move up, down, left or right. these apply to navbars as well as the main screen.
 
 the up and down keys are used to
-- navigate between rows (tasks) on the main screen, and
-- navigate the main screen and the navbar, as well as other options.
+- navigate between rows (tasks) on the main screen, 
+- navigate the main screen and the navbar, as well as other options, and
+- move the cursor to the extreme left and extreme right respectively (in the text input field).
 
 the left and right keys are used to 
 - navigate between options on the navbar,
-- navigate between columns (in non-list task views) on the main screen, and
-- change the date (in non-list task views).
+- navigate between columns (in non-list task views) on the main screen,
+- change the date (in non-list task views), and
+- move the cursor to the left and the right respectively (in the text input field).
 
 ### list task view keybindings
 do note that these keybindings require your cursor to be on a task (with the exception of `:`, which still requires you to be on the main screen).

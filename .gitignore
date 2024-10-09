@@ -1,3 +1,4 @@
 __pycache__/
 build/
-dots.spec/
+dist/
+dots.spec

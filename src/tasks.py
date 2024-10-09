@@ -5,7 +5,6 @@ import calendar
 from datetime import datetime as dt, date, timedelta
 import toml
 import os
-import sys
 
 config = toml.load(os.path.join(os.path.expanduser("~"), ".dots", "config.toml"))
 
@@ -150,12 +149,12 @@ def tasks_for_year(day):
     tasks = tasks_for_days(start, end)
     return tasks
 
-def display_text_box(window, text_input, text_mode, text_box):
+def display_text_box(window, text_input, text_mode, text_box, text_index):
     """Display the input text box at the bottom of the screen."""
     max_y, max_x = window.getmaxyx()
     if text_input:
         window.addstr(max_y - 2, 2, text_box, curses.color_pair(1))
-        window.addstr(max_y - 2, len(text_box) + 2, " ", curses.color_pair(2))
+        window.chgat(max_y - 2, 2 + text_index, 1, curses.color_pair(2))
         window.addstr(max_y - 2, len(text_box) + 3, " " * (max_x - len(text_box) - 6), curses.color_pair(1))
     else:
         window.addstr(max_y - 2, len(text_box) + 2, " ", curses.color_pair(1))
@@ -316,7 +315,7 @@ def display_task_details(window, task_id, split_x, selected):
         window.move(window.getyx()[0] + 1, split_x + 3)
         count += 1
 
-def display_tasks(window, option, selected, text_input, text_mode, text_box, removing):
+def display_tasks(window, option, selected, text_input, text_mode, text_box, text_index, removing):
     """Main function to display tasks, with task details in the right box when selected."""
     if option == 0:
         max_y, max_x = window.getmaxyx()
@@ -349,7 +348,7 @@ def display_tasks(window, option, selected, text_input, text_mode, text_box, rem
             window.move(window.getyx()[0] + 1, 4)
             window.addstr("+ press : to enter a new task", curses.color_pair(4 + 1 * (selected[0] == len(get_task_list()) + 2)))
                 
-        display_text_box(window, text_input, text_mode, text_box)
+        display_text_box(window, text_input, text_mode, text_box, text_index)
 
 def draw_table(window, data, start_y, start_x, selected, removing):
     # Calculate the maximum width of each column
@@ -462,7 +461,7 @@ def render_task_and_children(window, data, task, tasks_by_parent, indent, day, r
         for child in tasks_by_parent[task['id']]:
             render_task_and_children(window, data, child, tasks_by_parent, indent + 1, day, removing, bullets=bullets, removing_subtask=task['id']==removing)
 
-def day_view(window, selected, day, text_input, text_mode, text_box, removing):
+def day_view(window, selected, day, text_input, text_mode, text_box, text_index, removing):
     display_borders(window, selected)
 
     window.addstr(2, 5, f"tasks for ")
@@ -508,9 +507,9 @@ def day_view(window, selected, day, text_input, text_mode, text_box, removing):
         )
 
     # Display text box input (for text entry mode)
-    display_text_box(window, text_input, text_mode, text_box)
+    display_text_box(window, text_input, text_mode, text_box, text_index)
 
-def week_view(window, selected, day, text_input, text_mode, text_box, removing):
+def week_view(window, selected, day, text_input, text_mode, text_box, text_index, removing):
     display_borders(window, selected)
 
     start = (dt.strptime(day, "%Y-%m-%d") - timedelta(days=dt.strptime(day, "%Y-%m-%d").weekday() + 1)).strftime("%Y-%m-%d")
@@ -552,9 +551,9 @@ def week_view(window, selected, day, text_input, text_mode, text_box, removing):
     )
 
     # Display text box input (for text entry mode)
-    display_text_box(window, text_input, text_mode, text_box)
+    display_text_box(window, text_input, text_mode, text_box, text_index)
 
-def month_view(window, selected, day, text_input, text_mode, text_box, removing):
+def month_view(window, selected, day, text_input, text_mode, text_box, text_index, removing):
     display_borders(window, selected)
 
     start = dt.strptime(day, "%Y-%m-%d").replace(day=1).strftime("%Y-%m-%d")
@@ -599,9 +598,9 @@ def month_view(window, selected, day, text_input, text_mode, text_box, removing)
     )
 
     # Display text box input (for text entry mode)
-    display_text_box(window, text_input, text_mode, text_box)
+    display_text_box(window, text_input, text_mode, text_box, text_index)
 
-def year_view(window, selected, day, text_input, text_mode, text_box, removing):
+def year_view(window, selected, day, text_input, text_mode, text_box, text_index, removing):
     display_borders(window, selected)
 
     start = dt.strptime(day, "%Y-%m-%d").replace(month=1, day=1).strftime("%Y-%m-%d")
@@ -646,5 +645,5 @@ def year_view(window, selected, day, text_input, text_mode, text_box, removing):
     )
 
     # Display text box input (for text entry mode)
-    display_text_box(window, text_input, text_mode, text_box)
+    display_text_box(window, text_input, text_mode, text_box, text_index)
 

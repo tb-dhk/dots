@@ -95,19 +95,18 @@ def inner_navbar(stdscr, outer_option, inner_option, selected):
     for i, option in enumerate(options):
         stdscr.addstr(f" {option} ", curses.color_pair(1 + (i != inner_option) + 4 * (selected[0] == 1)))
 
-def content(window, outer_option, inner_option, selected, text_input, text_mode, text_box, removing, day):
+def content(window, outer_option, inner_option, selected, text_input, text_mode, text_box, text_index, removing, day):
     if outer_option == 0:
         if inner_option == 0:
-            display_tasks(window, inner_option, selected, text_input, text_mode, text_box, removing)
+            display_tasks(window, inner_option, selected, text_input, text_mode, text_box, text_index, removing)
         elif inner_option == 1:
-            day_view(window, selected, day, text_input, text_mode, text_box, removing)
+            day_view(window, selected, day, text_input, text_mode, text_box, text_index, removing)
         elif inner_option == 2:
-            week_view(window, selected, day, text_input, text_mode, text_box, removing)
+            week_view(window, selected, day, text_input, text_mode, text_box, text_index, removing)
         elif inner_option == 3:
-            month_view(window, selected, day, text_input, text_mode, text_box, removing)
+            month_view(window, selected, day, text_input, text_mode, text_box, text_index, removing)
         elif inner_option == 4:
-            year_view(window, selected, day, text_input, text_mode, text_box, removing)
-            
+            year_view(window, selected, day, text_input, text_mode, text_box, text_index, removing)
     window.refresh()
 
 def status_bar(window, outer_option, inner_option, selected, text_mode, message):
@@ -166,10 +165,10 @@ def main(stdscr):
     text_input = False
     text_mode = ""
     text_box = ""
+    text_index = 0
     message = ""
     removing = "" 
     day = date.today().strftime("%Y-%m-%d")
-    day2 = day
 
     # Create a window for content
     content_height = height - 3  # Adjust based on your layout
@@ -223,7 +222,7 @@ def main(stdscr):
         else:
             outer_navbar(stdscr, outer_option, selected)
             inner_navbar(stdscr, outer_option, inner_option, selected)
-            content(content_window, outer_option, inner_option, selected, text_input, text_mode, text_box, removing, day)
+            content(content_window, outer_option, inner_option, selected, text_input, text_mode, text_box, text_index, removing, day)
             status_bar(stdscr, outer_option, inner_option, selected, text_mode, message)
 
         # Non-blocking check for key input
@@ -248,7 +247,8 @@ def main(stdscr):
                     break
             elif text_input:
                 if key == curses.KEY_BACKSPACE:
-                    text_box = text_box[:-1]
+                    text_box = text_box[:text_index - 1] + text_box[text_index:]
+                    text_index = max(0, text_index - 1)
                 elif key == 27:  # ESC key
                     text_input = False
                     text_box = ""
@@ -356,7 +356,6 @@ def main(stdscr):
                                 else:
                                     message = "invalid date format. try again!"
                                     clear = False
-                      
                             if clear:
                                 text_input = False
                                 text_box = ""
@@ -364,8 +363,18 @@ def main(stdscr):
                                 if outer_option == 0 and inner_option == 0:
                                     selected[1] = -1
                     content_window.clear()
+                elif key == curses.KEY_LEFT:
+                    text_index = max(0, text_index - 1)
+                elif key == curses.KEY_RIGHT:
+                    text_index = min(len(text_box), text_index + 1)
+                elif key == curses.KEY_DOWN:
+                    text_index = len(text_box)
+                elif key == curses.KEY_UP:
+                    text_index = 0
                 else:
-                    text_box += chr(key)
+                    if chr(key) in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+-=[]{}|;':,.<>/?":
+                        text_box = text_box[:text_index] + chr(key) + text_box[text_index:]
+                        text_index = min(len(text_box), text_index + 1)
             elif key == curses.KEY_DOWN:
                 content_window.clear()
                 selected[0] += 1

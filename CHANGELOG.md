@@ -2,8 +2,7 @@
 
 ## [0.1.0] - yyyy-mm-dd
 ### added
-- **task spreads**:
-  - **list view (core view)**:
+- **list view (core view)**:
     - add a new task with a title.
     - edit tasks:
       - update title.
@@ -13,9 +12,8 @@
       - move tasks.
       - modify tags/categories.
     - delete tasks.
-    - support for nested tasks/subtasks.
-  
+    - support for nested tasks/subtasks. 
 - **day/week/month/year view**:
-  - show tasks or goals assigned to the current time period.
-  - change the range of the current time period.
-  - add, edit and delete tasks for the current time period.
+    - show tasks or goals assigned to the current time period.
+    - change the range of the current time period.
+    - add, edit and delete tasks for the current time period.

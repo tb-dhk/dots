@@ -7,7 +7,7 @@ import calendar
 import sys
 import os
 
-from tasks import Task, get_task_list, display_tasks, day_view, tasks_for_day, week_view, tasks_for_week, month_view, tasks_for_month, year_view, tasks_for_year
+from tasks import *
 from points import points
 
 config = toml.load(os.path.join(os.path.expanduser("~"), ".dots", "config.toml"))
@@ -107,6 +107,8 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
             month_view(window, selected, day, text_input, text_mode, text_box, text_index, removing)
         elif inner_option == 4:
             year_view(window, selected, day, text_input, text_mode, text_box, text_index, removing)
+    else:
+        coming_soon(window)
     window.refresh()
 
 def status_bar(window, outer_option, inner_option, selected, text_mode, message):

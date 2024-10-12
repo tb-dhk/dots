@@ -10,6 +10,15 @@ dots incorporates the four main types of bullet journal spreads:
 only tasks are implemented at the moment, but i plan to add the other components in the near future.
 
 ## installation
+
+prerequisites:
+- linux, macos or wsl
+- git
+- python 3.10 or later
+- make
+- pip
+
+run the following code:
 ```
 git clone https://github.com/tb-dhk/dots
 cd dots

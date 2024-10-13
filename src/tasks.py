@@ -125,8 +125,8 @@ def tasks_for_days(start, end):
     start = dt.strptime(start, "%Y-%m-%d")
     end = dt.strptime(end, "%Y-%m-%d")
     for day in range((end - start).days + 1):
-        date = (start + timedelta(days=day)).strftime("%Y-%m-%d")
-        for task in tasks_for_day(date):
+        this_date = (start + timedelta(days=day)).strftime("%Y-%m-%d")
+        for task in tasks_for_day(this_date):
             if task not in tasks:
                 tasks.append(task)
     return tasks

@@ -1,11 +1,10 @@
 import curses
 import re
-import time
 from datetime import datetime as dt, date, timedelta
-import toml
 import calendar
 import sys
 import os
+import toml
 
 from tasks import *
 from points import points
@@ -111,7 +110,7 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
         coming_soon(window)
     window.refresh()
 
-def status_bar(window, outer_option, inner_option, selected, text_mode, message):
+def status_bar(window, text_mode, message):
     if message:
         display = message
     else:
@@ -225,7 +224,7 @@ def main(stdscr):
             outer_navbar(stdscr, outer_option, selected)
             inner_navbar(stdscr, outer_option, inner_option, selected)
             content(content_window, outer_option, inner_option, selected, text_input, text_mode, text_box, text_index, removing, day)
-            status_bar(stdscr, outer_option, inner_option, selected, text_mode, message)
+            status_bar(stdscr, text_mode, message)
 
         # Non-blocking check for key input
         key = stdscr.getch()

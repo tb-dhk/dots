@@ -3,8 +3,8 @@ import uuid
 import curses
 import calendar
 from datetime import datetime as dt, date, timedelta
-import toml
 import os
+import toml
 
 config = toml.load(os.path.join(os.path.expanduser("~"), ".dots", "config.toml"))
 
@@ -16,9 +16,9 @@ class Task:
         self.due_type = due_type
         self.priority = priority  # Priority: low, medium, high (default: medium)
         self.completed = False  # Task completion status (default: False)
-        self.subtasks = subtasks if subtasks else []  # List of subtasks (empty by default)
-        self.parent = []  # List of parent tasks (empty by default)
-        self.tags = tags if tags else []  # Optional tags (default: empty list)
+        self.subtasks = subtasks   # List of subtasks (empty by default)
+        self.parent = parent  # List of parent tasks (empty by default)
+        self.tags = tags  # Optional tags (default: empty list)
         self.date_added = str(dt.now().date())  # When the task was originally scheduled
         self.date_history = []  # Track any past due dates for this task
         self.recurrence = {
@@ -30,7 +30,7 @@ class Task:
     def load_tasks(filename=os.path.join(os.path.expanduser("~"), ".dots", "tasks.json")):
         """Load tasks from a JSON file."""
         try:
-            with open(filename, 'r') as file:
+            with open(filename, 'r', encoding='utf-8') as file:
                 return json.load(file)  # Load and return tasks as a dictionary
         except FileNotFoundError:
             return {}  # Return empty dict if file does not exist
@@ -40,7 +40,7 @@ class Task:
     @staticmethod
     def save_tasks(tasks, filename=os.path.join(os.path.expanduser("~"), ".dots", "tasks.json")):
         """Save tasks to a JSON file."""
-        with open(filename, 'w') as file:
+        with open(filename, 'w', encoding='utf-8') as file:
             json.dump(tasks, file, indent=4)  # Save tasks in a pretty format
 
     @classmethod
@@ -108,9 +108,9 @@ def get_task_list():
 
     return clean_list
 
-def check_migrated(history, date):
+def check_migrated(history, to_date):
     for record in range(len(history)-1):
-        if history[record][1] == history[record+1][0] and history[record][1] == date:
+        if history[record][1] == history[record+1][0] and history[record][1] == to_date:
             return True
     return False
 
@@ -149,7 +149,7 @@ def tasks_for_year(day):
     tasks = tasks_for_days(start, end)
     return tasks
 
-def display_text_box(window, text_input, text_mode, text_box, text_index):
+def display_text_box(window, text_input, text_box, text_index):
     """Display the input text box at the bottom of the screen."""
     max_y, max_x = window.getmaxyx()
     if text_input:
@@ -283,7 +283,7 @@ def display_task_details(window, task_id, split_x, selected):
     }
 
     # Calculate the maximum key length for proper alignment
-    max_key_length = max(len(key) for key in details.keys())
+    max_key_length = max(len(key) for key in details)
     max_width = window.getmaxyx()[1] - split_x - 7  # Available space for wrapping
 
     # Display each detail line with aligned colons and edit commands
@@ -317,7 +317,7 @@ def display_task_details(window, task_id, split_x, selected):
 
 def display_tasks(window, selected, text_input, text_mode, text_box, text_index, removing):
     """Main function to display tasks, with task details in the right box when selected."""
-    max_y, max_x = window.getmaxyx()
+    max_x = window.getmaxyx()[1]
     display_borders(window, selected, split=True)
     tasks = Task.load_tasks()
 
@@ -347,7 +347,7 @@ def display_tasks(window, selected, text_input, text_mode, text_box, text_index,
         window.move(window.getyx()[0] + 1, 4)
         window.addstr("+ press : to enter a new task", curses.color_pair(4 + 1 * (selected[0] == len(get_task_list()) + 2)))
 
-    display_text_box(window, text_input, text_mode, text_box, text_index)
+    display_text_box(window, text_input, text_box, text_index)
 
 def draw_table(window, data, start_y, start_x, selected, removing):
     # Calculate the maximum width of each column
@@ -463,7 +463,7 @@ def render_task_and_children(window, data, task, tasks_by_parent, indent, day, r
 def day_view(window, selected, day, text_input, text_mode, text_box, text_index, removing):
     display_borders(window, selected)
 
-    window.addstr(2, 5, f"tasks for ")
+    window.addstr(2, 5, "tasks for ")
     window.addstr(f"< {day} >", curses.color_pair(1 + 4 * (selected[0] == 2)))
 
     tasks = tasks_for_day(day)
@@ -506,7 +506,7 @@ def day_view(window, selected, day, text_input, text_mode, text_box, text_index,
         )
 
     # Display text box input (for text entry mode)
-    display_text_box(window, text_input, text_mode, text_box, text_index)
+    display_text_box(window, text_input, text_box, text_index)
 
 def week_view(window, selected, day, text_input, text_mode, text_box, text_index, removing):
     display_borders(window, selected)
@@ -514,7 +514,7 @@ def week_view(window, selected, day, text_input, text_mode, text_box, text_index
     start = (dt.strptime(day, "%Y-%m-%d") - timedelta(days=dt.strptime(day, "%Y-%m-%d").weekday() + 1)).strftime("%Y-%m-%d")
     end = (dt.strptime(start, "%Y-%m-%d") + timedelta(days=6)).strftime("%Y-%m-%d")
 
-    window.addstr(2, 5, f"tasks for ")
+    window.addstr(2, 5, "tasks for ")
     window.addstr(f"< {start} - {end} >", curses.color_pair(1 + 4 * (selected[0] == 2)))
 
     tasks = tasks_for_week(day)
@@ -550,7 +550,7 @@ def week_view(window, selected, day, text_input, text_mode, text_box, text_index
     )
 
     # Display text box input (for text entry mode)
-    display_text_box(window, text_input, text_mode, text_box, text_index)
+    display_text_box(window, text_input, text_box, text_index)
 
 def month_view(window, selected, day, text_input, text_mode, text_box, text_index, removing):
     display_borders(window, selected)
@@ -558,7 +558,7 @@ def month_view(window, selected, day, text_input, text_mode, text_box, text_inde
     start = dt.strptime(day, "%Y-%m-%d").replace(day=1).strftime("%Y-%m-%d")
     end = dt.strptime(start, "%Y-%m-%d").replace(day=calendar.monthrange(dt.strptime(day, "%Y-%m-%d").year, dt.strptime(day, "%Y-%m-%d").month)[1]).strftime("%Y-%m-%d")
 
-    window.addstr(2, 5, f"tasks for ")
+    window.addstr(2, 5, "tasks for ")
     window.addstr(f"< {start} - {end} >", curses.color_pair(1 + 4 * (selected[0] == 2)))
 
     tasks = tasks_for_month(day)
@@ -597,7 +597,7 @@ def month_view(window, selected, day, text_input, text_mode, text_box, text_inde
     )
 
     # Display text box input (for text entry mode)
-    display_text_box(window, text_input, text_mode, text_box, text_index)
+    display_text_box(window, text_input, text_box, text_index)
 
 def year_view(window, selected, day, text_input, text_mode, text_box, text_index, removing):
     display_borders(window, selected)
@@ -605,7 +605,7 @@ def year_view(window, selected, day, text_input, text_mode, text_box, text_index
     start = dt.strptime(day, "%Y-%m-%d").replace(month=1, day=1).strftime("%Y-%m-%d")
     end = dt.strptime(start, "%Y-%m-%d").replace(month=12, day=31).strftime("%Y-%m-%d")
 
-    window.addstr(2, 5, f"tasks for ")
+    window.addstr(2, 5, "tasks for ")
     window.addstr(f"< {start} - {end} >", curses.color_pair(1 + 4 * (selected[0] == 2)))
 
     tasks = tasks_for_year(day)
@@ -644,7 +644,7 @@ def year_view(window, selected, day, text_input, text_mode, text_box, text_index
     )
 
     # Display text box input (for text entry mode)
-    display_text_box(window, text_input, text_mode, text_box, text_index)
+    display_text_box(window, text_input, text_box, text_index)
 
 def coming_soon(window):
     display_borders(window, [0, 0])

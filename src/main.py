@@ -16,8 +16,7 @@ def check_date(string):
         dt.strptime(string, "%Y-%m-%d")
     except:
         return False
-    else:
-        return True
+    return True
 
 def center_string(window, string, color_pair, offset=(0, 0)):
     height, width = window.getmaxyx()
@@ -82,10 +81,9 @@ def outer_navbar(stdscr, outer_option, selected):
 def inner_options(outer_option):
     if outer_option == 0:
         return ["list", "day", "week", "month", "year"]
-    elif outer_option == 4:
+    if outer_option == 4:
         return ["main"]
-    else:
-        return ["+ new"]
+    return ["+ new"]
 
 def inner_navbar(stdscr, outer_option, inner_option, selected):
     stdscr.addstr(1, 0, " " * stdscr.getmaxyx()[1], curses.color_pair(2 + 4 * (selected[0] == 1)))

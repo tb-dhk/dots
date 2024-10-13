@@ -13,7 +13,7 @@ class Task:
         self.id = str(uuid.uuid4())  # Unique identifier for the task
         self.name = name  # Task name
         self.due_date = due_date  # Task due date (string, could be a day/week/month-based format)
-        self.due_type = due_type 
+        self.due_type = due_type
         self.priority = priority  # Priority: low, medium, high (default: medium)
         self.completed = False  # Task completion status (default: False)
         self.subtasks = subtasks if subtasks else []  # List of subtasks (empty by default)
@@ -162,7 +162,7 @@ def display_text_box(window, text_input, text_mode, text_box, text_index):
 def display_borders(window, selected, split=False):
     """Draw the border for the task list. If selected[0] >= 2, split the window in half."""
     max_y, max_x = window.getmaxyx()
-    
+
     if selected[0] >= 2 and selected[0] < len(get_task_list()) + 2 and split:
         split_x = max_x // 2 - 1
         # Left box border
@@ -171,7 +171,7 @@ def display_borders(window, selected, split=False):
             window.addstr(y, 0, "║", curses.color_pair(1))
             window.addstr(y, split_x - 1, "║", curses.color_pair(1))
         window.addstr(max_y - 4, 0, "╚" + "═" * (split_x - 2) + "╝" + " ")
-        
+
         # Right box border
         window.addstr(0, split_x + 1, "╔" + "═" * (max_x - split_x - 3) + "╗")
         for y in range(1, max_y - 3):
@@ -196,7 +196,7 @@ def display_task(window, task_key, selected, task_list, text_mode, indent=0, spl
     if not task or window.getyx()[0] + 1 > window.getmaxyx()[0] - 5:
         return  # Skip if task not found
 
-    task_number = get_task_list().index(task_key) 
+    task_number = get_task_list().index(task_key)
 
     # Choose the starting column based on the box ('left' or 'right')
     start_col = 2 if box != 'right' else split_x + 3
@@ -260,7 +260,7 @@ def display_task_details(window, task_id, split_x, selected):
         passed = False
     else:
         passed = due_date.date() < dt.now().date()
-    
+
     # Define the edit commands for each task attribute
     edit_commands = {
         "name": "n",
@@ -285,7 +285,7 @@ def display_task_details(window, task_id, split_x, selected):
     # Calculate the maximum key length for proper alignment
     max_key_length = max(len(key) for key in details.keys())
     max_width = window.getmaxyx()[1] - split_x - 7  # Available space for wrapping
-    
+
     # Display each detail line with aligned colons and edit commands
     window.move(1, split_x + 3)
     count = 0
@@ -293,7 +293,7 @@ def display_task_details(window, task_id, split_x, selected):
         # Construct the base line with key, edit command, and colon
         base_line = f"{key.ljust(max_key_length)} ({edit_commands[key]}) : "
         base_len = len(base_line)
-        
+
         # Split the value into lines if it exceeds the available width
         lines = []
         value_str = str(value)
@@ -301,54 +301,53 @@ def display_task_details(window, task_id, split_x, selected):
             lines.append(value_str[:max_width - base_len].rstrip())
             value_str = value_str[max_width - base_len:].lstrip()
         lines.append(value_str)  # Add the remaining part
-        
+
         # Display the first line with the base formatting
         window.addstr(base_line + lines[0], curses.color_pair(1 + (selected[1] == count)))
         window.move(window.getyx()[0] + 1, split_x + 3)
-        
+
         # Display any additional wrapped lines for the value
         for line in lines[1:]:
             window.addstr(" " * base_len + line, curses.color_pair(1 + (selected[1] == count)))
             window.move(window.getyx()[0] + 1, split_x + 3)
-        
+
         # Add extra spacing between each task detail
         window.move(window.getyx()[0] + 1, split_x + 3)
         count += 1
 
-def display_tasks(window, option, selected, text_input, text_mode, text_box, text_index, removing):
+def display_tasks(window, selected, text_input, text_mode, text_box, text_index, removing):
     """Main function to display tasks, with task details in the right box when selected."""
-    if option == 0:
-        max_y, max_x = window.getmaxyx()
-        display_borders(window, selected, split=True)
-        tasks = Task.load_tasks()
+    max_y, max_x = window.getmaxyx()
+    display_borders(window, selected, split=True)
+    tasks = Task.load_tasks()
 
-        split_x = max_x // 2 - 1 if selected[0] >= 2 else 0 
-        task_list = []
+    split_x = max_x // 2 - 1 if selected[0] >= 2 else 0
+    task_list = []
 
-        if selected[0] >= 2 and selected[0] < len(get_task_list()) + 2:
-            # Display tasks in the left box
-            window.move(0, 0)  # Changed to start at row 3
-            for task_key in tasks:
-                if not tasks[task_key]['parent']:
-                    display_task(window, task_key, selected, task_list, text_mode, split_x=split_x, box='left', removing=removing)
+    if selected[0] >= 2 and selected[0] < len(get_task_list()) + 2:
+        # Display tasks in the left box
+        window.move(0, 0)  # Changed to start at row 3
+        for task_key in tasks:
+            if not tasks[task_key]['parent']:
+                display_task(window, task_key, selected, task_list, text_mode, split_x=split_x, box='left', removing=removing)
 
-            window.move(window.getyx()[0] + 1, 4)
-            window.addstr("+ press : to enter a new task", curses.color_pair(4 + 1 * (selected[0] == len(get_task_list()) + 2)))
-            
-            # Find the selected task and display its details in the right box
-            selected_task_key = task_list[selected[0] - 2]
-            display_task_details(window, selected_task_key, split_x, selected)
-        else:
-            # Single full-width box display
-            window.move(0, 0)  # Changed to start at row 3
-            for task_key in tasks:
-                if not tasks[task_key]['parent']:
-                    display_task(window, task_key, selected, task_list, text_mode)
+        window.move(window.getyx()[0] + 1, 4)
+        window.addstr("+ press : to enter a new task", curses.color_pair(4 + 1 * (selected[0] == len(get_task_list()) + 2)))
 
-            window.move(window.getyx()[0] + 1, 4)
-            window.addstr("+ press : to enter a new task", curses.color_pair(4 + 1 * (selected[0] == len(get_task_list()) + 2)))
-                
-        display_text_box(window, text_input, text_mode, text_box, text_index)
+        # Find the selected task and display its details in the right box
+        selected_task_key = task_list[selected[0] - 2]
+        display_task_details(window, selected_task_key, split_x, selected)
+    else:
+        # Single full-width box display
+        window.move(0, 0)  # Changed to start at row 3
+        for task_key in tasks:
+            if not tasks[task_key]['parent']:
+                display_task(window, task_key, selected, task_list, text_mode)
+
+        window.move(window.getyx()[0] + 1, 4)
+        window.addstr("+ press : to enter a new task", curses.color_pair(4 + 1 * (selected[0] == len(get_task_list()) + 2)))
+
+    display_text_box(window, text_input, text_mode, text_box, text_index)
 
 def draw_table(window, data, start_y, start_x, selected, removing):
     # Calculate the maximum width of each column
@@ -401,7 +400,7 @@ def draw_table(window, data, start_y, start_x, selected, removing):
     for row_idx, row in enumerate(data[1:]):
         for i, item in enumerate(row[1:-1]):
             window.addstr(start_y + row_idx + 3, start_x + sum(column_widths[:i]) + i, "| ")
-            
+
             # Handle priority and completed columns
             if i == 0:
                 window.addstr(item[:2], curses.color_pair(8))
@@ -416,13 +415,13 @@ def draw_table(window, data, start_y, start_x, selected, removing):
                 # Handle removing subtasks
                 if row[-1] and i == 1:
                     item = "this task will be removed" if row[0] == removing else "this subtask will be removed"
-                
+
                 # Truncate text and add ellipses if it exceeds column width
                 item_str = str(item)
                 if len(item_str) > column_widths[i]:
                     item_str = item_str[:column_widths[i] - 5] + "..."
-                
-                window.addstr(item_str[:column_widths[i] - 2], curses.color_pair((1 + 4 * ((selected[0] - 3) == row_idx and (selected[1] + 1) == i))) if not row[-1] else curses.color_pair(7)) 
+
+                window.addstr(item_str[:column_widths[i] - 2], curses.color_pair((1 + 4 * ((selected[0] - 3) == row_idx and (selected[1] + 1) == i))) if not row[-1] else curses.color_pair(7))
 
         window.addstr(start_y + row_idx + 3, start_x + sum(column_widths) + 5, '|')
 
@@ -468,7 +467,7 @@ def day_view(window, selected, day, text_input, text_mode, text_box, text_index,
     window.addstr(f"< {day} >", curses.color_pair(1 + 4 * (selected[0] == 2)))
 
     tasks = tasks_for_day(day)
-    
+
     # Group tasks by parent ID
     tasks_by_parent = {}
     orphaned_tasks = []
@@ -501,7 +500,7 @@ def day_view(window, selected, day, text_input, text_mode, text_box, text_index,
         )
     else:
         window.addstr(
-            len(data) + 8, 5, 
+            len(data) + 8, 5,
             f"completed tasks due today: ({completed_today}/{len(due_today)}) " +
             f"({str(round(completed_today / len(due_today) * 100, 2)) + '%' if len(due_today) else 'n/a'})"
         )
@@ -545,7 +544,7 @@ def week_view(window, selected, day, text_input, text_mode, text_box, text_index
     due_today = [task for task in tasks if task['due_date'] == day]
     completed_today = len([task for task in due_today if task['completed']])
     window.addstr(
-        len(data) + 8, 5, 
+        len(data) + 8, 5,
         f"completed tasks due today: ({completed_today}/{len(due_today)}) " +
         f"({str(round(completed_today / len(due_today) * 100, 2)) + '%' if len(due_today) else 'n/a'})"
     )
@@ -563,7 +562,7 @@ def month_view(window, selected, day, text_input, text_mode, text_box, text_inde
     window.addstr(f"< {start} - {end} >", curses.color_pair(1 + 4 * (selected[0] == 2)))
 
     tasks = tasks_for_month(day)
-    
+
     tasks_by_parent = {}
     orphaned_tasks = []
 
@@ -592,7 +591,7 @@ def month_view(window, selected, day, text_input, text_mode, text_box, text_inde
     due_today = [task for task in tasks if task['due_date'] == day]
     completed_today = len([task for task in due_today if task['completed']])
     window.addstr(
-        len(data) + 8, 5, 
+        len(data) + 8, 5,
         f"completed tasks due today: ({completed_today}/{len(due_today)}) " +
         f"({str(round(completed_today / len(due_today) * 100, 2)) + '%' if len(due_today) else 'n/a'})"
     )
@@ -610,7 +609,7 @@ def year_view(window, selected, day, text_input, text_mode, text_box, text_index
     window.addstr(f"< {start} - {end} >", curses.color_pair(1 + 4 * (selected[0] == 2)))
 
     tasks = tasks_for_year(day)
-    
+
     tasks_by_parent = {}
     orphaned_tasks = []
 
@@ -639,7 +638,7 @@ def year_view(window, selected, day, text_input, text_mode, text_box, text_index
     due_today = [task for task in tasks if task['due_date'] == day]
     completed_today = len([task for task in due_today if task['completed']])
     window.addstr(
-        len(data) + 8, 5, 
+        len(data) + 8, 5,
         f"completed tasks due today: ({completed_today}/{len(due_today)}) " +
         f"({str(round(completed_today / len(due_today) * 100, 2)) + '%' if len(due_today) else 'n/a'})"
     )
@@ -650,3 +649,4 @@ def year_view(window, selected, day, text_input, text_mode, text_box, text_index
 def coming_soon(window):
     display_borders(window, [0, 0])
     window.addstr(2, 5, "coming soon...")
+

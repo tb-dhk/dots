@@ -98,7 +98,7 @@ def inner_navbar(stdscr, outer_option, inner_option, selected):
 def content(window, outer_option, inner_option, selected, text_input, text_mode, text_box, text_index, removing, day):
     if outer_option == 0:
         if inner_option == 0:
-            display_tasks(window, inner_option, selected, text_input, text_mode, text_box, text_index, removing)
+            display_tasks(window, selected, text_input, text_mode, text_box, text_index, removing)
         elif inner_option == 1:
             day_view(window, selected, day, text_input, text_mode, text_box, text_index, removing)
         elif inner_option == 2:
@@ -592,5 +592,6 @@ def main(stdscr):
 
 if __name__ == "__main__":
     curses.wrapper(main)
+
 
 

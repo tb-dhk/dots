@@ -75,4 +75,4 @@ all of these keybindings require text input and are only available in list view.
 - `d`: navigates to another date if cursor is on the date (if not on day view, navigates to relevant week, month or year)
 
 ## configuration
-configuration is not yet available, but there is a `config.toml` file in the `~/.dots` directory that you can edit manually. the file is created when you run the app for the first time.
+configuration is not yet available, but there is a `config.toml` file in the `~/.dots` directory that you can edit manually. the file is created when you run the app for the first time. do note that the file should not be changed.

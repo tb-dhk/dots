@@ -460,7 +460,7 @@ def render_task_and_children(window, data, task, tasks_by_parent, indent, day, r
         for child in tasks_by_parent[task['id']]:
             render_task_and_children(window, data, child, tasks_by_parent, indent + 1, day, removing, bullets=bullets, removing_subtask=task['id']==removing)
 
-def day_view(window, selected, day, text_input, text_mode, text_box, text_index, removing):
+def day_view(window, selected, day, text_input, text_box, text_index, removing):
     display_borders(window, selected)
 
     window.addstr(2, 5, "tasks for ")
@@ -508,7 +508,7 @@ def day_view(window, selected, day, text_input, text_mode, text_box, text_index,
     # Display text box input (for text entry mode)
     display_text_box(window, text_input, text_box, text_index)
 
-def week_view(window, selected, day, text_input, text_mode, text_box, text_index, removing):
+def week_view(window, selected, day, text_input, text_box, text_index, removing):
     display_borders(window, selected)
 
     start = (dt.strptime(day, "%Y-%m-%d") - timedelta(days=dt.strptime(day, "%Y-%m-%d").weekday() + 1)).strftime("%Y-%m-%d")
@@ -552,7 +552,7 @@ def week_view(window, selected, day, text_input, text_mode, text_box, text_index
     # Display text box input (for text entry mode)
     display_text_box(window, text_input, text_box, text_index)
 
-def month_view(window, selected, day, text_input, text_mode, text_box, text_index, removing):
+def month_view(window, selected, day, text_input, text_box, text_index, removing):
     display_borders(window, selected)
 
     start = dt.strptime(day, "%Y-%m-%d").replace(day=1).strftime("%Y-%m-%d")
@@ -599,7 +599,7 @@ def month_view(window, selected, day, text_input, text_mode, text_box, text_inde
     # Display text box input (for text entry mode)
     display_text_box(window, text_input, text_box, text_index)
 
-def year_view(window, selected, day, text_input, text_mode, text_box, text_index, removing):
+def year_view(window, selected, day, text_input, text_box, text_index, removing):
     display_borders(window, selected)
 
     start = dt.strptime(day, "%Y-%m-%d").replace(month=1, day=1).strftime("%Y-%m-%d")

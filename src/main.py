@@ -97,13 +97,13 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
         if inner_option == 0:
             display_tasks(window, selected, text_input, text_mode, text_box, text_index, removing)
         elif inner_option == 1:
-            day_view(window, selected, day, text_input, text_mode, text_box, text_index, removing)
+            day_view(window, selected, day, text_input, text_box, text_index, removing)
         elif inner_option == 2:
-            week_view(window, selected, day, text_input, text_mode, text_box, text_index, removing)
+            week_view(window, selected, day, text_input, text_box, text_index, removing)
         elif inner_option == 3:
-            month_view(window, selected, day, text_input, text_mode, text_box, text_index, removing)
+            month_view(window, selected, day, text_input, text_box, text_index, removing)
         elif inner_option == 4:
-            year_view(window, selected, day, text_input, text_mode, text_box, text_index, removing)
+            year_view(window, selected, day, text_input, text_box, text_index, removing)
     else:
         coming_soon(window)
     window.refresh()

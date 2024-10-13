@@ -649,4 +649,3 @@ def year_view(window, selected, day, text_input, text_mode, text_box, text_index
 def coming_soon(window):
     display_borders(window, [0, 0])
     window.addstr(2, 5, "coming soon...")
-

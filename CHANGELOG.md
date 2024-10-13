@@ -1,6 +1,6 @@
 # changelog
 
-## [0.1.0] - yyyy-mm-dd
+## [0.1.0] - 2024-10-13
 ### added
 - **list view (core view)**:
     - add a new task with a title.

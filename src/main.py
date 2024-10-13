@@ -11,9 +11,9 @@ from tasks import *
 from points import points
 
 config = toml.load(os.path.join(os.path.expanduser("~"), ".dots", "config.toml"))
-    
+
 def check_date(string):
-    try: 
+    try:
         dt.strptime(string, "%Y-%m-%d")
     except:
         return False
@@ -112,7 +112,7 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
     window.refresh()
 
 def status_bar(window, outer_option, inner_option, selected, text_mode, message):
-    if message: 
+    if message:
         display = message
     else:
         match text_mode:
@@ -169,7 +169,7 @@ def main(stdscr):
     text_box = ""
     text_index = 0
     message = ""
-    removing = "" 
+    removing = ""
     day = date.today().strftime("%Y-%m-%d")
 
     # Create a window for content
@@ -189,7 +189,7 @@ def main(stdscr):
     while True:
         # Update special color
         base_value = 500
-        color_offset = 100 
+        color_offset = 100
         if special_color[0] == 1000:
             if special_color[2] > base_value:
                 special_color[2] -= color_offset
@@ -270,7 +270,7 @@ def main(stdscr):
                             elif inner_option == 1:
                                 task_id = tasks_for_day(day)[selected[0] - 3]["id"]
                         if task_id:
-                            task_name = Task.get_task(task_id)["name"] 
+                            task_name = Task.get_task(task_id)["name"]
                         else:
                             task_name = ""
                         text_box = text_box.strip()
@@ -278,7 +278,7 @@ def main(stdscr):
                             if text_mode == "new task":
                                 if inner_option == 1:
                                     Task.add_task(text_box)
-                                elif inner_option == 2: 
+                                elif inner_option == 2:
                                     Task.add_task(text_box, due_date=(dt.strptime(day, "%Y-%m-%d") + timedelta(days=(5 - dt.strptime(day, "%Y-%m-%d").weekday()))).strftime("%Y-%m-%d"))
                                 elif inner_option == 3:
                                     Task.add_task(text_box, due_date=f"{day[:7]}-{calendar.monthrange(int(day[:4]), int(day[5:7]))[1]}", due_type="month")
@@ -350,7 +350,7 @@ def main(stdscr):
                                     day = text_box
                                     message = f"moved to date {text_box}"
                                 elif text_box and re.match(r"\d{4}-\d{2}", text_box) and int(text_box[-2:]) <= 12 and int(text_box[-2:]) >= 1:
-                                    day = f"{text_box}-{calendar.monthrange(int(text_box[:4]), int(text_box[-2:]))[1]}" 
+                                    day = f"{text_box}-{calendar.monthrange(int(text_box[:4]), int(text_box[-2:]))[1]}"
                                     message = f"moved to month {text_box}"
                                 elif text_box and re.match(r"\d{4}", text_box) and check_date(text_box):
                                     day = f"{text_box}-12-31"
@@ -392,7 +392,7 @@ def main(stdscr):
                             selected[0] = 0
                     elif inner_option == 3:
                         if selected[0] == len(tasks_for_month(day)) + 3:
-                            selected[0] = 0             
+                            selected[0] = 0
                     elif inner_option == 4:
                         if selected[0] == len(tasks_for_year(day)) + 3:
                             selected[0] = 0
@@ -500,7 +500,7 @@ def main(stdscr):
                                 text_input = True
                                 text_mode = "new task"
                         else:
-                            task_name = Task.get_task(task)["name"] 
+                            task_name = Task.get_task(task)["name"]
                             match chr(key):
                                 case ":":
                                     text_input = True
@@ -592,4 +592,5 @@ def main(stdscr):
 
 if __name__ == "__main__":
     curses.wrapper(main)
+
 

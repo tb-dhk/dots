@@ -84,6 +84,7 @@ class DurationHabit(Habit):
             if date not in habits[habit_id]['data']:
                 habits[habit_id]['data'][date] = []
             habits[habit_id]['data'][date] += duration_sessions  # Add duration sessions
+            habits[habit_id]['data'] = dict(sorted(habits[habit_id]['data'].items(), key=lambda x: x[0]))  # Sort by date
             cls.save_habits(habits)  # Save updated habits to JSON
             return True
         return False
@@ -184,27 +185,28 @@ def duration_maps(window, selected, duration_map_settings):
 
     habits = Habit.load_habits()
     habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
-    if based_on == "day":
-        day = date.today() + timedelta(days=index)
-        on = day.strftime("%Y-%m-%d")
-        try:
-            records = {habit: habits[habit]['data'][on] for habit in habits}
-        except:
-            for habit in habits:
-                if on not in habits[habit]['data']:
-                    habits[habit]['data'][on] = []
-            records = {habit: habits[habit]['data'][on] for habit in habits}
-    else:
-        id = list(habits.keys())[index % len(habits)]
-        records = habits[id]['data']
-        on = habits[id]['name']
-
-    for record in records:
-        records[record] = [[int(time[:2]) + int(time[3:]) / 60 for time in entry] for entry in records[record]]
-
-    window.addstr(6, 5, f"< {on} >", curses.color_pair(1 + (selected[0] == 3)))
 
     if habits:
+        if based_on == "day":
+            day = date.today() + timedelta(days=index)
+            on = day.strftime("%Y-%m-%d")
+            try:
+                records = {habit: habits[habit]['data'][on] for habit in habits}
+            except:
+                for habit in habits:
+                    if on not in habits[habit]['data']:
+                        habits[habit]['data'][on] = []
+                records = {habit: habits[habit]['data'][on] for habit in habits}
+        else:
+            id = list(habits.keys())[index % len(habits)]
+            records = habits[id]['data']
+            on = habits[id]['name']
+
+        for record in records:
+            records[record] = [[int(time[:2]) + int(time[3:]) / 60 for time in entry] for entry in records[record]]
+
+        window.addstr(6, 5, f"< {on} >", curses.color_pair(1 + (selected[0] == 3)))
+
         max_length = max(len(habits[habit]['name']) for habit in records) if based_on == "day" else 10
         raw_records = [item for record in records.values() for item in record]
         try:
@@ -217,12 +219,17 @@ def duration_maps(window, selected, duration_map_settings):
         except:
             earliest_time = 0
             latest_time_diff = 0
+
         max_width = window.getmaxyx()[1] - 11 - max_length
-        hour_width = max_width // (latest_time_diff)
-        hour_widths = [4, 6, 12]
-        hour_widths = [width for width in hour_widths if width * (latest_time_diff) <= max_width]
-        gaps = [abs(hour_width - width) for width in hour_widths]
-        hour_width = hour_widths[gaps.index(min(gaps))]
+        try:
+            hour_width = max_width // (latest_time_diff)
+        except:
+            hour_width = 0
+        else:
+            hour_widths = [4, 6, 12]
+            hour_widths = [width for width in hour_widths if width * (latest_time_diff) <= max_width]
+            gaps = [abs(hour_width - width) for width in hour_widths]
+            hour_width = hour_widths[gaps.index(min(gaps))]
 
         for hour in range(math.ceil(latest_time_diff) + 1):
             window.addstr(8, 7 + max_length + math.ceil(hour * hour_width), str((hour + int(earliest_time)) % 24).rjust(2, "0"))

@@ -552,8 +552,6 @@ def month_view(window, selected, day, text_input, text_box, text_index, removing
         f"({str(round(completed_today / len(due_today) * 100, 2)) + '%' if len(due_today) else 'n/a'})"
     )
 
-    # Display text box input (for text entry mode)
-
 def year_view(window, selected, day, text_input, text_box, text_index, removing):
     display_borders(window, selected)
 

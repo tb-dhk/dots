@@ -147,7 +147,9 @@ def status_bar(window, text_input, text_mode, message):
             case "habit target value":
                 display = "enter target value for habit"
             case ["new duration record", selected_day, selected_habit, habits]:
-                display = f"enter start and end for habit '{habits[selected_habit]['name']}' on {selected_day}, in format hh:mm-hh:mm"
+                display = f"enter start and end for habit '{habits[selected_habit]['name']}' on {selected_day}, in format hhmm-hhmm"
+            case ["add date", selected_habit]:
+                display = "enter the date in the format yyyy-mm-dd"
             case _:
                 display = str(message)
     window.addstr(window.getmaxyx()[0] - 1, 0, display[:window.getmaxyx()[1] - 1])
@@ -410,15 +412,21 @@ def main(stdscr):
                                         message = "habit target value updated"
                                 case ["new duration record", selected_day, selected_habit, habits]:
                                     try:
-                                        start, end = text_box.split("-")
-                                        start = dt.strptime(start, "%H:%M")
-                                        end = dt.strptime(end, "%H:%M") 
+                                        start, end = text_box.split("-")[:2]
+                                        start = dt.strptime(start, "%H%M")
+                                        end = dt.strptime(end, "%H%M") 
                                     except:
                                         message = "invalid time format. try again!"
                                         clear = False
                                     else:
                                         DurationHabit.add_duration_record(selected_habit, selected_day, [(start.strftime("%H:%M"), end.strftime("%H:%M"))])
                                         message = f"new duration record for habit '{habits[selected_habit]['name']}' on {selected_day} added"
+                                case ["add date", selected_habit]:
+                                    if text_box and re.match(r"\d{4}-\d{2}-\d{2}", text_box) and check_date(text_box):
+                                        DurationHabit.add_duration_record(selected_habit, text_box, [])
+                                    else:
+                                        message = "invalid date format. try again!"
+                                        clear = False
                             if clear:
                                 text_input = False
                                 text_box = ""
@@ -454,7 +462,16 @@ def main(stdscr):
                         elif inner_option == 4:
                             selected[0] = len(tasks_for_year(day)) + 2
                     elif outer_option == 1:
-                        if inner_option == 4:
+                        if inner_option == 0:
+                            if duration_map_settings["based_on"] == "day":
+                                habits = Habit.load_habits()
+                                habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
+                                selected[0] = 3 + len(habits)
+                            else:
+                                habits = Habit.load_habits()
+                                habit = list(habits.keys())[duration_map_settings["index"]]
+                                selected[0] = 4 + len(habits[habit]["data"])
+                        elif inner_option == 4:
                             selected[0] = 6
                 else:
                     if selected[0] == -1:
@@ -479,7 +496,18 @@ def main(stdscr):
                         if selected[0] == len(tasks_for_year(day)) + 3:
                             selected[0] = 0
                 elif outer_option == 1:
-                    if inner_option == 4:
+                    if inner_option == 0:
+                        if duration_map_settings["based_on"] == "day":
+                            habits = Habit.load_habits()
+                            habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
+                            if selected[0] == 4 + len(habits):
+                                selected[0] = 0
+                        else:
+                            habits = Habit.load_habits()
+                            habit = list(habits.keys())[duration_map_settings["index"]]
+                            if selected[0] == 4 + len(habits[habit]["data"]):
+                                selected[0] = 0
+                    elif inner_option == 4:
                         if selected[0] == 7:
                             selected[0] = 0
                 else:
@@ -525,7 +553,7 @@ def main(stdscr):
                             else:
                                 duration_map_settings["based_on"] = "day"
                         elif selected[0] == 3:
-                            duration_map_settings["index"] += 1
+                            duration_map_settings["index"] -= 1
                     elif inner_option == 4: 
                         if selected[0] == 3:
                             types = ["progress", "duration", "frequency"]
@@ -578,7 +606,7 @@ def main(stdscr):
                             else:
                                 duration_map_settings["based_on"] = "day"
                         elif selected[0] == 3:
-                            duration_map_settings["index"] -= 1
+                            duration_map_settings["index"] += 1
                     elif inner_option == 4:
                         if selected[0] == 3:
                             types = ["progress", "duration", "frequency"]
@@ -699,15 +727,19 @@ def main(stdscr):
                         index = duration_map_settings["index"]
                         habits = Habit.load_habits()
                         habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
-                        if chr(key) == "e":
-                            if duration_map_settings["based_on"] == "day":
-                                selected_day = (date.today() + timedelta(days=index)).strftime("%Y-%m-%d")
-                                selected_habit = list(habits.keys())[selected[0] - 4]
-                            else:
-                                selected_habit = list(habits.keys())[index % len(habits)]
-                                selected_day = list(habits[selected_habit]["data"].values())[selected[0] - 4]
-                            text_input = True
-                            text_mode = ["new duration record", selected_day, selected_habit, habits]
+                        if selected[0] >= 4:
+                            if chr(key) == "e":
+                                if duration_map_settings["based_on"] == "day":
+                                    selected_day = (date.today() + timedelta(days=index)).strftime("%Y-%m-%d")
+                                    selected_habit = list(habits.keys())[selected[0] - 4]
+                                else:
+                                    selected_habit = list(habits.keys())[index % len(habits)]
+                                    selected_day = list(habits[selected_habit]["data"].keys())[selected[0] - 4]
+                                text_input = True
+                                text_mode = ["new duration record", selected_day, selected_habit, habits]
+                            elif chr(key) == ":" and duration_map_settings["based_on"] == "habit":
+                                text_input = True
+                                text_mode = ["add date", list(habits.keys())[index % len(habits)]]
                     elif inner_option == 4:
                         text_modes = {
                             2: "habit name",

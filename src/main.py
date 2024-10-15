@@ -371,7 +371,7 @@ def main(stdscr):
                 elif key == curses.KEY_UP:
                     text_index = 0
                 else:
-                    if chr(key) in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+-=[]{}|;':,.<>/?":
+                    if chr(key) in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+-=[]{}|;':,.<>/? ":
                         text_box = text_box[:text_index] + chr(key) + text_box[text_index:]
                         text_index = min(len(text_box), text_index + 1)
             elif key == curses.KEY_DOWN:

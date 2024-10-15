@@ -8,6 +8,8 @@ import toml
 
 from tasks import *
 from points import points
+from habits import *
+from misc import *
 
 config = toml.load(os.path.join(os.path.expanduser("~"), ".dots", "config.toml"))
 
@@ -72,7 +74,7 @@ def edit_task_parent(selected, text_box, task_list):
     return message
 
 def outer_navbar(stdscr, outer_option, selected):
-    options = ["tasks", "lists", "trackers", "journals"]
+    options = ["tasks", "habits", "lists", "journals"]
     stdscr.addstr(0, 0, " " * stdscr.getmaxyx()[1], curses.color_pair(2 + 4 * (selected[0] == 0)))
     stdscr.move(0, 0)
     for i, option in enumerate(options):
@@ -81,6 +83,8 @@ def outer_navbar(stdscr, outer_option, selected):
 def inner_options(outer_option):
     if outer_option == 0:
         return ["list", "day", "week", "month", "year"]
+    if outer_option == 1:
+        return ["sleep", "progress", "heatmap", "yearmap", "+ new"]
     if outer_option == 4:
         return ["main"]
     return ["+ new"]
@@ -92,7 +96,7 @@ def inner_navbar(stdscr, outer_option, inner_option, selected):
     for i, option in enumerate(options):
         stdscr.addstr(f" {option} ", curses.color_pair(1 + (i != inner_option) + 4 * (selected[0] == 1)))
 
-def content(window, outer_option, inner_option, selected, text_input, text_mode, text_box, text_index, removing, day):
+def content(window, outer_option, inner_option, selected, text_input, text_mode, text_box, text_index, removing, day, new_habit):
     if outer_option == 0:
         if inner_option == 0:
             display_tasks(window, selected, text_input, text_mode, text_box, text_index, removing)
@@ -104,14 +108,21 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
             month_view(window, selected, day, text_input, text_box, text_index, removing)
         elif inner_option == 4:
             year_view(window, selected, day, text_input, text_box, text_index, removing)
+    elif outer_option == 1:
+        if inner_option < 4:
+            coming_soon(window)
+        elif inner_option == 4:
+            add_new_habit(window, selected, text_input, text_box, text_mode, text_index, new_habit)
     else:
         coming_soon(window)
+    display_text_box(window, text_input, text_box, text_index)
     window.refresh()
 
-def status_bar(window, text_mode, message):
-    if message:
-        display = message
-    else:
+def status_bar(window, text_input, text_mode, message):
+    window.addstr(window.getmaxyx()[0] - 1, 0, " " * (window.getmaxyx()[1] - 1))
+    if not text_input:
+        display = str(message)
+    else: 
         match text_mode:
             case "new task" | "edit task":
                 display = "enter new task name"
@@ -127,9 +138,16 @@ def status_bar(window, text_mode, message):
                 display = "enter the number to the right of the task you would like to set as the new parent (-1 for no parent)"
             case "choose date":
                 display = "enter the date in the format yyyy-mm-dd"
+            case "habit name":
+                display = "enter new habit name"
+            case "habit unit":
+                display = "enter habit unit (to provide singular and plural forms, separate with /)"
+            case "habit target value":
+                display = "enter target value for habit"
             case _:
                 display = str(message)
     window.addstr(window.getmaxyx()[0] - 1, 0, display[:window.getmaxyx()[1] - 1])
+    window.refresh()
 
 def main(stdscr):
     # Screen setup
@@ -168,6 +186,7 @@ def main(stdscr):
     message = ""
     removing = ""
     day = date.today().strftime("%Y-%m-%d")
+    new_habit = {"name": " ", "type": "progress", "unit": " ", "target_value": 0}
 
     # Create a window for content
     content_height = height - 3  # Adjust based on your layout
@@ -221,8 +240,19 @@ def main(stdscr):
         else:
             outer_navbar(stdscr, outer_option, selected)
             inner_navbar(stdscr, outer_option, inner_option, selected)
-            content(content_window, outer_option, inner_option, selected, text_input, text_mode, text_box, text_index, removing, day)
-            status_bar(stdscr, text_mode, message)
+            content(content_window, outer_option, inner_option, selected, text_input, text_mode, text_box, text_index, removing, day, new_habit)
+            status_bar(stdscr, text_input, text_mode, message)
+
+        # fetch all habits, and add a log for today (unless type == duration)
+        habits = Habit.load_habits()
+        for habit_id in habits:
+            habit = habits[habit_id]
+            if habit["type"] == "progress":
+                if date.today().strftime("%Y-%m-%d") not in habit["data"]:
+                    ProgressHabit.add_progress_record(habit_id, date.today().strftime("%Y-%m-%d"), 0)
+            elif habit["type"] == "frequency":
+                if date.today().strftime("%Y-%m-%d") not in habit["data"]:
+                    FrequencyHabit.add_occurrence_record(habit_id, date.today().strftime("%Y-%m-%d"), 0)
 
         # Non-blocking check for key input
         key = stdscr.getch()
@@ -272,89 +302,104 @@ def main(stdscr):
                             task_name = ""
                         text_box = text_box.strip()
                         if text_box:
-                            if text_mode == "new task":
-                                if inner_option == 1:
-                                    Task.add_task(text_box)
-                                elif inner_option == 2:
-                                    Task.add_task(text_box, due_date=(dt.strptime(day, "%Y-%m-%d") + timedelta(days=(5 - dt.strptime(day, "%Y-%m-%d").weekday()))).strftime("%Y-%m-%d"))
-                                elif inner_option == 3:
-                                    Task.add_task(text_box, due_date=f"{day[:7]}-{calendar.monthrange(int(day[:4]), int(day[5:7]))[1]}", due_type="month")
-                                elif inner_option == 4:
-                                    Task.add_task(text_box, due_date=f"{day[:4]}-12-31", due_type="year")
-                                message = f"new task '{text_box}' added"
-                            elif text_mode == "edit task":
-                                Task.edit_task(task_id, name=text_box)
-                                message = f"name of task '{task_name}' changed to '{text_box}'"
-                            elif text_mode in ["migrate", "schedule"]:
-                                if text_box and re.match(r"\d{4}-\d{2}-\d{2}", text_box) and check_date(text_box):
-                                    move_day = text_box
-                                elif text_box and re.match(r"\d{4}-\d{2}", text_box) and int(text_box[-2:]) <= 12 and int(text_box[-2:]) >= 1:
-                                    move_day = f"{text_box}-{calendar.monthrange(int(text_box[:4]), int(text_box[-2:]))[1]}"
-                                elif text_box and re.match(r"\d{4}", text_box):
-                                    move_day = f"{text_box}-12-31"
-                                elif not text_box:
-                                    move_day = ""
-                                else:
-                                    move_day = ""
+                            match text_mode:
+                                case "new task":
+                                    if inner_option == 1:
+                                        Task.add_task(text_box)
+                                    elif inner_option == 2:
+                                        Task.add_task(text_box, due_date=(dt.strptime(day, "%Y-%m-%d") + timedelta(days=(5 - dt.strptime(day, "%Y-%m-%d").weekday()))).strftime("%Y-%m-%d"))
+                                    elif inner_option == 3:
+                                        Task.add_task(text_box, due_date=f"{day[:7]}-{calendar.monthrange(int(day[:4]), int(day[5:7]))[1]}", due_type="month")
+                                    elif inner_option == 4:
+                                        Task.add_task(text_box, due_date=f"{day[:4]}-12-31", due_type="year")
+                                    message = f"new task '{text_box}' added"
+                                case "edit task":
+                                    Task.edit_task(task_id, name=text_box)
+                                    message = f"name of task '{task_name}' changed to '{text_box}'"
+                                case "migrate" | "schedule":
+                                    if text_box and re.match(r"\d{4}-\d{2}-\d{2}", text_box) and check_date(text_box):
+                                        move_day = text_box
+                                    elif text_box and re.match(r"\d{4}-\d{2}", text_box) and int(text_box[-2:]) <= 12 and int(text_box[-2:]) >= 1:
+                                        move_day = f"{text_box}-{calendar.monthrange(int(text_box[:4]), int(text_box[-2:]))[1]}"
+                                    elif text_box and re.match(r"\d{4}", text_box):
+                                        move_day = f"{text_box}-12-31"
+                                    elif not text_box:
+                                        move_day = ""
+                                    else:
+                                        move_day = ""
 
-                                task_due_date = dt.strptime(move_day, "%Y-%m-%d")
-                                try:
-                                    parent_due_date = dt.strptime(Task.get_task(Task.get_task(task_id)["parent"])["due_date"], "%Y-%m-%d")
-                                except:
-                                    parent_due_date = task_due_date
+                                    task_due_date = dt.strptime(move_day, "%Y-%m-%d")
+                                    try:
+                                        parent_due_date = dt.strptime(Task.get_task(Task.get_task(task_id)["parent"])["due_date"], "%Y-%m-%d")
+                                    except:
+                                        parent_due_date = task_due_date
 
-                                if move_day and task_due_date <= parent_due_date:
-                                    Task.edit_task(task_id, due_date=move_day)
-                                    Task.edit_task(task_id, date_history=Task.get_task(task_id)["date_history"] + [(date.today().strftime("%Y-%m-%d"), move_day)])
-                                    message = f"task '{task_name}' scheduled for {move_day}"
-                                elif not move_day:
-                                    if not text_box:
-                                        Task.edit_task(task_id, due_date=None)
-                                        message = f"task '{task_name}' unscheduled"
+                                    if move_day and task_due_date <= parent_due_date:
+                                        Task.edit_task(task_id, due_date=move_day)
+                                        Task.edit_task(task_id, date_history=Task.get_task(task_id)["date_history"] + [(date.today().strftime("%Y-%m-%d"), move_day)])
+                                        message = f"task '{task_name}' scheduled for {move_day}"
+                                    elif not move_day:
+                                        if not text_box:
+                                            Task.edit_task(task_id, due_date=None)
+                                            message = f"task '{task_name}' unscheduled"
+                                        else:
+                                            message = "invalid date format. try again!"
+                                            clear = False
+                                    else:
+                                        message = f"task due date cannot be later than parent's ({Task.get_task(Task.get_task(task_id)['parent'])['due_date']}). try again!"
+                                        clear = False
+                                case "edit priority":
+                                    if text_box in ["1", "2", "3"]:
+                                        Task.edit_task(task_id, priority=int(text_box))
+                                        message = f"priority of task '{task_name}' changed to {text_box}"
+                                    else:
+                                        message = "invalid priority. try again!"
+                                        clear = False
+                                case "edit tags":
+                                    original_tags = list(set(Task.load_tasks()[get_task_list()[selected[0] - 2]]["tags"]))
+                                    if text_box[0] in ["+", "-"]:
+                                        tags = [tag.strip() for tag in text_box[1:].split(",")]
+                                        if text_box[0] == "+":
+                                            new_tags = list(set(original_tags + tags))
+                                            message = f"tags {', '.join(tags)} added to task '{task_name}'"
+                                        else:
+                                            existing_tags = [i for i in tags if i in original_tags]
+                                            non_existing_tags = [i for i in tags if i not in original_tags]
+                                            new_tags = [i for i in original_tags if i not in tags]
+                                            message = f"tags {', '.join(existing_tags)} removed from task '{task_name}' (tags {', '.join(non_existing_tags)} not found)"
+                                        Task.edit_task(task_id, tags=new_tags)
+                                    else:
+                                        message = "invalid tag operation. try again!"
+                                        clear = False
+                                case "edit parent":
+                                    message = edit_task_parent(selected, text_box, get_task_list())
+                                case "choose date":
+                                    if text_box and re.match(r"\d{4}-\d{2}-\d{2}", text_box) and check_date(text_box):
+                                        day = text_box
+                                        message = f"moved to date {text_box}"
+                                    elif text_box and re.match(r"\d{4}-\d{2}", text_box) and int(text_box[-2:]) <= 12 and int(text_box[-2:]) >= 1:
+                                        day = f"{text_box}-{calendar.monthrange(int(text_box[:4]), int(text_box[-2:]))[1]}"
+                                        message = f"moved to month {text_box}"
+                                    elif text_box and re.match(r"\d{4}", text_box) and check_date(text_box):
+                                        day = f"{text_box}-12-31"
+                                        message = f"moved to year {text_box}"
                                     else:
                                         message = "invalid date format. try again!"
                                         clear = False
-                                else:
-                                    message = f"task due date cannot be later than parent's ({Task.get_task(Task.get_task(task_id)['parent'])['due_date']}). try again!"
-                                    clear = False
-                            elif text_mode == "edit priority":
-                                if text_box in ["1", "2", "3"]:
-                                    Task.edit_task(task_id, priority=int(text_box))
-                                    message = f"priority of task '{task_name}' changed to {text_box}"
-                                else:
-                                    message = "invalid priority. try again!"
-                                    clear = False
-                            elif text_mode == "edit tags":
-                                original_tags = list(set(Task.load_tasks()[get_task_list()[selected[0] - 2]]["tags"]))
-                                if text_box[0] in ["+", "-"]:
-                                    tags = [tag.strip() for tag in text_box[1:].split(",")]
-                                    if text_box[0] == "+":
-                                        new_tags = list(set(original_tags + tags))
-                                        message = f"tags {', '.join(tags)} added to task '{task_name}'"
+                                case "habit name":
+                                    new_habit["name"] = text_box
+                                    message = f"habit name set to '{text_box}'"
+                                case "habit unit":
+                                    new_habit["unit"] = text_box
+                                    message = f"habit unit set to '{text_box}'"
+                                case "habit target value":
+                                    try:
+                                        new_habit["target_value"] = int(text_box)
+                                    except: 
+                                        message = "invalid target value. try again!"
+                                        clear = False
                                     else:
-                                        existing_tags = [i for i in tags if i in original_tags]
-                                        non_existing_tags = [i for i in tags if i not in original_tags]
-                                        new_tags = [i for i in original_tags if i not in tags]
-                                        message = f"tags {', '.join(existing_tags)} removed from task '{task_name}' (tags {', '.join(non_existing_tags)} not found)"
-                                    Task.edit_task(task_id, tags=new_tags)
-                                else:
-                                    message = "invalid tag operation. try again!"
-                                    clear = False
-                            elif text_mode == "edit parent":
-                                message = edit_task_parent(selected, text_box, get_task_list())
-                            elif text_mode == "choose date":
-                                if text_box and re.match(r"\d{4}-\d{2}-\d{2}", text_box) and check_date(text_box):
-                                    day = text_box
-                                    message = f"moved to date {text_box}"
-                                elif text_box and re.match(r"\d{4}-\d{2}", text_box) and int(text_box[-2:]) <= 12 and int(text_box[-2:]) >= 1:
-                                    day = f"{text_box}-{calendar.monthrange(int(text_box[:4]), int(text_box[-2:]))[1]}"
-                                    message = f"moved to month {text_box}"
-                                elif text_box and re.match(r"\d{4}", text_box) and check_date(text_box):
-                                    day = f"{text_box}-12-31"
-                                    message = f"moved to year {text_box}"
-                                else:
-                                    message = "invalid date format. try again!"
-                                    clear = False
+                                        message = "habit target value updated"
                             if clear:
                                 text_input = False
                                 text_box = ""
@@ -371,9 +416,30 @@ def main(stdscr):
                 elif key == curses.KEY_UP:
                     text_index = 0
                 else:
-                    if chr(key) in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+-=[]{}|;':,.<>/?":
+                    if chr(key) in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+-=[]{}|;':,.<>/? ":
                         text_box = text_box[:text_index] + chr(key) + text_box[text_index:]
                         text_index = min(len(text_box), text_index + 1)
+            elif key == curses.KEY_UP:
+                content_window.clear()
+                selected[0] -= 1
+                if selected[0] == -1:
+                    if outer_option == 0:
+                        if inner_option == 0:
+                            selected[0] = 2 + len(get_task_list())
+                        elif inner_option == 1:
+                            selected[0] = len(tasks_for_day(day)) + 2
+                        elif inner_option == 2:
+                            selected[0] = len(tasks_for_week(day)) + 2
+                        elif inner_option == 3:
+                            selected[0] = len(tasks_for_month(day)) + 2
+                        elif inner_option == 4:
+                            selected[0] = len(tasks_for_year(day)) + 2
+                    elif outer_option == 1:
+                        if inner_option == 4:
+                            selected[0] = 6
+                else:
+                    if selected[0] == -1:
+                        selected[0] = 2
             elif key == curses.KEY_DOWN:
                 content_window.clear()
                 selected[0] += 1
@@ -393,27 +459,13 @@ def main(stdscr):
                     elif inner_option == 4:
                         if selected[0] == len(tasks_for_year(day)) + 3:
                             selected[0] = 0
+                elif outer_option == 1:
+                    if inner_option == 4:
+                        if selected[0] == 7:
+                            selected[0] = 0
                 else:
                     if selected[0] == 3:
                         selected[0] = 0
-            elif key == curses.KEY_UP:
-                content_window.clear()
-                selected[0] -= 1
-                if selected[0] == -1:
-                    if outer_option == 0:
-                        if inner_option == 0:
-                            selected[0] = 2 + len(get_task_list())
-                        elif inner_option == 1:
-                            selected[0] = len(tasks_for_day(day)) + 2
-                        elif inner_option == 2:
-                            selected[0] = len(tasks_for_week(day)) + 2
-                        elif inner_option == 3:
-                            selected[0] = len(tasks_for_month(day)) + 2
-                        elif inner_option == 4:
-                            selected[0] = len(tasks_for_year(day)) + 2
-                else:
-                    if selected[0] == -1:
-                        selected[0] = 2
             elif key == curses.KEY_END:
                 if outer_option == 0:
                     if inner_option == 0:
@@ -444,6 +496,10 @@ def main(stdscr):
                         selected[1] -= 1
                         if selected[1] == -1:
                             selected[1] = len(config["tasks"]["day"]["details"]) - 1
+                elif outer_option == 1:
+                    if inner_option == 4 and selected[0] == 3:
+                        types = ["progress", "duration", "frequency"]
+                        new_habit["type"] = types[(types.index(new_habit["type"]) - 1) % 3]
                 if selected[0] < 2:
                     if outer_option == 0:
                         if inner_option == 0:
@@ -474,6 +530,10 @@ def main(stdscr):
                         selected[1] += 1
                         if selected[1] == len(config["tasks"]["day"]["details"]):
                             selected[1] = 0
+                elif outer_option == 1:
+                    if inner_option == 4 and selected[0] == 3:
+                        types = ["progress", "duration", "frequency"]
+                        new_habit["type"] = types[(types.index(new_habit["type"]) + 1) % 3]
                 if selected[0] < 2:
                     if outer_option == 0:
                         if inner_option == 0:
@@ -495,18 +555,24 @@ def main(stdscr):
                         except:
                             if key == ord(":"):
                                 text_input = True
-                                text_mode = "new task"
+                                text_mode = "edit task"
                         else:
                             task_name = Task.get_task(task)["name"]
+                            text_modes = {
+                                ":": "new task",
+                                "n": "edit task",
+                                ">": "migrate",
+                                "<": "schedule",
+                                "t": "edit tags",
+                                "m": "edit parent",
+                            }
+                            if chr(key) in text_modes:
+                                text_input = True
+                                text_mode = text_modes[chr(key)]
                             match chr(key):
-                                case ":":
-                                    text_input = True
-                                    text_mode = "new task"
                                 case "x":
                                     Task.edit_task(task, completed=not Task.get_task(str(task))["completed"])
                                 case "n":
-                                    text_input = True
-                                    text_mode = "edit task"
                                     selected[1] = 0
                                 case ".":
                                     Task.edit_task(task, due_date=date.today().strftime("%Y-%m-%d"))
@@ -514,25 +580,16 @@ def main(stdscr):
                                 case "1" | "2" | "3":
                                     Task.edit_task(task, priority=int(chr(key)))
                                 case ">":
-                                    text_input = True
-                                    text_mode = "migrate"
                                     selected[1] = 2
                                 case "<":
-                                    text_input = True
-                                    text_mode = "schedule"
                                     selected[1] = 2
                                 case "t":
-                                    text_input = True
-                                    text_mode = "edit tags"
                                     selected[1] = 5
                                 case "m":
-                                    text_input = True
-                                    text_mode = "edit parent"
                                     selected[1] = 3
                                 case "r":
                                     removing = task
                                     content_window.clear()
-
                     elif inner_option in [1, 2, 3, 4]:
                         task = [tasks_for_day, tasks_for_week, tasks_for_month, tasks_for_year][inner_option - 1](day)[selected[0] - 3]
                         task_name = task["name"]
@@ -565,7 +622,7 @@ def main(stdscr):
                                         text_input = False
                             case ":":
                                 text_input = True
-                                text_mode = "new task"
+                                text_mode = "edit task"
                             case "x":
                                 Task.edit_task(task["id"], completed=not task["completed"])
                                 content_window.clear()
@@ -582,6 +639,20 @@ def main(stdscr):
                             case "r":
                                 removing = task["id"]
                                 content_window.clear()
+                elif outer_option == 1:
+                    if inner_option == 4:
+                        text_modes = {
+                            2: "habit name",
+                            4: "habit unit",
+                            5: "habit target value",
+                        }
+                        if selected[0] in text_modes and chr(key) == "e":
+                            text_input = True
+                            text_mode = text_modes[selected[0]]
+                        elif selected[0] == 6 and key == 13:
+                            Habit.add_habit(new_habit["name"], new_habit["type"], new_habit["unit"], target_value=new_habit["target_value"])
+                            message = f"new habit '{new_habit['name']}' added"
+                            new_habit = {"name": " ", "type": "progress", "unit": " ", "target_value": 0}
             else:
                 pass
 

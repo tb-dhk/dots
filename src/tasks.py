@@ -5,6 +5,7 @@ import calendar
 from datetime import datetime as dt, date, timedelta
 import os
 import toml
+from misc import display_borders
 
 config = toml.load(os.path.join(os.path.expanduser("~"), ".dots", "config.toml"))
 
@@ -149,47 +150,6 @@ def tasks_for_year(day):
     tasks = tasks_for_days(start, end)
     return tasks
 
-def display_text_box(window, text_input, text_box, text_index):
-    """Display the input text box at the bottom of the screen."""
-    max_y, max_x = window.getmaxyx()
-    if text_input:
-        window.addstr(max_y - 2, 2, text_box, curses.color_pair(1))
-        window.chgat(max_y - 2, 2 + text_index, 1, curses.color_pair(2))
-        window.addstr(max_y - 2, len(text_box) + 3, " " * (max_x - len(text_box) - 6), curses.color_pair(1))
-    else:
-        window.addstr(max_y - 2, len(text_box) + 2, " ", curses.color_pair(1))
-
-def display_borders(window, selected, split=False):
-    """Draw the border for the task list. If selected[0] >= 2, split the window in half."""
-    max_y, max_x = window.getmaxyx()
-
-    if selected[0] >= 2 and selected[0] < len(get_task_list()) + 2 and split:
-        split_x = max_x // 2 - 1
-        # Left box border
-        window.addstr(0, 0, "╔" + "═" * (split_x - 2) + "╗" + " ")
-        for y in range(1, max_y - 3):
-            window.addstr(y, 0, "║", curses.color_pair(1))
-            window.addstr(y, split_x - 1, "║", curses.color_pair(1))
-        window.addstr(max_y - 4, 0, "╚" + "═" * (split_x - 2) + "╝" + " ")
-
-        # Right box border
-        window.addstr(0, split_x + 1, "╔" + "═" * (max_x - split_x - 3) + "╗")
-        for y in range(1, max_y - 3):
-            window.addstr(y, split_x + 1, "║", curses.color_pair(1))
-            window.addstr(y, max_x - 1, "║", curses.color_pair(1))
-        window.addstr(max_y - 4, split_x + 1, "╚" + "═" * (max_x - split_x - 3) + "╝")
-    else:
-        # Single full-width box
-        window.addstr(0, 0, "╔" + "═" * (max_x - 2) + "╗")
-        for y in range(1, max_y - 3):
-            window.addstr(y, 0, "║" + " " * (max_x - 2) + "║", curses.color_pair(1))
-        window.addstr(max_y - 4, 0, "╚" + "═" * (max_x - 2) + "╝")
-    # Single full-width box
-    window.addstr(max_y - 3, 0, "╔" + "═" * (max_x - 2) + "╗")
-    window.addstr(max_y - 2, 0, "║" + " " * (max_x - 2) + "║", curses.color_pair(1))
-    window.addstr(max_y - 1, 0, "╚" + "═" * (max_x - 3) + "╝")
-    window.insstr(max_y - 1, 1, "═")
-
 def display_task(window, task_key, selected, task_list, text_mode, indent=0, split_x=0, box='wide', removing="", removing_subtask=False):
     """Display a task and its subtasks with indentation, adapted for two split boxes."""
     task = Task.load_tasks()[str(task_key)]
@@ -318,7 +278,7 @@ def display_task_details(window, task_id, split_x, selected):
 def display_tasks(window, selected, text_input, text_mode, text_box, text_index, removing):
     """Main function to display tasks, with task details in the right box when selected."""
     max_x = window.getmaxyx()[1]
-    display_borders(window, selected, split=True)
+    display_borders(window, selected, split=True, task_list=get_task_list())
     tasks = Task.load_tasks()
 
     split_x = max_x // 2 - 1 if selected[0] >= 2 else 0
@@ -346,8 +306,6 @@ def display_tasks(window, selected, text_input, text_mode, text_box, text_index,
 
         window.move(window.getyx()[0] + 1, 4)
         window.addstr("+ press : to enter a new task", curses.color_pair(4 + 1 * (selected[0] == len(get_task_list()) + 2)))
-
-    display_text_box(window, text_input, text_box, text_index)
 
 def draw_table(window, data, start_y, start_x, selected, removing):
     # Calculate the maximum width of each column
@@ -506,7 +464,6 @@ def day_view(window, selected, day, text_input, text_box, text_index, removing):
         )
 
     # Display text box input (for text entry mode)
-    display_text_box(window, text_input, text_box, text_index)
 
 def week_view(window, selected, day, text_input, text_box, text_index, removing):
     display_borders(window, selected)
@@ -550,7 +507,6 @@ def week_view(window, selected, day, text_input, text_box, text_index, removing)
     )
 
     # Display text box input (for text entry mode)
-    display_text_box(window, text_input, text_box, text_index)
 
 def month_view(window, selected, day, text_input, text_box, text_index, removing):
     display_borders(window, selected)
@@ -597,7 +553,6 @@ def month_view(window, selected, day, text_input, text_box, text_index, removing
     )
 
     # Display text box input (for text entry mode)
-    display_text_box(window, text_input, text_box, text_index)
 
 def year_view(window, selected, day, text_input, text_box, text_index, removing):
     display_borders(window, selected)
@@ -644,7 +599,6 @@ def year_view(window, selected, day, text_input, text_box, text_index, removing)
     )
 
     # Display text box input (for text entry mode)
-    display_text_box(window, text_input, text_box, text_index)
 
 def coming_soon(window):
     display_borders(window, [0, 0])

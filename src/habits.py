@@ -85,6 +85,7 @@ class DurationHabit(Habit):
                 habits[habit_id]['data'][date] = []
             habits[habit_id]['data'][date] += duration_sessions  # Add duration sessions
             habits[habit_id]['data'] = dict(sorted(habits[habit_id]['data'].items(), key=lambda x: x[0]))  # Sort by date
+            habits[habit_id]['data'][date] = list(sorted(habits[habit_id]['data'][date], key=lambda x: x[0]))  # Sort by start time
             cls.save_habits(habits)  # Save updated habits to JSON
             return True
         return False
@@ -105,10 +106,15 @@ class DurationHabit(Habit):
         habits = cls.load_habits()
         if habit_id in habits and date in habits[habit_id]['data']:
             sessions = habits[habit_id]['data'][date]
-            if duration_session in sessions:
-                sessions.remove(duration_session)  # Remove the session
-                cls.save_habits(habits)  # Save updated habits to JSON
-                return True
+            if duration_session:
+                try:
+                    sessions.remove(sessions[duration_session - 1])  # Remove the session
+                except:
+                    raise Exception(f"{sessions} {duration_session}")
+            else:
+                del habits[habit_id]['data'][date]  # Remove the entire date 
+            cls.save_habits(habits)  # Save updated habits to JSON
+            return True
         return False
 
 class ProgressHabit(Habit):
@@ -173,7 +179,7 @@ class FrequencyHabit(Habit):
             return True
         return False
 
-def duration_maps(window, selected, duration_map_settings):
+def duration_maps(window, selected, duration_map_settings, removing):
     display_borders(window, selected)
     based_on = duration_map_settings['based_on']
     index = duration_map_settings['index']
@@ -236,11 +242,19 @@ def duration_maps(window, selected, duration_map_settings):
 
         for i, (key, value) in enumerate(records.items()):
             if based_on == "day":
+                id = key
                 key = habits[key]['name']
             window.addstr(9 + i, 5, key.rjust(max_length), curses.color_pair(1 + (selected[0] == i + 4)))
+            count = 0
+            removing_this = (based_on == "day" and removing == id) or (based_on == "habit" and removing == key)
+            if value == [] and removing_this:
+                window.addstr(9 + i, 7 + max_length, "press 0 to remove this date, esc to cancel", curses.color_pair(7))
             for record in value:
+                count += 1
                 length = (record[1] - record[0]) % 24
-                window.addstr(9 + i, 7 + max_length + math.ceil((record[0] - earliest_time) * hour_width), " " * math.ceil((length) * hour_width), curses.color_pair(2)) 
+                text_length = math.ceil((length) * hour_width)
+                removing_text = f"press {count} to remove, esc to cancel"
+                window.addstr(9 + i, 7 + max_length + math.ceil((record[0] - earliest_time) * hour_width), removing_text.center(text_length) if removing_this else " " * text_length, curses.color_pair(2 if not removing_this else 7))
     else:
         window.addstr(8, 5, "no duration habits!")
 

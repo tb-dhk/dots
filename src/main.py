@@ -110,7 +110,7 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
             year_view(window, selected, day, text_input, text_box, text_index, removing)
     elif outer_option == 1:
         if inner_option == 0:
-            duration_maps(window, selected, duration_map_settings)
+            duration_maps(window, selected, duration_map_settings, removing)
         elif inner_option < 4:
             coming_soon(window)
         elif inner_option == 4:
@@ -271,14 +271,29 @@ def main(stdscr):
                 stdscr.refresh()
             if removing:
                 if key == ord("r"):
-                    parent = Task.get_task(removing)["parent"]
-                    if parent:
-                        Task.edit_task(parent, subtasks=list(set(Task.get_task(parent)["subtasks"]) - {removing}))
-                    for subtask in Task.get_task(removing)["subtasks"]:
-                        Task.remove_task(subtask)
-                    Task.remove_task(removing)
-                    removing = ""
-                    content_window.clear()
+                    if outer_option == 0 and inner_option == 0:
+                        parent = Task.get_task(removing)["parent"]
+                        if parent:
+                            Task.edit_task(parent, subtasks=list(set(Task.get_task(parent)["subtasks"]) - {removing}))
+                        for subtask in Task.get_task(removing)["subtasks"]:
+                            Task.remove_task(subtask)
+                        Task.remove_task(removing)
+                        removing = ""
+                        content_window.clear()
+                elif chr(key) in "1234567890":
+                    if outer_option == 1 and inner_option == 0:
+                        if duration_map_settings["based_on"] == "day":
+                            habits = Habit.load_habits()
+                            habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
+                            habit = list(habits.keys())[duration_map_settings["index"]]
+                            for_day = (date.today() + timedelta(days=duration_map_settings["index"])).strftime("%Y-%m-%d")
+                        else:
+                            habits = Habit.load_habits()
+                            habit = list(habits.keys())[duration_map_settings["index"]]
+                            for_day = list(habits[habit]["data"].keys())[selected[0] - 4]
+                        DurationHabit.remove_duration_record(habit, for_day, int(chr(key)))
+                        removing = ""
+                        content_window.clear()
                 elif key == 27:
                     removing = ""
                     content_window.clear()
@@ -505,7 +520,7 @@ def main(stdscr):
                         else:
                             habits = Habit.load_habits()
                             habit = list(habits.keys())[duration_map_settings["index"]]
-                            if selected[0] == 4 + len(habits[habit]["data"]):
+                            if selected[0] == 5 + len(habits[habit]["data"]):
                                 selected[0] = 0
                     elif inner_option == 4:
                         if selected[0] == 7:
@@ -740,6 +755,13 @@ def main(stdscr):
                             elif chr(key) == ":" and duration_map_settings["based_on"] == "habit":
                                 text_input = True
                                 text_mode = ["add date", list(habits.keys())[index % len(habits)]]
+                            elif chr(key) == "r":
+                                if duration_map_settings["based_on"] == "day":
+                                    removing = list(habits.keys())[selected[0] - 4]
+                                else:
+                                    selected_habit = list(habits.keys())[index % len(habits)]
+                                    removing = list(habits[selected_habit]["data"].keys())[selected[0] - 4]
+                                content_window.clear()
                     elif inner_option == 4:
                         text_modes = {
                             2: "habit name",

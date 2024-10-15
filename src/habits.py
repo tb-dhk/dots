@@ -2,11 +2,9 @@ import json
 import os
 import uuid
 import curses
+from datetime import date, timedelta
+import math
 from misc import display_borders
-import os
-import json
-import uuid
-import os
 
 class Habit:
     def __init__(self, name, habit_type, unit, target_value=""):
@@ -77,7 +75,7 @@ class Habit:
 
 class DurationHabit(Habit):
     def __init__(self, name, unit, target_value=""):
-        super().__init__(name, habit_type="duration", unit=unit, target_value=target_value)
+        super().__init__(name, habit_type="duration", unit="hours", target_value=target_value)
 
     @classmethod
     def add_duration_record(cls, habit_id, date, duration_sessions):
@@ -85,7 +83,7 @@ class DurationHabit(Habit):
         if habit_id in habits:
             if date not in habits[habit_id]['data']:
                 habits[habit_id]['data'][date] = []
-            habits[habit_id]['data'][date].extend(duration_sessions)  # Add duration sessions
+            habits[habit_id]['data'][date] += duration_sessions  # Add duration sessions
             cls.save_habits(habits)  # Save updated habits to JSON
             return True
         return False
@@ -174,7 +172,72 @@ class FrequencyHabit(Habit):
             return True
         return False
 
-def add_new_habit(window, selected, text_input, text_box, text_mode, text_index, new_habit):
+def duration_maps(window, selected, duration_map_settings):
+    display_borders(window, selected)
+    based_on = duration_map_settings['based_on']
+    index = duration_map_settings['index']
+
+    window.addstr(2, 5, "duration habits")
+
+    window.addstr(4, 5, "based on: ")
+    window.addstr(f"< {based_on} >", curses.color_pair(1 + (selected[0] == 2)))
+
+    habits = Habit.load_habits()
+    habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
+    if based_on == "day":
+        day = date.today() + timedelta(days=index)
+        on = day.strftime("%Y-%m-%d")
+        try:
+            records = {habit: habits[habit]['data'][on] for habit in habits}
+        except:
+            for habit in habits:
+                if on not in habits[habit]['data']:
+                    habits[habit]['data'][on] = []
+            records = {habit: habits[habit]['data'][on] for habit in habits}
+    else:
+        id = list(habits.keys())[index % len(habits)]
+        records = habits[id]['data']
+        on = habits[id]['name']
+
+    for record in records:
+        records[record] = [[int(time[:2]) + int(time[3:]) / 60 for time in entry] for entry in records[record]]
+
+    window.addstr(6, 5, f"< {on} >", curses.color_pair(1 + (selected[0] == 3)))
+
+    if habits:
+        max_length = max(len(habits[habit]['name']) for habit in records) if based_on == "day" else 10
+        raw_records = [item for record in records.values() for item in record]
+        try:
+            adjusted_records = [
+                (record[0], record[1] + 24 * ((record[1] <= record[0])))  # add 24 if record[1] <= record[0]
+                for record in raw_records
+            ]
+            earliest_time = min(record[0] for record in adjusted_records)
+            latest_time_diff = max(record[1] for record in adjusted_records) - earliest_time
+        except:
+            earliest_time = 0
+            latest_time_diff = 0
+        max_width = window.getmaxyx()[1] - 11 - max_length
+        hour_width = max_width // (latest_time_diff)
+        hour_widths = [4, 6, 12]
+        hour_widths = [width for width in hour_widths if width * (latest_time_diff) <= max_width]
+        gaps = [abs(hour_width - width) for width in hour_widths]
+        hour_width = hour_widths[gaps.index(min(gaps))]
+
+        for hour in range(math.ceil(latest_time_diff) + 1):
+            window.addstr(8, 7 + max_length + math.ceil(hour * hour_width), str((hour + int(earliest_time)) % 24).rjust(2, "0"))
+
+        for i, (key, value) in enumerate(records.items()):
+            if based_on == "day":
+                key = habits[key]['name']
+            window.addstr(9 + i, 5, key.rjust(max_length), curses.color_pair(1 + (selected[0] == i + 4)))
+            for record in value:
+                length = (record[1] - record[0]) % 24
+                window.addstr(9 + i, 7 + max_length + math.ceil((record[0] - earliest_time) * hour_width), " " * math.ceil((length) * hour_width), curses.color_pair(2)) 
+    else:
+        window.addstr(8, 5, "no duration habits!")
+
+def add_new_habit(window, selected, new_habit):
     display_borders(window, selected)
 
     window.addstr(2, 5, "new habit")

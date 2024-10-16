@@ -507,6 +507,9 @@ def main(stdscr):
                                 habits = Habit.load_habits()
                                 habit = list(habits.keys())[map_settings["index"]]
                                 selected[0] = 4 + len(habits[habit]["data"])
+                        elif inner_option == 2:
+                            habits = Habit.load_habits()
+                            selected[0] = 3 + len(habits)
                         elif inner_option == 4:
                             selected[0] = 6
                 else:
@@ -543,6 +546,10 @@ def main(stdscr):
                             habit = list(habits.keys())[map_settings["index"]]
                             if selected[0] == 5 + len(habits[habit]["data"]):
                                 selected[0] = 0
+                    elif inner_option == 2:
+                        habits = Habit.load_habits()
+                        if selected[0] == 4 + len(habits):
+                            selected[0] = 0
                     elif inner_option == 4:
                         if selected[0] == 7:
                             selected[0] = 0
@@ -565,6 +572,8 @@ def main(stdscr):
                     inner_option -= 1
                     if inner_option == -1:
                         inner_option = len(inner_options(outer_option)) - 1
+                    map_settings["index"] = 0
+                    map_settings["index2"] = 0
                 elif outer_option == 0:
                     if selected[0] == 2:
                         if inner_option == 1:
@@ -590,6 +599,14 @@ def main(stdscr):
                                 map_settings["based_on"] = "day"
                         elif selected[0] == 3:
                             map_settings["index"] -= 1
+                    elif inner_option == 2:
+                        if selected[0] == 2:
+                            ls = ["day", "week", "month", "year", "calendar"]
+                            map_settings["based_on"] = ls[(ls.index(map_settings["based_on"]) - 1) % 5]
+                        elif selected[0] == 3:
+                            map_settings["index"] -= 1
+                        elif selected[0] == 4:
+                            map_settings["index2"] = max(map_settings["index2"] - 1, map_settings["index"])
                     elif inner_option == 4: 
                         if selected[0] == 3:
                             types = ["progress", "duration", "frequency"]
@@ -618,6 +635,8 @@ def main(stdscr):
                     inner_option += 1
                     if inner_option == len(inner_options(outer_option)):
                         inner_option = 0
+                    map_settings["index"] = 0
+                    map_settings["index2"] = 0
                 elif outer_option == 0:
                     if selected[0] == 2:
                         if inner_option == 1:
@@ -643,6 +662,14 @@ def main(stdscr):
                                 map_settings["based_on"] = "day"
                         elif selected[0] == 3:
                             map_settings["index"] += 1
+                    elif inner_option == 2:
+                        if selected[0] == 2:
+                            ls = ["day", "week", "month", "year", "calendar"]
+                            map_settings["based_on"] = ls[(ls.index(map_settings["based_on"]) + 1) % 5]
+                        elif selected[0] == 3:
+                            map_settings["index"] = min(map_settings["index"] + 1, map_settings["index2"])
+                        elif selected[0] == 4:
+                            map_settings["index2"] += 1
                     elif inner_option == 4:
                         if selected[0] == 3:
                             types = ["progress", "duration", "frequency"]

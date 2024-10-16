@@ -4,6 +4,7 @@ import uuid
 import curses
 from datetime import date, timedelta, datetime as dt
 import math
+import calendar
 from misc import display_borders
 
 class Habit:
@@ -410,19 +411,27 @@ def heatmaps(window, selected, map_settings, removing):
             condensed = {}
             for habit in heat:
                 condensed[habit] = {}
-                for rounded_date in heat[habit]:
-                    if rounded_date < start_day or rounded_date > end_day:
+                for og_date in heat[habit]:
+                    if og_date < start_day or og_date > end_day:
                         continue
                     elif based_on == "week":
-                        rounded_date = get_sunday(rounded_date)
+                        rounded_date = get_sunday(og_date)
                     elif based_on == "month":
-                        rounded_date = rounded_date[:7]
+                        rounded_date = og_date[:7]
                     else:
-                        rounded_date = rounded_date[:4]
+                        rounded_date = og_date[:4]
                     try:
-                        condensed[habit][rounded_date] += heat[habit][rounded_date]
+                        condensed[habit][rounded_date] += heat[habit][og_date]
                     except:
-                        condensed[habit][rounded_date] = heat[habit][rounded_date]
+                        condensed[habit][rounded_date] = heat[habit][og_date]
+                for rounded_date in condensed[habit]:
+                    if based_on == "week":
+                        length_of_period = 7
+                    elif based_on == "month":
+                        length_of_period = calendar.monthrange(int(rounded_date[:4]), int(rounded_date[5:7]))[1]
+                    else:
+                        length_of_period = 365
+                    condensed[habit][rounded_date] /= length_of_period
         condensed = dict(sorted(condensed.items(), key=lambda x: x[0]))
 
         # print the heatmaps
@@ -431,6 +440,10 @@ def heatmaps(window, selected, map_settings, removing):
             max_length = max(len(habits[habit]['name']) for habit in condensed)
             max_width = window.getmaxyx()[1] - 13 - max_length
             date_headers = ["yy", "mm", "dd"]
+            if based_on == "year":
+                date_headers = ["yy"]
+            elif based_on == "month":
+                date_headers = ["yy", "mm"]
             side_headers = date_headers + [habits[habit]['name'] for habit in condensed.keys()]
             for i, habit in enumerate(side_headers):
                 window.addstr(10 + i, 5, habit.rjust(max_length), curses.color_pair(1 + (selected[0] == i + 2 if i >= 3 else 0)))

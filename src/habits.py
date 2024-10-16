@@ -329,13 +329,14 @@ def progress_maps(window, selected, map_settings, removing):
                 key = habits[key]['name']
                 target = habits[id]['target_value']
             else:
-                target = habits[key]['target_value']
+                id = list(habits.keys())[index % len(habits)]
+                target = habits[id]['target_value']
             window.addstr(9 + i, 5, key.rjust(max_length), curses.color_pair(1 + (selected[0] == i + 4)))
             removing_this = (based_on == "day" and removing == id) or (based_on == "habit" and removing == key)
             if removing_this:
                 window.addstr(9 + i, 8 + max_length, "press 0 to remove this date, esc to cancel", curses.color_pair(7))
-            window.addstr(9 + i, 8 + max_length, " " * max_width, curses.color_pair(2 if not removing_this else 7))
-            window.addstr(f"{round(value / target * 100, 2):.2f}%".rjust(10))
+            window.addstr(9 + i, 8 + max_length, " " * round(max_width * value / target), curses.color_pair(2 if not removing_this else 7))
+            window.addstr(9 + i, window.getmaxyx()[1] - 12, f"{round(value / target * 100, 2):.2f}%".rjust(10))
     else:
         window.addstr(8, 5, "no progress habits!")
 

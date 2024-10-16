@@ -124,7 +124,7 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
 
 def status_bar(window, text_input, text_mode, message):
     window.addstr(window.getmaxyx()[0] - 1, 0, " " * (window.getmaxyx()[1] - 1))
-    if message or not text_input:
+    if message and not text_input:
         display = str(message)
     else: 
         match text_mode:
@@ -150,6 +150,8 @@ def status_bar(window, text_input, text_mode, message):
                 display = "enter target value for habit"
             case ["new duration record", selected_day, selected_habit, habits]:
                 display = f"enter start and end for habit '{habits[selected_habit]['name']}' on {selected_day}, in format yyyy-mm-dd-hh:mm,yyyy-mm-dd-hh:mm"
+            case ["new progress record", selected_day, selected_habit, habits]:
+                display = f"enter value for habit '{habits[selected_habit]['name']}' on {selected_day}"
             case ["add date", selected_habit]:
                 display = "enter the date in the format yyyy-mm-dd"
             case _:
@@ -443,9 +445,19 @@ def main(stdscr):
                                     else:
                                         DurationHabit.add_duration_record(selected_habit, selected_day, [[start, end]])
                                         message = f"new duration record for habit '{habits[selected_habit]['name']}' on {selected_day} added"
+                                case ["new progress record", selected_day, selected_habit, habits]:
+                                    if not text_box.isdigit():
+                                        message = "invalid value. try again!"
+                                        clear = False
+                                    elif int(text_box) < 0 or int(text_box) > habits[selected_habit]["target_value"]:
+                                        message = f"value must be between 0 and {habits[selected_habit]['target_value']}. try again!"
+                                        clear = False
+                                    else:
+                                        ProgressHabit.add_progress_record(selected_habit, selected_day, int(text_box))
+                                        message = f"new progress record for habit '{habits[selected_habit]['name']}' on {selected_day} added"
                                 case ["add date", selected_habit]:
                                     if text_box and re.match(r"\d{4}-\d{2}-\d{2}", text_box) and check_date(text_box):
-                                        DurationHabit.add_duration_record(selected_habit, text_box, [])
+                                        ProgressHabit.add_progress_record(selected_habit, text_box, 0)
                                     else:
                                         message = "invalid date format. try again!"
                                         clear = False
@@ -484,7 +496,7 @@ def main(stdscr):
                         elif inner_option == 4:
                             selected[0] = len(tasks_for_year(day)) + 2
                     elif outer_option == 1:
-                        if inner_option == 0:
+                        if inner_option < 2:
                             if map_settings["based_on"] == "day":
                                 habits = Habit.load_habits()
                                 habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
@@ -518,7 +530,7 @@ def main(stdscr):
                         if selected[0] == len(tasks_for_year(day)) + 3:
                             selected[0] = 0
                 elif outer_option == 1:
-                    if inner_option == 0:
+                    if inner_option < 2:
                         if map_settings["based_on"] == "day":
                             habits = Habit.load_habits()
                             habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
@@ -566,7 +578,7 @@ def main(stdscr):
                         if selected[1] == -1:
                             selected[1] = len(config["tasks"]["day"]["details"]) - 1
                 elif outer_option == 1:
-                    if inner_option == 0:
+                    if inner_option < 2:
                         habits = Habit.load_habits()
                         habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
                         if selected[0] == 2:
@@ -619,7 +631,7 @@ def main(stdscr):
                         if selected[1] == len(config["tasks"]["day"]["details"]):
                             selected[1] = 0
                 elif outer_option == 1:
-                    if inner_option == 0:
+                    if inner_option < 2:
                         habits = Habit.load_habits()
                         habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
                         if selected[0] == 2:
@@ -747,25 +759,29 @@ def main(stdscr):
                                 removing = task["id"]
                                 content_window.clear()
                 elif outer_option == 1:
-                    if inner_option == 0:
+                    if inner_option < 2:
                         index = map_settings["index"]
                         habits = Habit.load_habits()
-                        habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
+                        habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == ("duration" if inner_option == 0 else "progress")}
                         if selected[0] >= 4:
                             if chr(key) == "e":
-                                if map_settings["based_on"] == "day":
-                                    selected_day = (date.today() + timedelta(days=index)).strftime("%Y-%m-%d")
-                                    selected_habit = list(habits.keys())[selected[0] - 4]
+                                if inner_option == 0:
+                                    if map_settings["based_on"] == "day":
+                                        selected_day = (date.today() + timedelta(days=index)).strftime("%Y-%m-%d")
+                                        selected_habit = list(habits.keys())[selected[0] - 4]
+                                    else:
+                                        selected_habit = list(habits.keys())[index % len(habits)]
+                                        daylist = list(get_records_from_habits(habits, index).keys())
+                                        selected_day = daylist[selected[0] - 4]
                                 else:
                                     selected_habit = list(habits.keys())[index % len(habits)]
-                                    daylist = list(get_records_from_habits(habits, index).keys())
-                                    selected_day = daylist[selected[0] - 4]
+                                    selected_day = list(habits[selected_habit]["data"].keys())[selected[0] - 4]
                                 text_input = True
-                                text_mode = ["new duration record", selected_day, selected_habit, habits]
-                            elif chr(key) == ":" and map_settings["based_on"] == "habit":
+                                text_mode = ["new progress record" if inner_option == 1 else "new duration record", selected_day, selected_habit, habits]
+                            elif chr(key) == ":" and map_settings["based_on"] == "habit" and inner_option == 1:
                                 text_input = True
                                 text_mode = ["add date", list(habits.keys())[index % len(habits)]]
-                            elif chr(key) == "r":
+                            elif chr(key) == "r" and inner_option == 0:
                                 if map_settings["based_on"] == "day":
                                     removing = list(habits.keys())[selected[0] - 4]
                                 else:

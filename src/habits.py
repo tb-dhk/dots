@@ -3,6 +3,7 @@ import os
 import uuid
 import curses
 from datetime import date, timedelta, datetime as dt
+from dateutil.relativedelta import relativedelta
 import math
 import calendar
 from misc import display_borders
@@ -365,8 +366,16 @@ def heatmaps(window, selected, map_settings, removing):
     if habits:
         # print the bounds
         if based_on != "calendar":
-            start_day = (date.today() + timedelta(days=index)).strftime("%Y-%m-%d")
-            end_day = (date.today() + timedelta(days=index2)).strftime("%Y-%m-%d")
+            if based_on in ["day", "week"]:
+                start_day = (date.today() + timedelta(days=index)).strftime("%Y-%m-%d")
+                end_day = (date.today() + timedelta(days=index2)).strftime("%Y-%m-%d")
+            elif based_on == "month":
+                today = date.today()
+                start_day = (date.today().replace(day=1) + relativedelta(months=index)).strftime("%Y-%m-%d")
+                end_day = (date.today().replace(day=1) + relativedelta(months=index2 + 1, days=-1)).strftime("%Y-%m-%d")
+            elif based_on == "year":
+                start_day = date.today().replace(year=date.today().year + index, month=1, day=1).strftime("%Y-%m-%d")
+                end_day = date.today().replace(year=date.today().year + index2, month=12, day=31).strftime("%Y-%m-%d")
 
             window.addstr(6, 5, "start: ")
             window.addstr(f"< {start_day} >", curses.color_pair(1 + (selected[0] == 3)))
@@ -457,10 +466,8 @@ def heatmaps(window, selected, map_settings, removing):
             shades = [" ", "░", "▒", "▓", "█"]
 
             # print squares
-            start_day = min(dt.strptime(this_date, "%Y-%m-%d") for habit in condensed for this_date in condensed[habit])
-            index_start_day = date.today() + timedelta(days=index)
-            index_start_day -= timedelta(days=index_start_day.weekday() + 1)
-            start_day = min(start_day, dt.combine(index_start_day, dt.min.time()))
+            new_start_day = min(dt.strptime(this_date, "%Y-%m-%d") for habit in condensed for this_date in condensed[habit])
+            start_day = min(new_start_day, dt.combine(dt.strptime(start_day, "%Y-%m-%d"), dt.min.time()))
             if based_on == "day":
                 dates = [start_day + timedelta(days=i) for i in range(0, length)]
             elif based_on == "week":
@@ -469,7 +476,7 @@ def heatmaps(window, selected, map_settings, removing):
                 dates = [start_day + timedelta(days=7 * i) for i in range(0, length_in_weeks)]
             elif based_on == "month":
                 length_in_months = math.ceil((dt.strptime(end_day, "%Y-%m-%d") - start_day) / timedelta(days=1) / 30)
-                dates = [start_day.replace(month=start_day.month + i) for i in range(0, length_in_months)]
+                dates = [start_day + relativedelta(months=i) for i in range(0, length_in_months)]
             elif based_on == "year":
                 length_in_years = math.ceil((dt.strptime(end_day, "%Y-%m-%d") - start_day) / timedelta(days=1) / 365)
                 dates = [start_day.replace(year=start_day.year + i) for i in range(0, length_in_years)]

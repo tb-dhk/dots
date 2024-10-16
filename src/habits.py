@@ -227,10 +227,13 @@ def duration_maps(window, selected, map_settings, removing):
                 earliest_time = min(min(dt.strptime(record[0], "%Y-%m-%d-%H:%M") for record in records[habit]) for habit in records if records[habit])
                 latest_time = max(max(dt.strptime(record[1], "%Y-%m-%d-%H:%M") for record in records[habit]) for habit in records if records[habit])
             except:
-                earliest_time = 0
-                latest_time = 24
+                earliest_time = timedelta(hours=0)
+                latest_time = timedelta(hours=24)
             latest_time_diff = math.ceil((latest_time - earliest_time) / timedelta(hours=1))
-            earliest_time = earliest_time.hour
+            try:
+                earliest_time = earliest_time.hour
+            except:
+                earliest_time = 0
 
         else:
             id = list(habits.keys())[index % len(habits)]
@@ -342,9 +345,9 @@ def progress_maps(window, selected, map_settings, removing):
     else:
         window.addstr(8, 5, "no progress habits!")
 
-def get_sunday(date):
-    date = dt.strptime(date, "%Y-%m-%d")
-    return (date - timedelta(days=date.weekday())).strftime("%Y-%m-%d")
+def get_sunday(this_date):
+    this_date = dt.strptime(this_date, "%Y-%m-%d")
+    return (this_date - timedelta(days=this_date.weekday())).strftime("%Y-%m-%d")
 
 def heatmaps(window, selected, map_settings, removing):
     display_borders(window, selected)
@@ -417,20 +420,22 @@ def heatmaps(window, selected, map_settings, removing):
                     elif based_on == "week":
                         rounded_date = get_sunday(og_date)
                     elif based_on == "month":
-                        rounded_date = og_date[:7]
+                        rounded_date = og_date[:7] + "-01"
                     else:
-                        rounded_date = og_date[:4]
+                        rounded_date = og_date[:4] + "-01-01"
                     try:
                         condensed[habit][rounded_date] += heat[habit][og_date]
                     except:
                         condensed[habit][rounded_date] = heat[habit][og_date]
+                if based_on == "day":
+                    length_of_period = 1
+                elif based_on == "week":
+                    length_of_period = 7
+                elif based_on == "month":
+                    length_of_period = calendar.monthrange(int(rounded_date[:4]), int(rounded_date[5:7]))[1]
+                else:
+                    length_of_period = 365
                 for rounded_date in condensed[habit]:
-                    if based_on == "week":
-                        length_of_period = 7
-                    elif based_on == "month":
-                        length_of_period = calendar.monthrange(int(rounded_date[:4]), int(rounded_date[5:7]))[1]
-                    else:
-                        length_of_period = 365
                     condensed[habit][rounded_date] /= length_of_period
         condensed = dict(sorted(condensed.items(), key=lambda x: x[0]))
 
@@ -452,21 +457,57 @@ def heatmaps(window, selected, map_settings, removing):
             shades = [" ", "░", "▒", "▓", "█"]
 
             # print squares
-            dates = list(set([date for habit in condensed for date in condensed[habit]]))
-            dates.sort()
+            start_day = min(dt.strptime(this_date, "%Y-%m-%d") for habit in condensed for this_date in condensed[habit])
+            index_start_day = date.today() + timedelta(days=index)
+            index_start_day -= timedelta(days=index_start_day.weekday() + 1)
+            start_day = min(start_day, dt.combine(index_start_day, dt.min.time()))
+            if based_on == "day":
+                dates = [start_day + timedelta(days=i) for i in range(0, length)]
+            elif based_on == "week":
+                weekday = start_day.weekday()
+                length_in_weeks = math.ceil((dt.strptime(end_day, "%Y-%m-%d") - start_day) / timedelta(days=1) / 7)
+                dates = [start_day + timedelta(days=7 * i) for i in range(0, length_in_weeks)]
+            elif based_on == "month":
+                length_in_months = math.ceil((dt.strptime(end_day, "%Y-%m-%d") - start_day) / timedelta(days=1) / 30)
+                dates = [start_day.replace(month=start_day.month + i) for i in range(0, length_in_months)]
+            elif based_on == "year":
+                length_in_years = math.ceil((dt.strptime(end_day, "%Y-%m-%d") - start_day) / timedelta(days=1) / 365)
+                dates = [start_day.replace(year=start_day.year + i) for i in range(0, length_in_years)]
+            dates = [this_date.strftime("%Y-%m-%d") for this_date in dates]            
             for n, day in enumerate(dates):
                 day_list = day[2:].split("-")[:len(date_headers)]
                 for d, date_header in enumerate(day_list):
-                    window.addstr(10 + d, 6 + max_length + n * 2, date_header.rjust(2, "0"))
+                    # only print if different from last round
+                    if date_header != dates[n-1][2:].split("-")[:len(date_headers)][d] or n == 0:
+                        window.addstr(10 + d, 6 + max_length + n * 2, date_header.rjust(2, "0"))
                 for i, habit in enumerate(condensed):
                     try:
                         value = condensed[habit][day]
                     except:
                         value = 0
-                    try:
-                        window.addstr(10 + len(date_headers) + i, 6 + max_length + n * 2, shades[min(round(value * 4), 4)] * 2, curses.color_pair(1))
-                    except:
-                        raise Exception(value)
+                    window.addstr(10 + len(date_headers) + i, 6 + max_length + n * 2, shades[min(round(value * 4), 4)] * 2, curses.color_pair(1))
+        else:
+            side_headers = ["mm", "dd", "sun", "mon", "tue", "wed", "thu", "fri", "sat"]
+            for i, day in enumerate(side_headers):
+                window.addstr(10 + i, 5, day.rjust(3), curses.color_pair(1 + (selected[0] == i + 5)))
+
+            habit = list(habits.keys())[index2 % len(habits)]
+            shades = [" ", "░", "▒", "▓", "█"]
+
+            year_length = date(year, 12, 31).timetuple().tm_yday
+            for day in range(0, year_length):
+                this_date = date(year, 1, 1) + timedelta(days=day)
+                weekday = (this_date.weekday() + 1) % 7
+                weeks = math.ceil((day + date(year, 1, 1).weekday() + 2) / 7)
+                if weekday == 0:
+                    if this_date.month != (this_date - timedelta(days=7)).month:
+                        window.addstr(10, 9 + weeks * 2, str(this_date.month).rjust(2, "0"), curses.color_pair(1))
+                    window.addstr(11, 9 + weeks * 2, str(this_date.day).rjust(2, "0"), curses.color_pair(1))
+                try:
+                    value = heat[habit][this_date.strftime("%Y-%m-%d")]
+                except:
+                    value = 0
+                window.addstr(12 + weekday, 9 + weeks * 2, shades[min(round(value * 4), 4)] * 2, curses.color_pair(1)) 
     else:
         window.addstr(8, 5, "no habits!")
 

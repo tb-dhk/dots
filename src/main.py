@@ -256,15 +256,13 @@ def main(stdscr):
         habits = Habit.load_habits()
         for habit_id in habits:
             habit = habits[habit_id]
+            today = date.today().strftime("%Y-%m-%d")
             if habit["type"] == "progress":
-                if date.today().strftime("%Y-%m-%d") not in habit["data"]:
-                    ProgressHabit.add_progress_record(habit_id, date.today().strftime("%Y-%m-%d"), 0)
+                if today not in habit["data"]:
+                    ProgressHabit.add_progress_record(habit_id, today, 0)
             elif habit["type"] == "frequency":
-                if date.today().strftime("%Y-%m-%d") not in habit["data"]:
-                    FrequencyHabit.add_occurrence_record(habit_id, date.today().strftime("%Y-%m-%d"), 0)
-            elif habit["type"] == "duration":
-                if date.today().strftime("%Y-%m-%d") not in habit["data"]:
-                    DurationHabit.add_duration_record(habit_id, date.today().strftime("%Y-%m-%d"), [])
+                if today not in habit["data"]:
+                    FrequencyHabit.add_occurrence_record(habit_id, today, 0)
 
         # Non-blocking check for key input
         key = stdscr.getch()
@@ -509,7 +507,7 @@ def main(stdscr):
                                 selected[0] = 4 + len(habits[habit]["data"])
                         elif inner_option == 2:
                             habits = Habit.load_habits()
-                            selected[0] = 3 + len(habits)
+                            selected[0] = 4 + (len(habits) if map_settings["based_on"] != "calendar" else 0)
                         elif inner_option == 4:
                             selected[0] = 6
                 else:
@@ -548,7 +546,7 @@ def main(stdscr):
                                 selected[0] = 0
                     elif inner_option == 2:
                         habits = Habit.load_habits()
-                        if selected[0] == 4 + len(habits):
+                        if selected[0] == 5 + (len(habits) if map_settings["based_on"] != "calendar" else 0):
                             selected[0] = 0
                     elif inner_option == 4:
                         if selected[0] == 7:

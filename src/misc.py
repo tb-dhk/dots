@@ -25,6 +25,7 @@ def display_borders(window, selected, split=False, task_list=[]):
         for y in range(1, max_y - 3):
             window.addstr(y, 0, "║" + " " * (max_x - 2) + "║", curses.color_pair(1))
         window.addstr(max_y - 4, 0, "╚" + "═" * (max_x - 2) + "╝")
+
     # Single full-width box
     window.addstr(max_y - 3, 0, "╔" + "═" * (max_x - 2) + "╗")
     window.addstr(max_y - 2, 0, "║" + " " * (max_x - 2) + "║", curses.color_pair(1))

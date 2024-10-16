@@ -170,34 +170,33 @@ def display_task(window, task_key, selected, task_list, text_mode, indent=0, spl
         number = len(task_list)
         window.addstr(window.getyx()[0], end_col - 1, f"({number})".rjust(12) if selected[0] != task_number + 2 else " " * 12)
     else:
-        window.addstr(window.getyx()[0], end_col - 1, f"[{task['due_date'].ljust(10)}]", curses.color_pair(1))
+        if task['due_type'] == "day":
+            window.addstr(window.getyx()[0], end_col - 1, f"[{task['due_date'].ljust(10)}]", curses.color_pair(1))
+        elif task['due_type'] == "month":
+            window.addstr(window.getyx()[0], end_col - 1, f"[{task['due_date'][:7].ljust(10)}]", curses.color_pair(1))
+        elif task['due_type'] == "year":
+            window.addstr(window.getyx()[0], end_col - 1, f"[{task['due_date'][:4].ljust(10)}]", curses.color_pair(1))
     window.move(window.getyx()[0], start_col)
 
     task_color_pair = 4 if task_number + 2 != selected[0] and task['completed'] else (1 + 4 * (task_number + 2 == selected[0]))
 
     window.addstr(important, curses.color_pair(8))
+
     if removing != task_key and not removing_subtask:
         window.addstr(f"{'  ' * indent}{symbol} ", curses.color_pair(task_color_pair))
 
         # Wrap text if it exceeds the column width (end_col)
         task_name = task['name']
-        available_width = end_col - window.getyx()[1]  # Calculate remaining space on the line
+        available_width = end_col - window.getyx()[1] - 2  # Account for space and '...'
 
-        # Split task name into words for wrapping
-        words = task_name.split(' ')
-        current_line = ""
-        for word in words:
-            # If adding the next word exceeds the available width, print the current line and move to the next
-            if len(current_line) + len(word) + 1 > available_width:  # +1 accounts for the space
-                window.addstr(current_line.strip(), curses.color_pair(task_color_pair))
-                window.move(window.getyx()[0] + 1, start_col + indent * 2 + len(symbol) + 3)  # Move to the next line
-                current_line = word + " "  # Start a new line with the current word
-            else:
-                current_line += word + " "  # Append the word to the current line
+        # Check if truncation is needed
+        if len(task_name) > available_width:
+            truncated_name = task_name[:available_width - 3] + "..."  # Truncate and add "..."
+        else:
+            truncated_name = task_name
 
-        # Print the last line after exiting the loop
-        if current_line:
-            window.addstr(current_line.strip(), curses.color_pair(task_color_pair))
+        # Print the truncated task name
+        window.addstr(truncated_name, curses.color_pair(task_color_pair))
 
     else:
         window.addstr('  ' * indent)
@@ -235,7 +234,7 @@ def display_task_details(window, task_id, split_x, selected):
     # Define the task details with keys for alignment
     details = {
         "name": task['name'],
-        "completed": 'yes' if task['completed'] else 'no',
+        "completed": 'yes' if task['completed'] else 'no ',
         "due date": task['due_date'],
         "parent": Task.load_tasks()[task['parent']]['name'] if task['parent'] else "none",
         "priority": ["low", "medium", "high"][int(task['priority']) - 1],
@@ -292,7 +291,10 @@ def display_tasks(window, selected, text_input, text_mode, text_box, text_index,
                 display_task(window, task_key, selected, task_list, text_mode, split_x=split_x, box='left', removing=removing)
 
         window.move(window.getyx()[0] + 1, 4)
-        window.addstr("+ press : to enter a new task", curses.color_pair(4 + 1 * (selected[0] == len(get_task_list()) + 2)))
+        new_task_msg = "+ press : to enter a new task"
+        if len(new_task_msg) > split_x - 2:
+            new_task_msg = new_task_msg[:split_x - 5] + "..."
+        window.addstr(new_task_msg, curses.color_pair(4 + 1 * (selected[0] == len(get_task_list()) + 2)))
 
         # Find the selected task and display its details in the right box
         selected_task_key = task_list[selected[0] - 2]
@@ -320,29 +322,37 @@ def draw_table(window, data, start_y, start_x, selected, removing):
     table_width = sum(column_widths) + len(column_widths) + 5  # Total width of the table
     max_width = window.getmaxyx()[1] - 10  # Max width allowed for the table
 
-    # Prioritize the columns by allocating space to "everything else" first
+    # If the table is wider than the maximum allowed width
     if table_width > max_width:
-        # First, allocate full width to "everything else" columns (non-prioritized columns)
-        everything_else_indexes = [i for i in range(len(column_widths)) if i not in [tag_index, name_index, parent_index]]
-        allocated_width = sum(column_widths[i] for i in everything_else_indexes)
+        # List of all column indices
+        all_columns = [i for i in range(len(column_widths))]
 
-        # Calculate remaining space for prioritized columns
-        remaining_width = max_width - (allocated_width + len(column_widths) + 5)
+        # Calculate how much the table exceeds the max width
+        total_excess = table_width - max_width
 
-        # Ensure "tags," "name," and "parent" get a minimum width (header length + 3)
-        prioritized_columns = [tag_index, name_index, parent_index]
-        min_widths = {col: len(headers[col]) + 3 for col in prioritized_columns if col != -1}
+        # Calculate the proportional decrease for each column based on their current widths
+        total_current_width = sum(column_widths[i] for i in all_columns)
+        
+        # Scale down columns proportionally
+        for col_index in all_columns:
+            # Reduce each column width based on its proportion of the total current width
+            reduction_ratio = column_widths[col_index] / total_current_width
+            reduction_amount = int(total_excess * reduction_ratio)
+            
+            # Ensure columns do not shrink below the minimum width
+            min_width = len(headers[col_index]) + 3
+            column_widths[col_index] = max(min_width, column_widths[col_index] - reduction_amount)
 
-        # Calculate total prioritized column widths
-        total_prioritized_width = sum(column_widths[i] for i in prioritized_columns if i != -1)
-
-        # Distribute remaining width to prioritized columns fairly
-        if remaining_width > 0:
-            for col_index in prioritized_columns:
-                if col_index != -1:
-                    # Scale down prioritized columns proportionally but respect minimum widths
-                    extra_space = (remaining_width / len(prioritized_columns)) if total_prioritized_width > 0 else 0
-                    column_widths[col_index] += max(min_widths[col_index], int(extra_space))
+        # After reducing all columns, recheck the table width to ensure it fits within the limit
+        final_table_width = sum(column_widths) + len(column_widths) + 5
+        if final_table_width > max_width:
+            # If the widths still exceed the limit, iteratively reduce them further
+            total_excess = final_table_width - max_width
+            for col_index in all_columns:
+                # Further proportional reduction
+                reduction_ratio = column_widths[col_index] / total_current_width
+                reduction_amount = int(total_excess * reduction_ratio)
+                column_widths[col_index] = max(min_width, column_widths[col_index] - reduction_amount)
 
     # Draw table header
     for i, header in enumerate(data[0][1:-1]):
@@ -351,7 +361,10 @@ def draw_table(window, data, start_y, start_x, selected, removing):
         window.addstr(start_y + 2, start_x + sum(column_widths[:i]) + i, '+' + '-' * column_widths[i])
         window.addstr(start_y + len(data) + 2, start_x + sum(column_widths[:i]) + i, '+' + '-' * column_widths[i])
     for row in range(3):
-        window.addstr(start_y + row, start_x + sum(column_widths) + 5, '|' if row % 2 else '+')
+        try:
+            window.addstr(start_y + row, start_x + sum(column_widths) + 5, '|' if row % 2 else '+')
+        except:
+            raise Exception(f"{start_x}, {column_widths}, {start_x + sum(column_widths) + 5}, {max_width}")
     window.addstr(start_y + len(data) + 2, start_x + sum(column_widths) + 5, '+')
 
     # Draw table rows

@@ -96,7 +96,7 @@ def inner_navbar(stdscr, outer_option, inner_option, selected):
     for i, option in enumerate(options):
         stdscr.addstr(f" {option} ", curses.color_pair(1 + (i != inner_option) + 4 * (selected[0] == 1)))
 
-def content(window, outer_option, inner_option, selected, text_input, text_mode, text_box, text_index, removing, day, duration_map_settings, new_habit):
+def content(window, outer_option, inner_option, selected, text_input, text_mode, text_box, text_index, removing, day, map_settings, new_habit):
     if outer_option == 0:
         if inner_option == 0:
             display_tasks(window, selected, text_input, text_mode, text_box, text_index, removing)
@@ -110,7 +110,9 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
             year_view(window, selected, day, text_input, text_box, text_index, removing)
     elif outer_option == 1:
         if inner_option == 0:
-            duration_maps(window, selected, duration_map_settings, removing)
+            duration_maps(window, selected, map_settings, removing)
+        elif inner_option == 1:
+            progress_maps(window, selected, map_settings, removing)
         elif inner_option < 4:
             coming_soon(window)
         elif inner_option == 4:
@@ -147,7 +149,7 @@ def status_bar(window, text_input, text_mode, message):
             case "habit target value":
                 display = "enter target value for habit"
             case ["new duration record", selected_day, selected_habit, habits]:
-                display = f"enter start and end for habit '{habits[selected_habit]['name']}' on {selected_day}, in format hhmm-hhmm"
+                display = f"enter start and end for habit '{habits[selected_habit]['name']}' on {selected_day}, in format yyyy-mm-dd-hh:mm,yyyy-mm-dd-hh:mm"
             case ["add date", selected_habit]:
                 display = "enter the date in the format yyyy-mm-dd"
             case _:
@@ -192,22 +194,13 @@ def main(stdscr):
     message = ""
     removing = ""
     day = date.today().strftime("%Y-%m-%d")
-    duration_map_settings = {"based_on": "day", "index": 0}
+    map_settings = {"based_on": "day", "index": 0}
     new_habit = {"name": " ", "type": "progress", "unit": " ", "target_value": 0}
 
     # Create a window for content
     content_height = height - 3  # Adjust based on your layout
     content_width = width
     content_window = curses.newwin(content_height, content_width, 2, 0)  # Starting from row 2
-
-    # Initial screen design (before starting)
-    if not started:
-        for x in range(width):
-            for y in range(height):
-                try:
-                    stdscr.addch(y, x, "•", curses.color_pair(4))
-                except:
-                    stdscr.insstr(y, x - 1, "•", curses.color_pair(4))
 
     while True:
         # Update special color
@@ -241,13 +234,18 @@ def main(stdscr):
         if not started:
             for x in range(width):
                 for y in range(height):
-                    if (x - width / 2 + 26, y - height / 2 + 6) in points:
+                    if (x - width // 2 + 26, y - height // 2 + 6) in points:
                         stdscr.addch(y, x, "•", curses.color_pair(3))
+                    else:
+                        try:
+                            stdscr.addch(y, x, "•", curses.color_pair(4))
+                        except:
+                            pass #stdscr.insstr(y, x-1, "•", curses.color_pair(4))
             center_string(stdscr, " press SPACE to start ", 1, offset=(0, 10))
         else:
             outer_navbar(stdscr, outer_option, selected)
             inner_navbar(stdscr, outer_option, inner_option, selected)
-            content(content_window, outer_option, inner_option, selected, text_input, text_mode, text_box, text_index, removing, day, duration_map_settings, new_habit)
+            content(content_window, outer_option, inner_option, selected, text_input, text_mode, text_box, text_index, removing, day, map_settings, new_habit)
             status_bar(stdscr, text_input, text_mode, message)
 
         # fetch all habits, and add a log for today (unless type == duration)
@@ -267,8 +265,6 @@ def main(stdscr):
         # Non-blocking check for key input
         key = stdscr.getch()
         if key != -1:  # -1 means no key was pressed
-            if started:
-                stdscr.refresh()
             if removing:
                 if key == ord("r"):
                     if outer_option == 0 and inner_option == 0:
@@ -280,18 +276,23 @@ def main(stdscr):
                         Task.remove_task(removing)
                         removing = ""
                         content_window.clear()
-                elif chr(key) in "1234567890":
+                elif chr(key) in "123456789":
                     if outer_option == 1 and inner_option == 0:
-                        if duration_map_settings["based_on"] == "day":
+                        if map_settings["based_on"] == "day":
                             habits = Habit.load_habits()
                             habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
-                            habit = list(habits.keys())[duration_map_settings["index"]]
-                            for_day = (date.today() + timedelta(days=duration_map_settings["index"])).strftime("%Y-%m-%d")
+                            habit = list(habits.keys())[map_settings["index"]]
+                            for_day = (date.today() + timedelta(days=map_settings["index"])).strftime("%Y-%m-%d")
+                            records = {habit: [record for record in habits[habit]['data'] if record[0][:10] == for_day] for habit in habits}
+                            record = records[habit][int(chr(key)) - 1]
                         else:
                             habits = Habit.load_habits()
-                            habit = list(habits.keys())[duration_map_settings["index"]]
-                            for_day = list(habits[habit]["data"].keys())[selected[0] - 4]
-                        DurationHabit.remove_duration_record(habit, for_day, int(chr(key)))
+                            habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
+                            habit = list(habits.keys())[map_settings["index"] % len(habits)]
+                            for_day = list(get_records_from_habits(habits, map_settings["index"]).keys())[selected[0] - 4]
+                            records = get_records_from_habits(habits, map_settings["index"])
+                            record = records[for_day][int(chr(key)) - 1]
+                        DurationHabit.remove_duration_record(habit, for_day, record)
                         removing = ""
                         content_window.clear()
                 elif key == 27:
@@ -321,6 +322,12 @@ def main(stdscr):
                                     task_id = ""
                             elif inner_option == 1:
                                 task_id = tasks_for_day(day)[selected[0] - 3]["id"]
+                            elif inner_option == 2:
+                                task_id = tasks_for_week(day)[selected[0] - 3]["id"]
+                            elif inner_option == 3:
+                                task_id = tasks_for_month(day)[selected[0] - 3]["id"]
+                            elif inner_option == 4:
+                                task_id = tasks_for_year(day)[selected[0] - 3]["id"]
                         if task_id:
                             task_name = Task.get_task(task_id)["name"]
                         else:
@@ -329,7 +336,7 @@ def main(stdscr):
                         if text_box:
                             match text_mode:
                                 case "new task":
-                                    if inner_option == 1:
+                                    if inner_option < 2:
                                         Task.add_task(text_box)
                                     elif inner_option == 2:
                                         Task.add_task(text_box, due_date=(dt.strptime(day, "%Y-%m-%d") + timedelta(days=(5 - dt.strptime(day, "%Y-%m-%d").weekday()))).strftime("%Y-%m-%d"))
@@ -427,14 +434,14 @@ def main(stdscr):
                                         message = "habit target value updated"
                                 case ["new duration record", selected_day, selected_habit, habits]:
                                     try:
-                                        start, end = text_box.split("-")[:2]
-                                        start = dt.strptime(start, "%H%M")
-                                        end = dt.strptime(end, "%H%M") 
+                                        start, end = text_box.split(",")[:2]
+                                        dt.strptime(start, "%Y-%m-%d-%H:%M")
+                                        dt.strptime(end, "%Y-%m-%d-%H:%M") 
                                     except:
                                         message = "invalid time format. try again!"
                                         clear = False
                                     else:
-                                        DurationHabit.add_duration_record(selected_habit, selected_day, [(start.strftime("%H:%M"), end.strftime("%H:%M"))])
+                                        DurationHabit.add_duration_record(selected_habit, selected_day, [[start, end]])
                                         message = f"new duration record for habit '{habits[selected_habit]['name']}' on {selected_day} added"
                                 case ["add date", selected_habit]:
                                     if text_box and re.match(r"\d{4}-\d{2}-\d{2}", text_box) and check_date(text_box):
@@ -478,13 +485,13 @@ def main(stdscr):
                             selected[0] = len(tasks_for_year(day)) + 2
                     elif outer_option == 1:
                         if inner_option == 0:
-                            if duration_map_settings["based_on"] == "day":
+                            if map_settings["based_on"] == "day":
                                 habits = Habit.load_habits()
                                 habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
                                 selected[0] = 3 + len(habits)
                             else:
                                 habits = Habit.load_habits()
-                                habit = list(habits.keys())[duration_map_settings["index"]]
+                                habit = list(habits.keys())[map_settings["index"]]
                                 selected[0] = 4 + len(habits[habit]["data"])
                         elif inner_option == 4:
                             selected[0] = 6
@@ -512,14 +519,14 @@ def main(stdscr):
                             selected[0] = 0
                 elif outer_option == 1:
                     if inner_option == 0:
-                        if duration_map_settings["based_on"] == "day":
+                        if map_settings["based_on"] == "day":
                             habits = Habit.load_habits()
                             habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
                             if selected[0] == 4 + len(habits):
                                 selected[0] = 0
                         else:
                             habits = Habit.load_habits()
-                            habit = list(habits.keys())[duration_map_settings["index"]]
+                            habit = list(habits.keys())[map_settings["index"]]
                             if selected[0] == 5 + len(habits[habit]["data"]):
                                 selected[0] = 0
                     elif inner_option == 4:
@@ -564,11 +571,11 @@ def main(stdscr):
                         habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
                         if selected[0] == 2:
                             if habits:
-                                duration_map_settings["based_on"] = "day" if duration_map_settings["based_on"] == "habit" else "habit"
+                                map_settings["based_on"] = "day" if map_settings["based_on"] == "habit" else "habit"
                             else:
-                                duration_map_settings["based_on"] = "day"
+                                map_settings["based_on"] = "day"
                         elif selected[0] == 3:
-                            duration_map_settings["index"] -= 1
+                            map_settings["index"] -= 1
                     elif inner_option == 4: 
                         if selected[0] == 3:
                             types = ["progress", "duration", "frequency"]
@@ -617,11 +624,11 @@ def main(stdscr):
                         habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
                         if selected[0] == 2:
                             if habits:
-                                duration_map_settings["based_on"] = "day" if duration_map_settings["based_on"] == "habit" else "habit"
+                                map_settings["based_on"] = "day" if map_settings["based_on"] == "habit" else "habit"
                             else:
-                                duration_map_settings["based_on"] = "day"
+                                map_settings["based_on"] = "day"
                         elif selected[0] == 3:
-                            duration_map_settings["index"] += 1
+                            map_settings["index"] += 1
                     elif inner_option == 4:
                         if selected[0] == 3:
                             types = ["progress", "duration", "frequency"]
@@ -667,6 +674,8 @@ def main(stdscr):
                             if chr(key) in text_modes:
                                 text_input = True
                                 text_mode = text_modes[chr(key)]
+                            if chr(key) in "xn.123><tmr":
+                                content_window.clear()
                             match chr(key):
                                 case "x":
                                     Task.edit_task(task, completed=not Task.get_task(str(task))["completed"])
@@ -739,28 +748,30 @@ def main(stdscr):
                                 content_window.clear()
                 elif outer_option == 1:
                     if inner_option == 0:
-                        index = duration_map_settings["index"]
+                        index = map_settings["index"]
                         habits = Habit.load_habits()
                         habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
                         if selected[0] >= 4:
                             if chr(key) == "e":
-                                if duration_map_settings["based_on"] == "day":
+                                if map_settings["based_on"] == "day":
                                     selected_day = (date.today() + timedelta(days=index)).strftime("%Y-%m-%d")
                                     selected_habit = list(habits.keys())[selected[0] - 4]
                                 else:
                                     selected_habit = list(habits.keys())[index % len(habits)]
-                                    selected_day = list(habits[selected_habit]["data"].keys())[selected[0] - 4]
+                                    daylist = list(get_records_from_habits(habits, index).keys())
+                                    selected_day = daylist[selected[0] - 4]
                                 text_input = True
                                 text_mode = ["new duration record", selected_day, selected_habit, habits]
-                            elif chr(key) == ":" and duration_map_settings["based_on"] == "habit":
+                            elif chr(key) == ":" and map_settings["based_on"] == "habit":
                                 text_input = True
                                 text_mode = ["add date", list(habits.keys())[index % len(habits)]]
                             elif chr(key) == "r":
-                                if duration_map_settings["based_on"] == "day":
+                                if map_settings["based_on"] == "day":
                                     removing = list(habits.keys())[selected[0] - 4]
                                 else:
                                     selected_habit = list(habits.keys())[index % len(habits)]
-                                    removing = list(habits[selected_habit]["data"].keys())[selected[0] - 4]
+                                    daylist = list(get_records_from_habits(habits, index).keys())
+                                    removing = daylist[selected[0] - 4]
                                 content_window.clear()
                     elif inner_option == 4:
                         text_modes = {

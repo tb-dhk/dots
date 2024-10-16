@@ -2,7 +2,7 @@ import json
 import os
 import uuid
 import curses
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime as dt
 import math
 from misc import display_borders
 
@@ -80,39 +80,47 @@ class DurationHabit(Habit):
     @classmethod
     def add_duration_record(cls, habit_id, date, duration_sessions):
         habits = cls.load_habits()  # Load existing habits
+        
         if habit_id in habits:
-            if date not in habits[habit_id]['data']:
-                habits[habit_id]['data'][date] = []
-            habits[habit_id]['data'][date] += duration_sessions  # Add duration sessions
-            habits[habit_id]['data'] = dict(sorted(habits[habit_id]['data'].items(), key=lambda x: x[0]))  # Sort by date
-            habits[habit_id]['data'][date] = list(sorted(habits[habit_id]['data'][date], key=lambda x: x[0]))  # Sort by start time
+            # Ensure the data structure for this habit is initialized
+            if 'data' not in habits[habit_id]:
+                habits[habit_id]['data'] = []
+
+            # Split duration sessions if they exceed midnight
+            updated_sessions = []
+            for session in duration_sessions:
+                start_time = dt.strptime(session[0], "%Y-%m-%d-%H:%M")
+                end_time = dt.strptime(session[1], "%Y-%m-%d-%H:%M")
+                
+                # Check if the session exceeds midnight
+                if start_time.date() < end_time.date():
+                    # Split the session into two
+                    midnight = dt.combine(start_time.date() + timedelta(days=1), dt.min.time())
+                    
+                    # First part: from start to midnight
+                    updated_sessions.append([session[0], midnight.strftime("%Y-%m-%d-%H:%M")])
+                    
+                    # Second part: from midnight to end
+                    updated_sessions.append([midnight.strftime("%Y-%m-%d-%H:%M"), session[1]])
+                else:
+                    # If it does not exceed midnight, add the session as is
+                    updated_sessions.append(session)
+            
+            # Add sessions to the habit data, ensuring they are sorted by start time
+            habits[habit_id]['data'].extend(updated_sessions)
+            # Sort the records by start time
+            habits[habit_id]['data'] = sorted(habits[habit_id]['data'], key=lambda x: dt.strptime(x[0], "%Y-%m-%d-%H:%M"))
+
             cls.save_habits(habits)  # Save updated habits to JSON
             return True
         return False
 
     @classmethod
-    def edit_duration_record(cls, habit_id, date, old_session, new_session):
-        habits = cls.load_habits()
-        if habit_id in habits and date in habits[habit_id]['data']:
-            sessions = habits[habit_id]['data'][date]
-            if old_session in sessions:
-                sessions[sessions.index(old_session)] = new_session  # Edit the session
-                cls.save_habits(habits)  # Save updated habits to JSON
-                return True
-        return False
-
-    @classmethod
     def remove_duration_record(cls, habit_id, date, duration_session):
         habits = cls.load_habits()
-        if habit_id in habits and date in habits[habit_id]['data']:
-            sessions = habits[habit_id]['data'][date]
+        if habit_id in habits:
             if duration_session:
-                try:
-                    sessions.remove(sessions[duration_session - 1])  # Remove the session
-                except:
-                    raise Exception(f"{sessions} {duration_session}")
-            else:
-                del habits[habit_id]['data'][date]  # Remove the entire date 
+                habits[habit_id]['data'].remove(duration_session)  # Remove the session
             cls.save_habits(habits)  # Save updated habits to JSON
             return True
         return False
@@ -179,13 +187,27 @@ class FrequencyHabit(Habit):
             return True
         return False
 
-def duration_maps(window, selected, duration_map_settings, removing):
+def get_records_from_habits(habits, index):
+    id = list(habits.keys())[index % len(habits)]
+    raw_records = habits[id]['data']
+
+    records = {date.today().strftime("%Y-%m-%d"): []}
+
+    for record in raw_records:
+        day_of_record = record[0][:10]
+        try:
+            records[day_of_record].append(record)
+        except KeyError:
+            records[day_of_record] = [record]
+
+    return records
+
+def duration_maps(window, selected, map_settings, removing):
     display_borders(window, selected)
-    based_on = duration_map_settings['based_on']
-    index = duration_map_settings['index']
+    based_on = map_settings['based_on']
+    index = map_settings['index']
 
     window.addstr(2, 5, "duration habits")
-
     window.addstr(4, 5, "based on: ")
     window.addstr(f"< {based_on} >", curses.color_pair(1 + (selected[0] == 2)))
 
@@ -195,38 +217,45 @@ def duration_maps(window, selected, duration_map_settings, removing):
     if habits:
         if based_on == "day":
             day = date.today() + timedelta(days=index)
+            tomorrow = dt.combine(date.today() + timedelta(days=index + 1), dt.min.time())
             on = day.strftime("%Y-%m-%d")
+            # all records that start or end on this day (fetch date from datetime)
+            records = {habit: [record for record in habits[habit]['data'] if record[0][:10] == on] for habit in habits}
+            
             try:
-                records = {habit: habits[habit]['data'][on] for habit in habits}
+                earliest_time = min(min(dt.strptime(record[0], "%Y-%m-%d-%H:%M") for record in records[habit]) for habit in records if records[habit])
+                latest_time = max(max(dt.strptime(record[1], "%Y-%m-%d-%H:%M") for record in records[habit]) for habit in records if records[habit])
             except:
-                for habit in habits:
-                    if on not in habits[habit]['data']:
-                        habits[habit]['data'][on] = []
-                records = {habit: habits[habit]['data'][on] for habit in habits}
+                earliest_time = 0
+                latest_time = 24
+            latest_time_diff = math.ceil((latest_time - earliest_time) / timedelta(hours=1))
+            earliest_time = earliest_time.hour
+
         else:
             id = list(habits.keys())[index % len(habits)]
-            records = habits[id]['data']
+            raw_records = habits[id]['data']
             on = habits[id]['name']
 
-        for record in records:
-            records[record] = [[int(time[:2]) + int(time[3:]) / 60 for time in entry] for entry in records[record]]
+            # Find periods and analyze the least recorded times
+            # Create a count for each hour in a 24-hour format
+            hour_counts = [0] * 24
+            for record in raw_records:
+                start_dt = dt.strptime(record[0], "%Y-%m-%d-%H:%M")
+                end_dt = dt.strptime(record[1], "%Y-%m-%d-%H:%M")
+                for hour in range(start_dt.hour, end_dt.hour + 1):
+                    hour_counts[hour % 24] += 1
+
+            # Find the hour with the least records
+            earliest_time = 24 - hour_counts[::-1].index(min(hour_counts))
+            latest_time_diff = 24
+
+            records = get_records_from_habits(habits, index)
 
         window.addstr(6, 5, f"< {on} >", curses.color_pair(1 + (selected[0] == 3)))
 
         max_length = max(len(habits[habit]['name']) for habit in records) if based_on == "day" else 10
-        raw_records = [item for record in records.values() for item in record]
-        try:
-            adjusted_records = [
-                (record[0], record[1] + 24 * ((record[1] <= record[0])))  # add 24 if record[1] <= record[0]
-                for record in raw_records
-            ]
-            earliest_time = min(record[0] for record in adjusted_records)
-            latest_time_diff = max(record[1] for record in adjusted_records) - earliest_time
-        except:
-            earliest_time = 0
-            latest_time_diff = 0
+        max_width = window.getmaxyx()[1] - 13 - max_length
 
-        max_width = window.getmaxyx()[1] - 11 - max_length
         try:
             hour_width = max_width // (latest_time_diff)
         except:
@@ -237,26 +266,78 @@ def duration_maps(window, selected, duration_map_settings, removing):
             gaps = [abs(hour_width - width) for width in hour_widths]
             hour_width = hour_widths[gaps.index(min(gaps))]
 
-        for hour in range(math.ceil(latest_time_diff) + 1):
-            window.addstr(8, 7 + max_length + math.ceil(hour * hour_width), str((hour + int(earliest_time)) % 24).rjust(2, "0"))
+        for x in range(latest_time_diff + 1):
+            window.addstr(8, 7 + max_length + round(hour_width * x), str((earliest_time + x) % 24).rjust(2, "0"))
+
+        for i, record in enumerate(records):
+            if based_on == "day":
+                window.addstr(9 + i, 5, habits[record]["name"].rjust(max_length), curses.color_pair(1 + (selected[0] == i + 4)))
+            else:
+                window.addstr(9 + i, 5, record.rjust(max_length), curses.color_pair(1 + (selected[0] == i + 4)))
+            count = 0
+            for entry in records[record]:
+                count += 1
+                width = hour_width * ((dt.strptime(entry[1], "%Y-%m-%d-%H:%M").hour - dt.strptime(entry[0], "%Y-%m-%d-%H:%M").hour) % 24)
+                message = " " * width if removing != record else f"press {count} to remove this entry, esc to cancel"
+                if len(message) > width:
+                    message = message[:width-3] + "..."
+                window.addstr(9 + i, 8 + max_length + hour_width * ((dt.strptime(entry[0], "%Y-%m-%d-%H:%M").hour - earliest_time) % 24), message, curses.color_pair(2 if removing != record else 7))                     
+    else:
+        window.addstr(8, 5, "no duration habits!")
+
+def progress_maps(window, selected, map_settings, removing):
+    display_borders(window, selected)
+    based_on = map_settings['based_on']
+    index = map_settings['index']
+
+    window.addstr(2, 5, "progress habits")
+
+    window.addstr(4, 5, "based on: ")
+    window.addstr(f"< {based_on} >", curses.color_pair(1 + (selected[0] == 2)))
+
+    habits = Habit.load_habits()
+    habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "progress"}
+
+    if habits:
+        if based_on == "day":
+            day = date.today() + timedelta(days=index)
+            on = day.strftime("%Y-%m-%d")
+            try:
+                records = {habit: habits[habit]['data'][on] for habit in habits}
+            except:
+                for habit in habits:
+                    if on not in habits[habit]['data']:
+                        habits[habit]['data'][on] = 0
+                records = {habit: habits[habit]['data'][on] for habit in habits}
+        else:
+            id = list(habits.keys())[index % len(habits)]
+            records = habits[id]['data']
+            on = habits[id]['name']
+
+        window.addstr(6, 5, f"< {on} >", curses.color_pair(1 + (selected[0] == 3)))
+
+        max_length = max(len(habits[habit]['name']) for habit in records) if based_on == "day" else 10
+        max_width = window.getmaxyx()[1] - 20 - max_length
+
+        interval = max_width // 10
+        for x in range(interval + 1):
+            window.addstr(8, 7 + max_length + round(max_width * (x / interval)), str(round(x / interval * 100)).rjust(2, "0"))
 
         for i, (key, value) in enumerate(records.items()):
             if based_on == "day":
                 id = key
                 key = habits[key]['name']
+                target = habits[id]['target_value']
+            else:
+                target = habits[key]['target_value']
             window.addstr(9 + i, 5, key.rjust(max_length), curses.color_pair(1 + (selected[0] == i + 4)))
-            count = 0
             removing_this = (based_on == "day" and removing == id) or (based_on == "habit" and removing == key)
-            if value == [] and removing_this:
-                window.addstr(9 + i, 7 + max_length, "press 0 to remove this date, esc to cancel", curses.color_pair(7))
-            for record in value:
-                count += 1
-                length = (record[1] - record[0]) % 24
-                text_length = math.ceil((length) * hour_width)
-                removing_text = f"press {count} to remove, esc to cancel"
-                window.addstr(9 + i, 7 + max_length + math.ceil((record[0] - earliest_time) * hour_width), removing_text.center(text_length) if removing_this else " " * text_length, curses.color_pair(2 if not removing_this else 7))
+            if removing_this:
+                window.addstr(9 + i, 8 + max_length, "press 0 to remove this date, esc to cancel", curses.color_pair(7))
+            window.addstr(9 + i, 8 + max_length, " " * max_width, curses.color_pair(2 if not removing_this else 7))
+            window.addstr(f"{round(value / target * 100, 2):.2f}%".rjust(10))
     else:
-        window.addstr(8, 5, "no duration habits!")
+        window.addstr(8, 5, "no progress habits!")
 
 def add_new_habit(window, selected, new_habit):
     display_borders(window, selected)

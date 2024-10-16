@@ -84,7 +84,7 @@ def inner_options(outer_option):
     if outer_option == 0:
         return ["list", "day", "week", "month", "year"]
     if outer_option == 1:
-        return ["duration", "progress", "heatmap", "yearmap", "+ new"]
+        return ["duration", "progress", "heatmap", "manage", "+ new"]
     if outer_option == 4:
         return ["main"]
     return ["+ new"]
@@ -113,7 +113,9 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
             duration_maps(window, selected, map_settings, removing)
         elif inner_option == 1:
             progress_maps(window, selected, map_settings, removing)
-        elif inner_option < 4:
+        elif inner_option == 2:
+            heatmaps(window, selected, map_settings, removing)
+        elif inner_option == 3:
             coming_soon(window)
         elif inner_option == 4:
             add_new_habit(window, selected, new_habit)
@@ -177,7 +179,7 @@ def main(stdscr):
         curses.init_color(20, 500, 500, 500)
         curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)  # Navbar colors
         curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_WHITE)
-        curses.init_pair(3, 100, curses.COLOR_BLACK)  # colored dots
+        curses.init_pair(3, 69, curses.COLOR_BLACK)  # colored dots
         curses.init_pair(4, 20, curses.COLOR_BLACK)
         curses.init_pair(5, curses.COLOR_WHITE, 20)
         curses.init_pair(6, 20, curses.COLOR_WHITE)
@@ -196,7 +198,7 @@ def main(stdscr):
     message = ""
     removing = ""
     day = date.today().strftime("%Y-%m-%d")
-    map_settings = {"based_on": "day", "index": 0}
+    map_settings = {"based_on": "day", "index": 0, "index2": 0}
     new_habit = {"name": " ", "type": "progress", "unit": " ", "target_value": 0}
 
     # Create a window for content
@@ -230,7 +232,7 @@ def main(stdscr):
             else:
                 special_color[2] -= color_offset
 
-        curses.init_color(100, *special_color)
+        curses.init_color(69, *special_color)
 
         # Draw screen
         if not started:

@@ -244,9 +244,10 @@ def duration_maps(window, selected, map_settings, removing):
                 end_dt = dt.strptime(record[1], "%Y-%m-%d-%H:%M")
                 for hour in range(start_dt.hour, end_dt.hour + 1):
                     hour_counts[hour % 24] += 1
+            off_peak = 24 - hour_counts[::-1].index(min(hour_counts))
 
             # Find the hour with the least records
-            earliest_time = 24 - hour_counts[::-1].index(min(hour_counts))
+            earliest_time = off_peak 
             latest_time_diff = 24
 
             records = get_records_from_habits(habits, index)
@@ -339,6 +340,122 @@ def progress_maps(window, selected, map_settings, removing):
             window.addstr(9 + i, window.getmaxyx()[1] - 12, f"{round(value / target * 100, 2):.2f}%".rjust(10))
     else:
         window.addstr(8, 5, "no progress habits!")
+
+def get_sunday(date):
+    date = dt.strptime(date, "%Y-%m-%d")
+    return (date - timedelta(days=date.weekday())).strftime("%Y-%m-%d")
+
+def heatmaps(window, selected, map_settings, removing):
+    display_borders(window, selected)
+    based_on = map_settings['based_on']
+    index = map_settings['index']
+    index2 = map_settings['index2']
+
+    window.addstr(2, 5, "heatmaps")
+
+    window.addstr(4, 5, "based on: ")
+    window.addstr(f"< {based_on} >", curses.color_pair(1 + (selected[0] == 2)))
+
+    habits = Habit.load_habits()
+
+    if habits:
+        # print the bounds
+        if based_on != "calendar":
+            start_day = (date.today() + timedelta(days=index)).strftime("%Y-%m-%d")
+            end_day = (date.today() + timedelta(days=index2)).strftime("%Y-%m-%d")
+
+            window.addstr(6, 5, "start: ")
+            window.addstr(f"< {start_day} >", curses.color_pair(1 + (selected[0] == 3)))
+            window.addstr(8, 5, "end: ")
+            window.addstr(f"< {end_day} >", curses.color_pair(1 + (selected[0] == 4)))
+        else:
+            year = date.today().year + index
+            start_day = f"{year}-01-01"
+            end_day = f"{year}-12-31"
+
+            habit = list(habits.keys())[index2 % len(habits)]
+
+            window.addstr(6, 5, "year: ")
+            window.addstr(f"< {year} >", curses.color_pair(1 + (selected[0] == 3)))
+
+            window.addstr(8, 5, "habit: ")
+            window.addstr(f"< {habits[habit]['name']} >", curses.color_pair(1 + (selected[0] == 4)))
+
+        length = math.ceil((dt.strptime(end_day, "%Y-%m-%d") - dt.strptime(start_day, "%Y-%m-%d")) / timedelta(days=1)) + 1
+
+        # reformat the information based on the bounds
+        heat = {}
+        for habit in habits:
+            heat[habit] = {}
+            if habits[habit]['type'] == "duration":
+                for record in habits[habit]['data']:
+                    duration = (dt.strptime(record[1], "%Y-%m-%d-%H:%M") - dt.strptime(record[0], "%Y-%m-%d-%H:%M")) / timedelta(hours=1)
+                    target_value = habits[habit]['target_value']
+                    try:
+                        heat[habit][record[0][:10]] += duration / target_value
+                    except:
+                        heat[habit][record[0][:10]] = duration / target_value
+            elif habits[habit]['type'] == "progress":
+                for d in habits[habit]['data']:
+                    heat[habit][d] = habits[habit]['data'][d] / habits[habit]['target_value']
+            elif habits[habit]['type'] == "frequency":
+                max_frequency = max(habits[habit]['data'].values())
+                for d in habits[habit]['data']:
+                    heat[habit][d] = habits[habit]['data'][d] / max_frequency 
+
+        # condense the information into time blocks
+        if based_on in ["day", "calendar"]:
+            condensed = {habit: {day: heat[habit][day] for day in heat[habit] if start_day <= day <= end_day} for habit in heat}
+        elif based_on in ["week", "month", "year"]:
+            condensed = {}
+            for habit in heat:
+                condensed[habit] = {}
+                for rounded_date in heat[habit]:
+                    if rounded_date < start_day or rounded_date > end_day:
+                        continue
+                    elif based_on == "week":
+                        rounded_date = get_sunday(rounded_date)
+                    elif based_on == "month":
+                        rounded_date = rounded_date[:7]
+                    else:
+                        rounded_date = rounded_date[:4]
+                    try:
+                        condensed[habit][rounded_date] += heat[habit][rounded_date]
+                    except:
+                        condensed[habit][rounded_date] = heat[habit][rounded_date]
+        condensed = dict(sorted(condensed.items(), key=lambda x: x[0]))
+
+        # print the heatmaps
+        if based_on != "calendar":
+            # print side
+            max_length = max(len(habits[habit]['name']) for habit in condensed)
+            max_width = window.getmaxyx()[1] - 13 - max_length
+            date_headers = ["yy", "mm", "dd"]
+            side_headers = date_headers + [habits[habit]['name'] for habit in condensed.keys()]
+            for i, habit in enumerate(side_headers):
+                window.addstr(10 + i, 5, habit.rjust(max_length), curses.color_pair(1 + (selected[0] == i + 2 if i >= 3 else 0)))
+            
+            # define shades:
+            shades = [" ", "░", "▒", "▓", "█"]
+
+            # print squares
+            dates = list(set([date for habit in condensed for date in condensed[habit]]))
+            dates.sort()
+            for n, day in enumerate(dates):
+                day_list = day[2:].split("-")[:len(date_headers)]
+                for d, date_header in enumerate(day_list):
+                    window.addstr(10 + d, 6 + max_length + n * 2, date_header.rjust(2, "0"))
+                for i, habit in enumerate(condensed):
+                    try:
+                        value = condensed[habit][day]
+                    except:
+                        value = 0
+                    try:
+                        window.addstr(10 + len(date_headers) + i, 6 + max_length + n * 2, shades[min(round(value * 4), 4)] * 2, curses.color_pair(1))
+                    except:
+                        raise Exception(value)
+    else:
+        window.addstr(8, 5, "no habits!")
 
 def add_new_habit(window, selected, new_habit):
     display_borders(window, selected)

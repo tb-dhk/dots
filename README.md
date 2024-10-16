@@ -20,8 +20,17 @@ prerequisites:
 
 run the following code:
 ```
+# clone the repository
 git clone https://github.com/tb-dhk/dots
 cd dots
+
+# fetch the latest release tag
+latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+
+# checkout the latest release tag
+git checkout $latest_tag
+
+# build and install
 make build && make install
 ```
 

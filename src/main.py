@@ -110,13 +110,13 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
             year_view(window, selected, day, text_input, text_box, text_index, removing)
     elif outer_option == 1:
         if inner_option == 0:
-            duration_maps(window, selected, map_settings, removing)
+            duration_maps(window, selected, map_settings)
         elif inner_option == 1:
-            progress_maps(window, selected, map_settings, removing)
+            progress_maps(window, selected, map_settings)
         elif inner_option == 2:
-            heatmaps(window, selected, map_settings, removing)
+            heatmaps(window, selected, map_settings)
         elif inner_option == 3:
-            coming_soon(window)
+            manage_habits(window, selected, removing)
         elif inner_option == 4:
             add_new_habit(window, selected, new_habit)
     else:
@@ -126,7 +126,7 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
 
 def status_bar(window, text_input, text_mode, message):
     window.addstr(window.getmaxyx()[0] - 1, 0, " " * (window.getmaxyx()[1] - 1))
-    if message or not text_input:
+    if message or not text_input and not text_mode:
         display = str(message)
     else: 
         match text_mode:
@@ -156,6 +156,11 @@ def status_bar(window, text_input, text_mode, message):
                 display = f"enter value for habit '{habits[selected_habit]['name']}' on {selected_day}"
             case ["add date", selected_habit]:
                 display = "enter the date in the format yyyy-mm-dd"
+            case ["edit habit", selected_habit, selected_header]:
+                if selected_header in ["unit", "target value"]:
+                    display = f"enter new {selected_header} for habit '{Habit.load_habits()[selected_habit]['name']}'"
+                else:
+                    display = f"enter new unit for habit '{Habit.load_habits()[selected_habit]['name']}' (to provide singular and plural forms, separate with /)"
             case _:
                 display = str(message)
     window.addstr(window.getmaxyx()[0] - 1, 0, display[:window.getmaxyx()[1] - 1])
@@ -199,7 +204,7 @@ def main(stdscr):
     removing = ""
     day = date.today().strftime("%Y-%m-%d")
     map_settings = {"based_on": 0, "index": 0, "index2": 0}
-    new_habit = {"name": " ", "type": "progress", "unit": " ", "target_value": 0}
+    new_habit = {"name": " ", "type": "progress", "unit": "", "target_value": 0}
 
     # Create a window for content
     content_height = height - 3  # Adjust based on your layout
@@ -276,6 +281,10 @@ def main(stdscr):
                         for subtask in Task.get_task(removing)["subtasks"]:
                             Task.remove_task(subtask)
                         Task.remove_task(removing)
+                        removing = ""
+                        content_window.clear()
+                    elif outer_option == 1 and inner_option == 3:
+                        Habit.remove_habit(removing)
                         removing = ""
                         content_window.clear()
                 elif chr(key) in "123456789":
@@ -471,11 +480,24 @@ def main(stdscr):
                                     else:
                                         message = "invalid date format. try again!"
                                         clear = False
+                                case ["edit habit", selected_habit, selected_header]:
+                                    if selected_header in ["name", "unit"]:
+                                        valid = True
+                                    else:
+                                        if text_box.isdigit():
+                                            valid = int(text_box) >= 0
+                                            text_box = int(text_box)
+                                        else:
+                                            valid = False
+                                    if valid:
+                                        Habit.edit_habit(selected_habit, **{selected_header: text_box})
+                                        message = f"habit {selected_header} changed to '{text_box}'"
+                                    else:
+                                        message = f"invalid {selected_header}. try again!"
                             if clear:
                                 text_input = False
                                 text_box = ""
                                 text_mode = ""
-                                message = ""
                                 if outer_option == 0 and inner_option == 0:
                                     selected[1] = -1
                     content_window.clear()
@@ -519,6 +541,8 @@ def main(stdscr):
                         elif inner_option == 2:
                             habits = Habit.load_habits()
                             selected[0] = 4 + (len(habits) if map_settings["based_on"] != 4 else 7)
+                        elif inner_option == 3:
+                            selected[0] = 2 + len(Habit.load_habits())
                         elif inner_option == 4:
                             selected[0] = 6
                 else:
@@ -558,6 +582,9 @@ def main(stdscr):
                     elif inner_option == 2:
                         habits = Habit.load_habits()
                         if selected[0] == 5 + (len(habits) if map_settings["based_on"] != 4 else 7):
+                            selected[0] = 0
+                    elif inner_option == 3:
+                        if selected[0] == 2 + len(Habit.load_habits()):
                             selected[0] = 0
                     elif inner_option == 4:
                         if selected[0] == 7:
@@ -620,6 +647,8 @@ def main(stdscr):
                                 map_settings["index2"] -= 1
                         elif selected[0] > 4:
                             selected[1] -= 1
+                    elif inner_option == 3:
+                        selected[1] -= 1
                     elif inner_option == 4: 
                         if selected[0] == 3:
                             types = ["progress", "duration", "frequency"]
@@ -628,7 +657,7 @@ def main(stdscr):
                                 new_habit["unit"] = "hours"
                             elif new_habit["unit"] == "hours" and new_habit["type"] != "duration":
                                 new_habit["unit"] = ""
-                        elif selected[0] == 4:
+                        elif selected[0] == 5:
                             new_habit["target_value"] -= 1
                             if new_habit["target_value"] < 0:
                                 new_habit["target_value"] = 0
@@ -687,6 +716,8 @@ def main(stdscr):
                             map_settings["index2"] += 1
                         elif selected[0] > 4:
                             selected[1] += 1
+                    elif inner_option == 3:
+                        selected[1] += 1
                     elif inner_option == 4:
                         if selected[0] == 3:
                             types = ["progress", "duration", "frequency"]
@@ -695,7 +726,7 @@ def main(stdscr):
                                 new_habit["unit"] = "hours"
                             elif new_habit["unit"] == "hours" and new_habit["type"] != "duration":
                                 new_habit["unit"] = ""
-                        elif selected[0] == 4:
+                        elif selected[0] == 5:
                             new_habit["target_value"] += 1
                 if selected[0] < 2:
                     if outer_option == 0:
@@ -808,7 +839,7 @@ def main(stdscr):
                                 content_window.clear()
                 elif outer_option == 1:
                     habits = Habit.load_habits()
-                    habits = dict(sorted(habits.items(), key=lambda x: x[1]["name"]))
+                    habits = dict(sorted(habits.items(), key=lambda x: x[0]))
                     if inner_option < 2:
                         index = map_settings["index"]
                         if inner_option == 0:
@@ -819,7 +850,7 @@ def main(stdscr):
                             else:
                                 allowed_types = ["progress"]
                         habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] in allowed_types}
-                        habits = dict(sorted(habits.items(), key=lambda x: x[1]["name"]))
+                        habits = dict(sorted(habits.items(), key=lambda x: x[0]))
                         if selected[0] >= 4:
                             if chr(key) == "e":
                                 if inner_option == 0:
@@ -871,6 +902,16 @@ def main(stdscr):
                                     if selected_day[:4] == str(this_year):
                                         text_input = True
                                         text_mode = [f"new {habits[selected_habit]['type']} record", selected_day, selected_habit, habits]
+                    elif inner_option == 3:
+                        if chr(key) == "e":
+                            headers = ["name", "type", "unit", "target_value"]
+                            selected_header = headers[selected[1] % len(headers)]
+                            if selected_header != "type":
+                                text_input = True
+                                text_mode = ["edit habit", list(habits.keys())[selected[0] - 2], selected_header.replace("_", " ")] 
+                        elif chr(key) == "r":
+                            removing = list(habits.keys())[selected[0] - 2]
+                            content_window.clear()
                     elif inner_option == 4:
                         text_modes = {
                             2: "habit name",

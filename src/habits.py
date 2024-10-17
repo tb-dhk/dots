@@ -204,7 +204,7 @@ def get_records_from_habits(habits, index):
 
     return records
 
-def duration_maps(window, selected, map_settings, removing):
+def duration_maps(window, selected, map_settings):
     display_borders(window, selected)
     based_on = ["day", "habit"][map_settings['based_on'] % 2]
     index = map_settings['index']
@@ -284,14 +284,14 @@ def duration_maps(window, selected, map_settings, removing):
             for entry in records[record]:
                 count += 1
                 width = hour_width * ((dt.strptime(entry[1], "%Y-%m-%d-%H:%M").hour - dt.strptime(entry[0], "%Y-%m-%d-%H:%M").hour) % 24)
-                message = " " * width if removing != record else f"press {count} to remove this entry, esc to cancel"
+                message = " " * width
                 if len(message) > width:
                     message = message[:width-3] + "..."
                 window.addstr(9 + i, 8 + max_length + hour_width * ((dt.strptime(entry[0], "%Y-%m-%d-%H:%M").hour - earliest_time) % 24), message, curses.color_pair(2 if removing != record else 7))                     
     else:
         window.addstr(8, 5, "no duration habits!")
 
-def progress_maps(window, selected, map_settings, removing):
+def progress_maps(window, selected, map_settings):
     display_borders(window, selected)
     based_on = ["day", "habit"][map_settings['based_on'] % 2]
     index = map_settings['index']
@@ -352,10 +352,7 @@ def progress_maps(window, selected, map_settings, removing):
                     window.addstr(8, 7 + max_length + round(max_width * (x / interval)), f'{float(f"{x / interval * target:.2g}"):g}'.rjust(2))
 
             window.addstr(9 + i, 5, key.rjust(max_length), curses.color_pair(1 + (selected[0] == i + 4)))
-            removing_this = (based_on == "day" and removing == id) or (based_on == "habit" and removing == key)
-            if removing_this:
-                window.addstr(9 + i, 8 + max_length, "press 0 to remove this date, esc to cancel", curses.color_pair(7))
-            window.addstr(9 + i, 8 + max_length, " " * round(max_width * value / target), curses.color_pair(2 if not removing_this else 7))
+            window.addstr(9 + i, 8 + max_length, " " * min(round(max_width * value / target), max_width), curses.color_pair(2))
             if habits[id]['type'] == "progress":
                 window.addstr(9 + i, window.getmaxyx()[1] - 12, f"{round(value / target * 100, 2):.2f}%".rjust(10))
             else:
@@ -401,7 +398,7 @@ def get_dates(start_day, end_day, based_on, index, index2):
         dates = [start_day.replace(year=start_day.year + i) for i in range(length)]
     return dates
 
-def heatmaps(window, selected, map_settings, removing):
+def heatmaps(window, selected, map_settings):
     display_borders(window, selected)
     based_list = ["day", "week", "month", "year", "calendar"]
     based_on = based_list[map_settings['based_on'] % len(based_list)]
@@ -558,6 +555,39 @@ def heatmaps(window, selected, map_settings, removing):
                 window.addstr(12 + weekday, 9 + weeks * 2, shades[min(round(value * 4), 4)] * 2, curses.color_pair(8 if this_cell_selected else 1))
     else:
         window.addstr(8, 5, "no habits!")
+
+def manage_habits(window, selected, removing):
+    display_borders(window, selected)
+    habits = Habit.load_habits()
+    habits = dict(sorted(habits.items(), key=lambda x: x[0]))
+
+    headers = ["name", "type", "unit", "target_value"]
+    column_widths = [max(len(str(habits[habit][key])) for habit in habits) for key in headers]
+    column_widths = [max(column_widths[i], len(headers[i])) + 3 for i in range(len(headers))]
+
+    window.addstr(2, 5, "manage habits")
+
+    # draw headers and footer
+    for i, header in enumerate(headers):
+        window.addstr(4, 5 + sum(column_widths[:i]), "+" + "-" * (column_widths[i] - 1))
+        window.addstr(5, 5 + sum(column_widths[:i]), "| " + header.ljust(column_widths[i]) + " ")
+        window.addstr(6, 5 + sum(column_widths[:i]), "+" + "-" * (column_widths[i] - 1))
+        window.addstr(7 + len(habits), 5 + sum(column_widths[:i]), "+" + "-" * (column_widths[i] - 1))
+    for c, char in enumerate("+|+"):
+        window.addstr(4 + c, 5 + sum(column_widths), char)
+    window.addstr(7 + len(habits), 5 + sum(column_widths), "+")
+
+    for h, habit in enumerate(habits):
+        for i, header in enumerate(headers):
+            item = str(habits[habit][header])
+            if i == 3 and habits[habit]["type"] == "frequency":
+                item = ""
+            window.addstr(7 + h, 5 + sum(column_widths[:i]), "|" + " " * (column_widths[i] + 2))
+            if removing == habit:
+                window.addstr(7 + h, 7 + sum(column_widths[:i]), item.ljust(column_widths[i] - 3), curses.color_pair(7))
+            else:
+                window.addstr(7 + h, 7 + sum(column_widths[:i]), item.ljust(column_widths[i] - 3), curses.color_pair(1 + (selected[0] == h + 2 and selected[1] % 4 == i)))
+        window.addstr(7 + h, 5 + sum(column_widths), "|")
 
 def add_new_habit(window, selected, new_habit):
     display_borders(window, selected)

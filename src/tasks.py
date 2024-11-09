@@ -1,11 +1,10 @@
-import json
 import uuid
 import curses
 import calendar
 from datetime import datetime as dt, date, timedelta
 import os
 import toml
-from misc import display_borders
+from misc import display_borders, load_items, save_items
 
 config = toml.load(os.path.join(os.path.expanduser("~"), ".dots", "config.toml"))
 
@@ -29,20 +28,11 @@ class Task:
 
     @staticmethod
     def load_tasks(filename=os.path.join(os.path.expanduser("~"), ".dots", "tasks.json")):
-        """Load tasks from a JSON file."""
-        try:
-            with open(filename, 'r', encoding='utf-8') as file:
-                return json.load(file)  # Load and return tasks as a dictionary
-        except FileNotFoundError:
-            return {}  # Return empty dict if file does not exist
-        except json.JSONDecodeError:
-            return {}  # Return empty dict if JSON is invalid
+        return load_items(filename)
 
     @staticmethod
     def save_tasks(tasks, filename=os.path.join(os.path.expanduser("~"), ".dots", "tasks.json")):
-        """Save tasks to a JSON file."""
-        with open(filename, 'w', encoding='utf-8') as file:
-            json.dump(tasks, file, indent=4)  # Save tasks in a pretty format
+        save_items(tasks, filename)
 
     @classmethod
     def add_task(cls, name, due_date=date.today().strftime("%Y-%m-%d"), due_type="day"):
@@ -274,7 +264,7 @@ def display_task_details(window, task_id, split_x, selected):
         window.move(window.getyx()[0] + 1, split_x + 3)
         count += 1
 
-def display_tasks(window, selected, text_input, text_mode, text_box, text_index, removing):
+def display_tasks(window, selected, text_mode, removing):
     """Main function to display tasks, with task details in the right box when selected."""
     max_x = window.getmaxyx()[1]
     display_borders(window, selected, split=True, task_list=get_task_list())
@@ -315,9 +305,6 @@ def draw_task_table(window, data, start_y, start_x, selected, removing):
 
     # Identify specific columns for prioritization
     headers = data[0][1:-1]
-    tag_index = headers.index("tags") if "tags" in headers else -1
-    name_index = headers.index("task") if "task" in headers else -1
-    parent_index = headers.index("part of") if "part of" in headers else -1
 
     table_width = sum(column_widths) + len(column_widths) + 5  # Total width of the table
     max_width = window.getmaxyx()[1] - 10  # Max width allowed for the table
@@ -325,20 +312,20 @@ def draw_task_table(window, data, start_y, start_x, selected, removing):
     # If the table is wider than the maximum allowed width
     if table_width > max_width:
         # List of all column indices
-        all_columns = [i for i in range(len(column_widths))]
+        all_columns = list(range(len(column_widths)))
 
         # Calculate how much the table exceeds the max width
         total_excess = table_width - max_width
 
         # Calculate the proportional decrease for each column based on their current widths
         total_current_width = sum(column_widths[i] for i in all_columns)
-        
+
         # Scale down columns proportionally
         for col_index in all_columns:
             # Reduce each column width based on its proportion of the total current width
             reduction_ratio = column_widths[col_index] / total_current_width
             reduction_amount = int(total_excess * reduction_ratio)
-            
+
             # Ensure columns do not shrink below the minimum width
             min_width = len(headers[col_index]) + 3
             column_widths[col_index] = max(min_width, column_widths[col_index] - reduction_amount)
@@ -361,10 +348,7 @@ def draw_task_table(window, data, start_y, start_x, selected, removing):
         window.addstr(start_y + 2, start_x + sum(column_widths[:i]) + i, '+' + '-' * column_widths[i])
         window.addstr(start_y + len(data) + 2, start_x + sum(column_widths[:i]) + i, '+' + '-' * column_widths[i])
     for row in range(3):
-        try:
-            window.addstr(start_y + row, start_x + sum(column_widths) + 5, '|' if row % 2 else '+')
-        except:
-            raise Exception(f"{start_x}, {column_widths}, {start_x + sum(column_widths) + 5}, {max_width}")
+        window.addstr(start_y + row, start_x + sum(column_widths) + 5, '|' if row % 2 else '+')
     window.addstr(start_y + len(data) + 2, start_x + sum(column_widths) + 5, '+')
 
     # Draw table rows
@@ -430,7 +414,7 @@ def render_task_and_children(window, data, task, tasks_by_parent, indent, day, r
         for child in tasks_by_parent[task['id']]:
             render_task_and_children(window, data, child, tasks_by_parent, indent + 1, day, removing, bullets=bullets, removing_subtask=task['id']==removing)
 
-def day_view(window, selected, day, text_input, text_box, text_index, removing):
+def day_view(window, selected, day, removing):
     display_borders(window, selected)
 
     window.addstr(2, 5, "tasks for ")
@@ -477,7 +461,7 @@ def day_view(window, selected, day, text_input, text_box, text_index, removing):
 
     # Display text box input (for text entry mode)
 
-def week_view(window, selected, day, text_input, text_box, text_index, removing):
+def week_view(window, selected, day, removing):
     display_borders(window, selected)
 
     start = (dt.strptime(day, "%Y-%m-%d") - timedelta(days=dt.strptime(day, "%Y-%m-%d").weekday() + 1)).strftime("%Y-%m-%d")
@@ -520,7 +504,7 @@ def week_view(window, selected, day, text_input, text_box, text_index, removing)
 
     # Display text box input (for text entry mode)
 
-def month_view(window, selected, day, text_input, text_box, text_index, removing):
+def month_view(window, selected, day, removing):
     display_borders(window, selected)
 
     start = dt.strptime(day, "%Y-%m-%d").replace(day=1).strftime("%Y-%m-%d")
@@ -564,7 +548,7 @@ def month_view(window, selected, day, text_input, text_box, text_index, removing
         f"({str(round(completed_today / len(due_today) * 100, 2)) + '%' if len(due_today) else 'n/a'})"
     )
 
-def year_view(window, selected, day, text_input, text_box, text_index, removing):
+def year_view(window, selected, day, removing):
     display_borders(window, selected)
 
     start = dt.strptime(day, "%Y-%m-%d").replace(month=1, day=1).strftime("%Y-%m-%d")

@@ -530,14 +530,14 @@ def main(stdscr):
                             selected[0] = len(tasks_for_year(day)) + 2
                     elif outer_option == 1:
                         if inner_option < 2:
-                            if map_settings["based_on"] == 0:
-                                habits = Habit.load_habits()
-                                habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
-                                selected[0] = 3 + len(habits)
-                            else:
-                                habits = Habit.load_habits()
-                                habit = list(habits.keys())[map_settings["index"] % len(habits)]
-                                selected[0] = 4 + len(habits[habit]["data"])
+                            habits = Habit.load_habits()
+                            if habits:
+                                if map_settings["based_on"] == 0: 
+                                    habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
+                                    selected[0] = 3 + len(habits)
+                                else:
+                                    habit = list(habits.keys())[map_settings["index"] % len(habits)]
+                                    selected[0] = 4 + len(habits[habit]["data"])
                         elif inner_option == 2:
                             habits = Habit.load_habits()
                             selected[0] = 4 + (len(habits) if map_settings["based_on"] != 4 else 7)
@@ -569,16 +569,16 @@ def main(stdscr):
                             selected[0] = 0
                 elif outer_option == 1:
                     if inner_option < 2:
-                        if map_settings["based_on"] == 0:
-                            habits = Habit.load_habits()
-                            habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
-                            if selected[0] == 4 + len(habits):
-                                selected[0] = 0
-                        else:
-                            habits = Habit.load_habits()
-                            habit = list(habits.keys())[map_settings["index"] % len(habits)]
-                            if selected[0] == 5 + len(habits[habit]["data"]):
-                                selected[0] = 0
+                        habits = Habit.load_habits()
+                        if habits:
+                            if map_settings["based_on"] == 0:
+                                habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
+                                if selected[0] == 4 + len(habits):
+                                    selected[0] = 0
+                            else:
+                                habit = list(habits.keys())[map_settings["index"] % len(habits)]
+                                if selected[0] == 5 + len(habits[habit]["data"]):
+                                    selected[0] = 0
                     elif inner_option == 2:
                         habits = Habit.load_habits()
                         if selected[0] == 5 + (len(habits) if map_settings["based_on"] != 4 else 7):

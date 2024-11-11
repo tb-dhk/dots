@@ -222,10 +222,18 @@ def duration_maps(window, selected, map_settings):
             except:
                 earliest_time = timedelta(hours=0)
                 latest_time = timedelta(hours=24)
+<<<<<<< HEAD
                 try:
                     earliest_time = earliest_time.seconds // 3600
                 except:
                     earliest_time = 0
+=======
+            latest_time_diff = math.ceil((latest_time - earliest_time) / timedelta(hours=1))
+            try:                                                   
+                earliest_time = earliest_time.hour
+            except:
+                earliest_time = 0
+>>>>>>> 31e39e3 (src/tasks.py:)
 
             latest_time_diff = math.ceil((latest_time - earliest_time) / timedelta(hours=1))
         else:

@@ -129,7 +129,7 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
     elif outer_option == 2:
         lists = List.load_lists()
         if inner_option < len(lists):
-            view_list(window, inner_option, selected) 
+            view_list(window, inner_option, selected, removing) 
         else:
             add_new_list(window, selected) 
     else:
@@ -311,6 +311,14 @@ def main(stdscr):
                         Habit.remove_habit(removing)
                         removing = ""
                         content_window.clear()
+                    elif outer_option == 2:
+                        lists = List.load_lists()
+                        if inner_option < len(lists):
+                            ls = list(lists.keys())[inner_option]
+                            if removing == ".":
+                                List.remove_list(ls)
+                            else:
+                                List.remove_item(ls, removing)
                 elif chr(key) in "123456789":
                     if outer_option == 1 and inner_option == 0:
                         if map_settings["based_on"] == 0:
@@ -992,7 +1000,6 @@ def main(stdscr):
                 elif outer_option == 2:
                     lists = List.load_lists()
                     if inner_option < len(lists):
-                        lists = List.load_lists()
                         ls = list(lists.keys())[inner_option]
                         items = List.get_list(ls)["items"]
                         try:
@@ -1005,6 +1012,8 @@ def main(stdscr):
                                 case "e":
                                     text_input = True
                                     text_mode = ["edit list name", ls]
+                                case "r":
+                                    removing = "."
                         else:
                             match chr(key):
                                 case "x":
@@ -1013,6 +1022,8 @@ def main(stdscr):
                                 case "e":
                                     text_input = True
                                     text_mode = ["edit list item", ls, item]
+                                case "r":
+                                    removing = item
                     else:
                         if chr(key) == ":":
                             text_input = True

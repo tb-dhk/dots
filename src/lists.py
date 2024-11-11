@@ -1,13 +1,14 @@
+import curses
 import os
 import uuid
-from misc import load_items, save_items
+from misc import display_borders, load_items, save_items
 
 class List:
-    def __init__(self, name, description="", items=[]):
+    def __init__(self, name, description="", items=None):
         self.id = str(uuid.uuid4())
         self.name = name
         self.description = description
-        self.items = items
+        self.items = items if items is not None else {}
 
     @staticmethod
     def load_lists(filename=os.path.join(os.path.expanduser("~"), ".dots", "lists.json")):
@@ -20,11 +21,11 @@ class List:
     @classmethod
     def add_list(cls, name):
         """Create a new list and add it to the lists dictionary."""
-        list = cls(name)
+        list_instance = cls(name)
         lists = cls.load_lists()  # Load existing lists
-        lists[list.id] = vars(list)  # Add list to the dictionary
+        lists[list_instance.id] = vars(list_instance)  # Add list to the dictionary
         cls.save_lists(lists)  # Save updated lists to JSON
-        return list.id  # Return the ID of the new list
+        return list_instance.id  # Return the ID of the new list
 
     @classmethod
     def edit_list(cls, list_id, **kwargs):
@@ -56,4 +57,64 @@ class List:
     def get_list(cls, list_id):
         """Get a list by its ID."""
         lists = cls.load_lists()  # Load existing lists
-        return lists[list_id]  # Return the list if it exists, else None
+        return lists.get(list_id)  # Return the list if it exists, else None
+
+    @classmethod
+    def add_item(cls, list_id, name, description=""):
+        """Add a new item to a specific list."""
+        lists = cls.load_lists()
+        if list_id in lists:
+            new_item = ListItem(name, description=description)
+            lists[list_id]["items"][new_item.id] = vars(new_item)  # Add new item to the dictionary
+            cls.save_lists(lists)  # Save changes to JSON
+            return new_item.id  # Return the new item's ID
+        return None  # Return None if list ID not found
+
+    @classmethod
+    def edit_item(cls, list_id, item_id, **kwargs):
+        """Edit an item within a specific list."""
+        lists = cls.load_lists()
+        if list_id in lists and item_id in lists[list_id]["items"]:
+            item_data = lists[list_id]["items"][item_id]
+            for key, value in kwargs.items():
+                if key in item_data:
+                    item_data[key] = value  # Update item attributes
+            lists[list_id]["items"][item_id] = item_data  # Save changes to the specific item
+            cls.save_lists(lists)  # Save changes to JSON
+            return True  # Return success if item updated
+        return False  # Return failure if item or list ID not found
+
+    @classmethod
+    def remove_item(cls, list_id, item_id):
+        """Remove an item from a specific list."""
+        lists = cls.load_lists()
+        if list_id in lists and item_id in lists[list_id]["items"]:
+            del lists[list_id]["items"][item_id]  # Remove the item by ID
+            cls.save_lists(lists)  # Save changes to JSON
+            return True  # Return success if item removed
+        return False  # Return failure if item or list ID not found
+
+class ListItem:
+    def __init__(self, name, description="", task=""):
+        self.id = str(uuid.uuid4())
+        self.name = name
+        self.completed = False
+        self.description = description
+        self.task = task
+
+def add_new_list(window, selected):
+    display_borders(window, selected)
+
+    window.addstr(1, 2, "+ press : to add a new list.", curses.color_pair(4 + (selected[0] == 2)))
+
+def view_list(window, inner_option, selected):
+    display_borders(window, selected)
+
+    lists = List.load_lists()
+    items = List.get_list(list(lists.keys())[inner_option])["items"]
+
+    for i, item in enumerate(items):
+        symbol = "x" if items[item]["completed"] else "•"
+        window.addstr(i + 1, 2, symbol + " " + items[item]["name"], curses.color_pair(1 + (selected[0] == i + 2)))
+
+    window.addstr(len(items) + 1, 2, "+ press : to add a new item.", curses.color_pair(4 + (selected[0] == (len(items) + 2))))

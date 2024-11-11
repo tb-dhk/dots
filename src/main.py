@@ -478,6 +478,13 @@ def main(stdscr):
                                         message = f"habit {selected_header} changed to '{text_box}'"
                                     else:
                                         message = f"invalid {selected_header}. try again!"
+                                case "new list":
+                                    List.add_list(text_box)
+                                    message = f"new list '{text_box}' added."
+                                case ["new list item", ls]:
+                                    List.add_item(ls, text_box)
+                                    ls_name = List.get_list(ls)["name"]
+                                    message = f"new list item '{text_box}' added to list {ls_name}."
                             if clear:
                                 text_input = False
                                 text_box = ""
@@ -537,6 +544,15 @@ def main(stdscr):
                             selected[0] = 2 + len(Habit.load_habits())
                         elif inner_option == 4:
                             selected[0] = 6
+                elif outer_option == 2:
+                    lists = List.load_lists()
+                    if inner_option < len(lists):
+                        ls = lists[list(lists.keys())[inner_option]]
+                        if selected[0] == -1:
+                            selected[0] = len(ls["items"]) + 2
+                    else:
+                        if selected[0] == 0:
+                            selected[0] = 3
                 else:
                     if selected[0] == -1:
                         selected[0] = 2
@@ -581,6 +597,15 @@ def main(stdscr):
                             selected[0] = 0
                     elif inner_option == 4:
                         if selected[0] == 7:
+                            selected[0] = 0
+                elif outer_option == 2:
+                    lists = List.load_lists()
+                    if inner_option < len(lists):
+                        ls = lists[list(lists.keys())[inner_option]]
+                        if selected[0] == len(ls["items"]) + 3:
+                            selected[0] = 0
+                    else:
+                        if selected[0] == 3:
                             selected[0] = 0
                 else:
                     if selected[0] == 3:
@@ -986,12 +1011,37 @@ def main(stdscr):
                                 target_value=new_habit["target_value"]
                             )
                             message = f"new habit '{new_habit['name']}' added"
+<<<<<<< HEAD
                             new_habit = {
                                 "name": " ",
                                 "type": "progress",
                                 "unit": " ",
                                 "target_value": 0
                             }
+=======
+                            new_habit = {"name": " ", "type": "progress", "unit": " ", "target_value": 0}
+                elif outer_option == 2:
+                    lists = List.load_lists()
+                    if inner_option < len(lists):
+                        lists = List.load_lists()
+                        ls = list(lists.keys())[inner_option]
+                        items = List.get_list(ls)["items"]
+                        try:
+                            item = items[list(items.keys())[(selected[0] + 2)]]
+                        except:
+                            match chr(key):
+                                case ":":
+                                    text_input = True
+                                    text_mode = ["new list item", ls]
+                        else:
+                            match chr(key):
+                                case "x":
+                                    List.edit_item(ls, item, completed=True)
+                    else:
+                        if chr(key) == ":":
+                            text_input = True
+                            text_mode = "new list"
+>>>>>>> fe0dc5f (src/lists.py:)
             else:
                 pass
 

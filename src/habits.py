@@ -75,7 +75,6 @@ def duration_maps(window, selected, map_settings):
                     earliest_time = dt.combine(day, time(hour=0, minute=0, second=0))
 
             latest_time_diff = math.ceil((latest_time - earliest_time) / timedelta(hours=1))
-
         else:
             habitid = list(habits.keys())[index % len(habits)]
             raw_records = habits[habitid]['data']

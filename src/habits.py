@@ -15,7 +15,7 @@ class Habit:
         self.name = name  # Habit name
         self.type = habit_type  # Habit type
         self.unit = unit  # Measurement unit
-        self.description = ""
+        self.description = description
         self.target_value = target_value  # Target value (optional)
         self.data = {}  # Data will be saved to habits.json
 

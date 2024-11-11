@@ -76,7 +76,7 @@ def edit_task_parent(selected, text_box, task_list):
     return message
 
 def outer_navbar(stdscr, outer_option, selected):
-    options = ["tasks", "habits", "lists", "journals"]
+    options = ["tasks", "habits", "lists", "log"]
     stdscr.addstr(0, 0, " " * stdscr.getmaxyx()[1], curses.color_pair(2 + 4 * (selected[0] == 0)))
     stdscr.move(0, 0)
     for i, option in enumerate(options):

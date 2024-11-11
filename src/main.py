@@ -135,7 +135,6 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
     elif outer_option == 2:
         lists = List.load_lists()
         if inner_option < len(lists):
-<<<<<<< HEAD
             view_list(window, inner_option, selected, removing) 
         else:
             add_new_list(window, selected) 
@@ -145,11 +144,6 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
             view_log(window, inner_option, selected, removing) 
         else:
             add_new_log(window, selected) 
-=======
-            view_list(window, inner_option, selected) 
-        else:
-            add_new_list(window, selected) 
->>>>>>> eae076f (src/lists.py:)
     else:
         coming_soon(window)
     display_text_box(window, text_input, text_box, text_index)
@@ -195,8 +189,6 @@ def status_bar(window, text_input, text_mode, message):
                     display = f"enter new unit for habit '{Habit.load_habits()[selected_habit]['name']}' (to provide singular and plural forms, separate with /)"
             case "new list":
                 display = "enter the list name"
-<<<<<<< HEAD
-<<<<<<< HEAD
             case ["edit list name", *args]:
                 display = "enter the list name"
             case [("new list item" | "edit list item"), *args]:
@@ -207,13 +199,8 @@ def status_bar(window, text_input, text_mode, message):
                 display = "enter the log name"
             case [("new log entry" | "edit log entry"), *args]:
                 display = "enter the entry name"
-=======
-            case ["new list item", ls]:
-=======
             case [("new list item" | "edit list item"), *args]:
->>>>>>> 0d024cc (added ability to change list item name (part of #4))
                 display = "enter the item name"
->>>>>>> eae076f (src/lists.py:)
             case _:
                 display = str(message)
     display = display.lower()
@@ -571,26 +558,18 @@ def main(stdscr):
                                 case "new list":
                                     List.add_list(text_box)
                                     message = f"new list '{text_box}' added."
-<<<<<<< HEAD
                                 case ["edit list name", ls]:
                                     og_name = List.get_list(ls)["name"]
                                     List.edit_list(ls, name=text_box)
                                     message = f"list '{og_name}' renamed to '{text_box}'."
-=======
->>>>>>> eae076f (src/lists.py:)
                                 case ["new list item", ls]:
                                     List.add_item(ls, text_box)
                                     ls_name = List.get_list(ls)["name"]
                                     message = f"new list item '{text_box}' added to list {ls_name}."
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 0d024cc (added ability to change list item name (part of #4))
                                 case ["edit list item", ls, item]:
                                     List.edit_item(ls, item, name=text_box)
                                     ls_name = List.get_list(ls)["name"]
                                     message = f"list item in list {ls_name} changed to {text_box}."
-<<<<<<< HEAD
                                 case "new log":
                                     Log.add_log(text_box)
                                     message = f"new log '{text_box}' added."
@@ -608,10 +587,6 @@ def main(stdscr):
                                     Log.edit_entry(log, stdscr, entry, markdown=text_box)
                                     log_name = Log.get_log(log)["name"]
                                     message = f"log entry for '{entry}' in log '{log_name}' changed."
-=======
->>>>>>> eae076f (src/lists.py:)
-=======
->>>>>>> 0d024cc (added ability to change list item name (part of #4))
                             if clear:
                                 text_input = False
                                 text_box = ""
@@ -661,7 +636,6 @@ def main(stdscr):
                             selected[0] = 2 + len(Habit.load_habits())
                         elif inner_option == 4:
                             selected[0] = 6
-<<<<<<< HEAD
                     elif outer_option == 2:
                         lists = List.load_lists()
                         if inner_option < len(lists):
@@ -676,21 +650,6 @@ def main(stdscr):
                             selected[0] = len(log["entries"]) + 2
                         else:
                             selected[0] = 2
-                    else:
-=======
-                elif outer_option == 2:
-                    lists = List.load_lists()
-                    if inner_option < len(lists):
-                        ls = lists[list(lists.keys())[inner_option]]
-                        if selected[0] == -1:
-                            selected[0] = len(ls["items"]) + 2
-                    else:
-                        if selected[0] == 0:
-                            selected[0] = 3
-                else:
-                    if selected[0] == -1:
->>>>>>> eae076f (src/lists.py:)
-                        selected[0] = 2
             elif key == curses.KEY_DOWN:
                 selected[0] += 1
                 if outer_option == 0:
@@ -740,7 +699,6 @@ def main(stdscr):
                     else:
                         if selected[0] == 3:
                             selected[0] = 0
-<<<<<<< HEAD
                 elif outer_option == 3:
                     logs = Log.load_logs()
                     if inner_option < len(logs):
@@ -750,8 +708,6 @@ def main(stdscr):
                     else:
                         if selected[0] == 3:
                             selected[0] = 0
-=======
->>>>>>> eae076f (src/lists.py:)
                 else:
                     if selected[0] == 3:
                         selected[0] = 0
@@ -1092,33 +1048,23 @@ def main(stdscr):
                 elif outer_option == 2:
                     lists = List.load_lists()
                     if inner_option < len(lists):
-<<<<<<< HEAD
                         ls = list(lists.keys())[inner_option]
                         items = List.get_list(ls)["items"]
                         try:
-                            item = list(items.keys())[(selected[0] - 2)]
-=======
-                        lists = List.load_lists()
-                        ls = list(lists.keys())[inner_option]
-                        items = List.get_list(ls)["items"]
-                        try:
-<<<<<<< HEAD
                             item = items[list(items.keys())[(selected[0] + 2)]]
->>>>>>> eae076f (src/lists.py:)
-=======
-                            item = list(items.keys())[(selected[0] - 2)]
->>>>>>> 0d024cc (added ability to change list item name (part of #4))
                         except:
                             match chr(key):
                                 case ":":
                                     text_input = True
                                     text_mode = ["new list item", ls]
-<<<<<<< HEAD
                                 case "e":
                                     text_input = True
                                     text_mode = ["edit list name", ls]
                                 case "r":
                                     removing = "."
+                                case "e":
+                                    text_input = True
+                                    text_mode = ["edit list name", ls]
                         else:
                             match chr(key):
                                 case "x":
@@ -1129,25 +1075,10 @@ def main(stdscr):
                                     text_mode = ["edit list item", ls, item]
                                 case "r":
                                     removing = item
-=======
-                        else:
-                            match chr(key):
-                                case "x":
-<<<<<<< HEAD
-                                    List.edit_item(ls, item, completed=True)
->>>>>>> eae076f (src/lists.py:)
-=======
-                                    completed = items[item]["completed"]
-                                    List.edit_item(ls, item, completed=not completed)
-                                case "e":
-                                    text_input = True
-                                    text_mode = ["edit list item", ls, item]
->>>>>>> 0d024cc (added ability to change list item name (part of #4))
                     else:
                         if chr(key) == ":":
                             text_input = True
                             text_mode = "new list"
-<<<<<<< HEAD
                 elif outer_option == 3:
                     logs = Log.load_logs()
                     if inner_option < len(logs):
@@ -1186,8 +1117,6 @@ def main(stdscr):
                         if chr(key) == ":":
                             text_input = True
                             text_mode = "new log"
-=======
->>>>>>> eae076f (src/lists.py:)
             else:
                 pass
 

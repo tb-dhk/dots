@@ -57,11 +57,6 @@ class List:
     def get_list(cls, list_id):
         """Get a list by its ID."""
         lists = cls.load_lists()  # Load existing lists
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> eae076f (src/lists.py:)
         return lists.get(list_id)  # Return the list if it exists, else None
 
     @classmethod
@@ -112,11 +107,7 @@ def add_new_list(window, selected):
 
     window.addstr(1, 2, "+ press : to add a new list.", curses.color_pair(4 + (selected[0] == 2)))
 
-<<<<<<< HEAD
 def view_list(window, inner_option, selected, removing):
-=======
-def view_list(window, inner_option, selected):
->>>>>>> eae076f (src/lists.py:)
     display_borders(window, selected)
 
     lists = List.load_lists()
@@ -124,7 +115,6 @@ def view_list(window, inner_option, selected):
 
     for i, item in enumerate(items):
         symbol = "x" if items[item]["completed"] else "•"
-<<<<<<< HEAD
         if removing == item:
             window.addstr(i + 1, 2, symbol + " press r to confirm removal, esc to cancel", curses.color_pair(7))
         else:
@@ -134,14 +124,3 @@ def view_list(window, inner_option, selected):
         window.addstr(len(items) + 1, 2, "+ press r to confirm removal, esc to cancel", curses.color_pair(7))
     else:
         window.addstr(len(items) + 1, 2, "+ press : to add a new item, e to change list name, r to remove list.", curses.color_pair(4 + (selected[0] == (len(items) + 2))))
-=======
-        return lists[list_id]  # Return the list if it exists, else None
->>>>>>> f39c9f3 (created src/lists.py (#2))
-=======
-        return lists[list_id]  # Return the list if it exists, else None
->>>>>>> 2018eca (created src/lists.py (#2))
-=======
-        window.addstr(i + 1, 2, symbol + " " + items[item]["name"], curses.color_pair(1 + (selected[0] == i + 2)))
-
-    window.addstr(len(items) + 1, 2, "+ press : to add a new item.", curses.color_pair(4 + (selected[0] == (len(items) + 2))))
->>>>>>> eae076f (src/lists.py:)

@@ -25,17 +25,38 @@ install:
 	else \
 		echo "error: unsupported operating system."; exit 1; \
 	fi
+	
 	@mkdir -p ~/.dots || { echo "error: failed to create ~/.dots."; exit 1; }
 	@if [ ! -f ~/.dots/config.toml ]; then \
 		cp src/config.toml ~/.dots/config.toml || { echo "error: failed to move config.toml to ~/.dots/config.toml."; exit 1; }; \
 	else \
 		echo "warning: ~/.dots/config.toml already exists. skipping..."; \
 	fi
+
 	@if [ ! -f ~/.dots/tasks.json ]; then \
-		echo "{}" > ~/.dots/tasks.json || { echo "error: failed to create tasks.json in ~/.dots."; exit 1; }; \
+			echo "{}" > ~/.dots/tasks.json || { echo "error: failed to create tasks.json in ~/.dots."; exit 1; }; \
 	else \
-		echo "warning: ~/.dots/tasks.json already exists. skipping..."; \
+			echo "warning: ~/.dots/tasks.json already exists. skipping..."; \
 	fi
+
+	@if [ ! -f ~/.dots/habits.json ]; then \
+			echo "{}" > ~/.dots/habits.json || { echo "error: failed to create habits.json in ~/.dots."; exit 1; }; \
+	else \
+			echo "warning: ~/.dots/habits.json already exists. skipping..."; \
+	fi
+
+	@if [ ! -f ~/.dots/lists.json ]; then \
+			echo "{}" > ~/.dots/lists.json || { echo "error: failed to create lists.json in ~/.dots."; exit 1; }; \
+	else \
+			echo "warning: ~/.dots/lists.json already exists. skipping..."; \
+	fi
+
+	@if [ ! -f ~/.dots/logs.json ]; then \
+			echo "{}" > ~/.dots/logs.json || { echo "error: failed to create logs.json in ~/.dots."; exit 1; }; \
+	else \
+			echo "warning: ~/.dots/logs.json already exists. skipping..."; \
+	fi
+
 	@echo "dots installed successfully."
 
 .PHONY: build install

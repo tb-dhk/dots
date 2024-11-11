@@ -481,6 +481,10 @@ def main(stdscr):
                                 case "new list":
                                     List.add_list(text_box)
                                     message = f"new list '{text_box}' added."
+                                case ["edit list name", ls]:
+                                    og_name = List.get_list(ls)["name"]
+                                    List.edit_list(ls, name=text_box)
+                                    message = f"list '{og_name}' renamed to '{text_box}'."
                                 case ["new list item", ls]:
                                     List.add_item(ls, text_box)
                                     ls_name = List.get_list(ls)["name"]
@@ -1037,6 +1041,9 @@ def main(stdscr):
                                 case ":":
                                     text_input = True
                                     text_mode = ["new list item", ls]
+                                case "e":
+                                    text_input = True
+                                    text_mode = ["edit list name", ls]
                         else:
                             match chr(key):
                                 case "x":

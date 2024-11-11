@@ -176,6 +176,8 @@ def status_bar(window, text_input, text_mode, message):
                     display = f"enter new unit for habit '{Habit.load_habits()[selected_habit]['name']}' (to provide singular and plural forms, separate with /)"
             case "new list":
                 display = "enter the list name"
+            case ["edit list name", *args]:
+                display = "enter the list name"
             case [("new list item" | "edit list item"), *args]:
                 display = "enter the item name"
             case _:
@@ -519,6 +521,10 @@ def main(stdscr):
                                 case "new list":
                                     List.add_list(text_box)
                                     message = f"new list '{text_box}' added."
+                                case ["edit list name", ls]:
+                                    og_name = List.get_list(ls)["name"]
+                                    List.edit_list(ls, name=text_box)
+                                    message = f"list '{og_name}' renamed to '{text_box}'."
                                 case ["new list item", ls]:
                                     List.add_item(ls, text_box)
                                     ls_name = List.get_list(ls)["name"]
@@ -996,6 +1002,9 @@ def main(stdscr):
                                 case ":":
                                     text_input = True
                                     text_mode = ["new list item", ls]
+                                case "e":
+                                    text_input = True
+                                    text_mode = ["edit list name", ls]
                         else:
                             match chr(key):
                                 case "x":

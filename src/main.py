@@ -12,14 +12,9 @@ import subprocess
 from points import points
 
 from tasks import Task, get_task_list, tasks_for_day, tasks_for_week, tasks_for_month, tasks_for_year, display_tasks, day_view, week_view, month_view, year_view
-<<<<<<< HEAD
 from habits import Habit, DurationHabit, FrequencyHabit, ProgressHabit, get_records_from_habits, duration_maps, progress_maps, get_sunday, get_bounds, get_dates, heatmaps, manage_habits, add_new_habit
 from lists import List, add_new_list, view_list
 from logs import Log, add_new_log, view_log
-=======
-from habits import Habit, get_records_from_habits, duration_maps, progress_maps, get_sunday, get_bounds, get_dates, heatmaps, manage_habits, add_new_habit
-from lists import List, add_new_list, view_list
->>>>>>> eae076f (src/lists.py:)
 
 from misc import display_text_box, coming_soon
 
@@ -100,12 +95,9 @@ def inner_options(outer_option):
     if outer_option == 2:
         lists = List.load_lists()
         return [lists[ls]["name"] for ls in lists] + ["+ new"]
-<<<<<<< HEAD
     if outer_option == 3:
         logs = Log.load_logs()
         return [logs[log]["name"] for log in logs] + ["+ new"]
-=======
->>>>>>> eae076f (src/lists.py:)
     if outer_option == 4:
         return ["main"]
     return ["+ new"]
@@ -203,6 +195,7 @@ def status_bar(window, text_input, text_mode, message):
             case "new list":
                 display = "enter the list name"
 <<<<<<< HEAD
+<<<<<<< HEAD
             case ["edit list name", *args]:
                 display = "enter the list name"
             case [("new list item" | "edit list item"), *args]:
@@ -215,6 +208,9 @@ def status_bar(window, text_input, text_mode, message):
                 display = "enter the entry name"
 =======
             case ["new list item", ls]:
+=======
+            case [("new list item" | "edit list item"), *args]:
+>>>>>>> 0d024cc (added ability to change list item name (part of #4))
                 display = "enter the item name"
 >>>>>>> eae076f (src/lists.py:)
             case _:
@@ -586,10 +582,14 @@ def main(stdscr):
                                     ls_name = List.get_list(ls)["name"]
                                     message = f"new list item '{text_box}' added to list {ls_name}."
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0d024cc (added ability to change list item name (part of #4))
                                 case ["edit list item", ls, item]:
                                     List.edit_item(ls, item, name=text_box)
                                     ls_name = List.get_list(ls)["name"]
                                     message = f"list item in list {ls_name} changed to {text_box}."
+<<<<<<< HEAD
                                 case "new log":
                                     Log.add_log(text_box)
                                     message = f"new log '{text_box}' added."
@@ -609,6 +609,8 @@ def main(stdscr):
                                     message = f"log entry for '{entry}' in log '{log_name}' changed."
 =======
 >>>>>>> eae076f (src/lists.py:)
+=======
+>>>>>>> 0d024cc (added ability to change list item name (part of #4))
                             if clear:
                                 text_input = False
                                 text_box = ""
@@ -1099,8 +1101,12 @@ def main(stdscr):
                         ls = list(lists.keys())[inner_option]
                         items = List.get_list(ls)["items"]
                         try:
+<<<<<<< HEAD
                             item = items[list(items.keys())[(selected[0] + 2)]]
 >>>>>>> eae076f (src/lists.py:)
+=======
+                            item = list(items.keys())[(selected[0] - 2)]
+>>>>>>> 0d024cc (added ability to change list item name (part of #4))
                         except:
                             match chr(key):
                                 case ":":
@@ -1126,8 +1132,16 @@ def main(stdscr):
                         else:
                             match chr(key):
                                 case "x":
+<<<<<<< HEAD
                                     List.edit_item(ls, item, completed=True)
 >>>>>>> eae076f (src/lists.py:)
+=======
+                                    completed = items[item]["completed"]
+                                    List.edit_item(ls, item, completed=not completed)
+                                case "e":
+                                    text_input = True
+                                    text_mode = ["edit list item", ls, item]
+>>>>>>> 0d024cc (added ability to change list item name (part of #4))
                     else:
                         if chr(key) == ":":
                             text_input = True

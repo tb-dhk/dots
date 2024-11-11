@@ -658,6 +658,7 @@ def main(stdscr):
                     else:
                         if selected[0] == 3:
                             selected[0] = 0
+<<<<<<< HEAD
                 elif outer_option == 3:
                     logs = Log.load_logs()
                     if inner_option < len(logs):
@@ -667,6 +668,8 @@ def main(stdscr):
                     else:
                         if selected[0] == 3:
                             selected[0] = 0
+=======
+>>>>>>> 83fe9d0 (src/lists.py:)
                 else:
                     if selected[0] == 3:
                         selected[0] = 0
@@ -1075,15 +1078,24 @@ def main(stdscr):
                 elif outer_option == 2:
                     lists = List.load_lists()
                     if inner_option < len(lists):
+<<<<<<< HEAD
                         ls = list(lists.keys())[inner_option]
                         items = List.get_list(ls)["items"]
                         try:
                             item = list(items.keys())[(selected[0] - 2)]
+=======
+                        lists = List.load_lists()
+                        ls = list(lists.keys())[inner_option]
+                        items = List.get_list(ls)["items"]
+                        try:
+                            item = items[list(items.keys())[(selected[0] + 2)]]
+>>>>>>> 83fe9d0 (src/lists.py:)
                         except:
                             match chr(key):
                                 case ":":
                                     text_input = True
                                     text_mode = ["new list item", ls]
+<<<<<<< HEAD
                                 case "e":
                                     text_input = True
                                     text_mode = ["edit list name", ls]
@@ -1099,10 +1111,17 @@ def main(stdscr):
                                     text_mode = ["edit list item", ls, item]
                                 case "r":
                                     removing = item
+=======
+                        else:
+                            match chr(key):
+                                case "x":
+                                    List.edit_item(ls, item, completed=True)
+>>>>>>> 83fe9d0 (src/lists.py:)
                     else:
                         if chr(key) == ":":
                             text_input = True
                             text_mode = "new list"
+<<<<<<< HEAD
                 elif outer_option == 3:
                     logs = Log.load_logs()
                     if inner_option < len(logs):
@@ -1141,6 +1160,8 @@ def main(stdscr):
                         if chr(key) == ":":
                             text_input = True
                             text_mode = "new log"
+=======
+>>>>>>> 83fe9d0 (src/lists.py:)
             else:
                 pass
 

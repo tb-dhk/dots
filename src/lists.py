@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import curses
 import os
 import uuid
@@ -5,6 +6,14 @@ from misc import display_borders, load_items, save_items
 
 class List:
     def __init__(self, name, description="", items={}):
+=======
+import os
+import uuid
+from misc import load_items, save_items
+
+class List:
+    def __init__(self, name, description="", items=[]):
+>>>>>>> 2018eca (created src/lists.py (#2))
         self.id = str(uuid.uuid4())
         self.name = name
         self.description = description
@@ -21,11 +30,19 @@ class List:
     @classmethod
     def add_list(cls, name):
         """Create a new list and add it to the lists dictionary."""
+<<<<<<< HEAD
         list_instance = cls(name)
         lists = cls.load_lists()  # Load existing lists
         lists[list_instance.id] = vars(list_instance)  # Add list to the dictionary
         cls.save_lists(lists)  # Save updated lists to JSON
         return list_instance.id  # Return the ID of the new list
+=======
+        list = cls(name)
+        lists = cls.load_lists()  # Load existing lists
+        lists[list.id] = vars(list)  # Add list to the dictionary
+        cls.save_lists(lists)  # Save updated lists to JSON
+        return list.id  # Return the ID of the new list
+>>>>>>> 2018eca (created src/lists.py (#2))
 
     @classmethod
     def edit_list(cls, list_id, **kwargs):
@@ -57,6 +74,7 @@ class List:
     def get_list(cls, list_id):
         """Get a list by its ID."""
         lists = cls.load_lists()  # Load existing lists
+<<<<<<< HEAD
         return lists.get(list_id)  # Return the list if it exists, else None
 
     @classmethod
@@ -124,3 +142,6 @@ def view_list(window, inner_option, selected, removing):
         window.addstr(len(items) + 1, 2, "+ press r to confirm removal, esc to cancel", curses.color_pair(7))
     else:
         window.addstr(len(items) + 1, 2, "+ press : to add a new item, e to change list name, r to remove list.", curses.color_pair(4 + (selected[0] == (len(items) + 2))))
+=======
+        return lists[list_id]  # Return the list if it exists, else None
+>>>>>>> 2018eca (created src/lists.py (#2))

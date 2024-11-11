@@ -21,11 +21,11 @@ class List:
     @classmethod
     def add_list(cls, name):
         """Create a new list and add it to the lists dictionary."""
-        list = cls(name)
+        list_instance = cls(name)
         lists = cls.load_lists()  # Load existing lists
-        lists[list.id] = vars(list)  # Add list to the dictionary
+        lists[list_instance.id] = vars(list_instance)  # Add list to the dictionary
         cls.save_lists(lists)  # Save updated lists to JSON
-        return list.id  # Return the ID of the new list
+        return list_instance.id  # Return the ID of the new list
 
     @classmethod
     def edit_list(cls, list_id, **kwargs):
@@ -124,3 +124,5 @@ def view_list(window, inner_option, selected, removing):
         window.addstr(len(items) + 1, 2, "+ press r to confirm removal, esc to cancel", curses.color_pair(7))
     else:
         window.addstr(len(items) + 1, 2, "+ press : to add a new item, e to change list name, r to remove list.", curses.color_pair(4 + (selected[0] == (len(items) + 2))))
+
+    window.addstr(len(items) + 1, 2, "+ press : to add a new item.", curses.color_pair(4 + (selected[0] == (len(items) + 2))))

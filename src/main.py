@@ -1273,7 +1273,7 @@ def main(stdscr):
                         ls = list(lists.keys())[inner_option]
                         items = List.get_list(ls)["items"]
                         try:
-                            item = items[list(items.keys())[(selected[0] + 2)]]
+                            item = list(items.keys())[(selected[0] - 2)]
                         except:
                             match chr(key):
                                 case ":":

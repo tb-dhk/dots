@@ -107,7 +107,7 @@ def add_new_list(window, selected):
 
     window.addstr(1, 2, "+ press : to add a new list.", curses.color_pair(4 + (selected[0] == 2)))
 
-def view_list(window, inner_option, selected):
+def view_list(window, inner_option, selected, removing):
     display_borders(window, selected)
 
     lists = List.load_lists()
@@ -115,6 +115,12 @@ def view_list(window, inner_option, selected):
 
     for i, item in enumerate(items):
         symbol = "x" if items[item]["completed"] else "•"
-        window.addstr(i + 1, 2, symbol + " " + items[item]["name"], curses.color_pair(1 + (selected[0] == i + 2)))
+        if removing == item:
+            window.addstr(i + 1, 2, symbol + " press r to confirm removal, esc to cancel", curses.color_pair(7))
+        else:
+            window.addstr(i + 1, 2, symbol + " " + items[item]["name"], curses.color_pair(1 + (selected[0] == i + 2)))
 
-    window.addstr(len(items) + 1, 2, "+ press : to add a new item, e to change list name.", curses.color_pair(4 + (selected[0] == (len(items) + 2))))
+    if removing == ".":
+        window.addstr(len(items) + 1, 2, "+ press r to confirm removal, esc to cancel", curses.color_pair(7))
+    else:
+        window.addstr(len(items) + 1, 2, "+ press : to add a new item, e to change list name, r to remove list.", curses.color_pair(4 + (selected[0] == (len(items) + 2))))

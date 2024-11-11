@@ -58,6 +58,7 @@ class List:
         """Get a list by its ID."""
         lists = cls.load_lists()  # Load existing lists
 <<<<<<< HEAD
+<<<<<<< HEAD
         return lists.get(list_id)  # Return the list if it exists, else None
 
     @classmethod
@@ -128,3 +129,6 @@ def view_list(window, inner_option, selected, removing):
 =======
         return lists[list_id]  # Return the list if it exists, else None
 >>>>>>> f39c9f3 (created src/lists.py (#2))
+=======
+        return lists[list_id]  # Return the list if it exists, else None
+>>>>>>> 2018eca (created src/lists.py (#2))

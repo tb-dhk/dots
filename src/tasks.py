@@ -593,7 +593,3 @@ def year_view(window, selected, day, removing):
     )
 
     # Display text box input (for text entry mode)
-
-def coming_soon(window):
-    display_borders(window, [0, 0])
-    window.addstr(2, 5, "coming soon...")

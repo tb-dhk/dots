@@ -6,10 +6,12 @@ import sys
 import os
 import toml
 
-from tasks import *
 from points import points
-from habits import *
-from misc import *
+
+from tasks import get_task_list, tasks_for_day, tasks_for_week, tasks_for_month, tasks_for_year, display_tasks, day_view, week_view, month_view, year_view
+from habits import get_records_from_habits, duration_maps, progress_maps, get_sunday, get_bounds, get_dates, heatmaps, manage_habits, add_new_habit
+
+from misc import display_text_box, coming_soon
 
 config = toml.load(os.path.join(os.path.expanduser("~"), ".dots", "config.toml"))
 

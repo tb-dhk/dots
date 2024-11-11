@@ -55,3 +55,7 @@ def load_items(filename):
 def save_items(items, filename):
     with open(filename, 'w', encoding='utf-8') as file:
         json.dump(items, file, indent=4)  # Save tasks in a pretty format
+
+def coming_soon(window):
+    display_borders(window, [0, 0])
+    window.addstr(2, 5, "coming soon...")

@@ -8,7 +8,7 @@ class List:
         self.id = str(uuid.uuid4())
         self.name = name
         self.description = description
-        self.items = items
+        self.items = items if items is not None else {}
 
     @staticmethod
     def load_lists(filename=os.path.join(os.path.expanduser("~"), ".dots", "lists.json")):
@@ -124,5 +124,3 @@ def view_list(window, inner_option, selected, removing):
         window.addstr(len(items) + 1, 2, "+ press r to confirm removal, esc to cancel", curses.color_pair(7))
     else:
         window.addstr(len(items) + 1, 2, "+ press : to add a new item, e to change list name, r to remove list.", curses.color_pair(4 + (selected[0] == (len(items) + 2))))
-
-    window.addstr(len(items) + 1, 2, "+ press : to add a new item.", curses.color_pair(4 + (selected[0] == (len(items) + 2))))

@@ -1269,6 +1269,7 @@ def main(stdscr):
                 elif outer_option == 2:
                     lists = List.load_lists()
                     if inner_option < len(lists):
+                        lists = List.load_lists()
                         ls = list(lists.keys())[inner_option]
                         items = List.get_list(ls)["items"]
                         try:

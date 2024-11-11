@@ -11,6 +11,7 @@ from points import points
 
 from tasks import Task, get_task_list, tasks_for_day, tasks_for_week, tasks_for_month, tasks_for_year, display_tasks, day_view, week_view, month_view, year_view
 from habits import Habit, DurationHabit, FrequencyHabit, ProgressHabit, get_records_from_habits, duration_maps, progress_maps, get_sunday, get_bounds, get_dates, heatmaps, manage_habits, add_new_habit
+from lists import List, add_new_list, view_list
 
 from misc import display_text_box, coming_soon
 
@@ -88,6 +89,9 @@ def inner_options(outer_option):
         return ["list", "day", "week", "month", "year"]
     if outer_option == 1:
         return ["duration", "progress", "heatmap", "manage", "+ new"]
+    if outer_option == 2:
+        lists = List.load_lists()
+        return [lists[ls]["name"] for ls in lists] + ["+ new"]
     if outer_option == 4:
         return ["main"]
     return ["+ new"]
@@ -122,6 +126,12 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
             manage_habits(window, selected, removing)
         elif inner_option == 4:
             add_new_habit(window, selected, new_habit)
+    elif outer_option == 2:
+        lists = List.load_lists()
+        if inner_option < len(lists):
+            view_list(window, inner_option, selected) 
+        else:
+            add_new_list(window, selected) 
     else:
         coming_soon(window)
     display_text_box(window, text_input, text_box, text_index)
@@ -164,6 +174,10 @@ def status_bar(window, text_input, text_mode, message):
                     display = f"enter new {selected_header} for habit '{Habit.load_habits()[selected_habit]['name']}'"
                 else:
                     display = f"enter new unit for habit '{Habit.load_habits()[selected_habit]['name']}' (to provide singular and plural forms, separate with /)"
+            case "new list":
+                display = "enter the list name"
+            case ["new list item", ls]:
+                display = "enter the item name"
             case _:
                 display = str(message)
     display = display.lower()
@@ -502,6 +516,13 @@ def main(stdscr):
                                         message = f"habit {selected_header} changed to '{text_box}'"
                                     else:
                                         message = f"invalid {selected_header}. try again!"
+                                case "new list":
+                                    List.add_list(text_box)
+                                    message = f"new list '{text_box}' added."
+                                case ["new list item", ls]:
+                                    List.add_item(ls, text_box)
+                                    ls_name = List.get_list(ls)["name"]
+                                    message = f"new list item '{text_box}' added to list {ls_name}."
                             if clear:
                                 text_input = False
                                 text_box = ""
@@ -553,6 +574,15 @@ def main(stdscr):
                             selected[0] = 2 + len(Habit.load_habits())
                         elif inner_option == 4:
                             selected[0] = 6
+                elif outer_option == 2:
+                    lists = List.load_lists()
+                    if inner_option < len(lists):
+                        ls = lists[list(lists.keys())[inner_option]]
+                        if selected[0] == -1:
+                            selected[0] = len(ls["items"]) + 2
+                    else:
+                        if selected[0] == 0:
+                            selected[0] = 3
                 else:
                     if selected[0] == -1:
                         selected[0] = 2
@@ -596,6 +626,15 @@ def main(stdscr):
                             selected[0] = 0
                     elif inner_option == 4:
                         if selected[0] == 7:
+                            selected[0] = 0
+                elif outer_option == 2:
+                    lists = List.load_lists()
+                    if inner_option < len(lists):
+                        ls = lists[list(lists.keys())[inner_option]]
+                        if selected[0] == len(ls["items"]) + 3:
+                            selected[0] = 0
+                    else:
+                        if selected[0] == 3:
                             selected[0] = 0
                 else:
                     if selected[0] == 3:
@@ -940,6 +979,27 @@ def main(stdscr):
                             Habit.add_habit(new_habit["name"], new_habit["type"], new_habit["unit"], target_value=new_habit["target_value"])
                             message = f"new habit '{new_habit['name']}' added"
                             new_habit = {"name": " ", "type": "progress", "unit": " ", "target_value": 0}
+                elif outer_option == 2:
+                    lists = List.load_lists()
+                    if inner_option < len(lists):
+                        lists = List.load_lists()
+                        ls = list(lists.keys())[inner_option]
+                        items = List.get_list(ls)["items"]
+                        try:
+                            item = items[list(items.keys())[(selected[0] + 2)]]
+                        except:
+                            match chr(key):
+                                case ":":
+                                    text_input = True
+                                    text_mode = ["new list item", ls]
+                        else:
+                            match chr(key):
+                                case "x":
+                                    List.edit_item(ls, item, completed=True)
+                    else:
+                        if chr(key) == ":":
+                            text_input = True
+                            text_mode = "new list"
             else:
                 pass
         time.sleep(0.02)

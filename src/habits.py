@@ -15,7 +15,7 @@ class Habit:
         self.name = name  # Habit name
         self.type = habit_type  # Habit type
         self.unit = unit  # Measurement unit
-        self.description = ""
+        self.description = description
         self.target_value = target_value  # Target value (optional)
         self.data = {}  # Data will be saved to habits.json
 
@@ -228,7 +228,6 @@ def duration_maps(window, selected, map_settings):
                     earliest_time = 0
 
             latest_time_diff = math.ceil((latest_time - earliest_time) / timedelta(hours=1))
-
         else:
             habitid = list(habits.keys())[index % len(habits)]
             raw_records = habits[habitid]['data']

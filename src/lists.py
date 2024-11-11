@@ -126,4 +126,7 @@ def view_list(window, inner_option, selected, removing):
         window.addstr(len(items) + 1, 2, "+ press : to add a new item, e to change list name, r to remove list.", curses.color_pair(4 + (selected[0] == (len(items) + 2))))
         window.addstr(i + 1, 2, symbol + " " + items[item]["name"], curses.color_pair(1 + (selected[0] == i + 2)))
 
-    window.addstr(len(items) + 1, 2, "+ press : to add a new item, e to change list name.", curses.color_pair(4 + (selected[0] == (len(items) + 2))))
+    if removing == ".":
+        window.addstr(len(items) + 1, 2, "+ press r to confirm removal, esc to cancel", curses.color_pair(7))
+    else:
+        window.addstr(len(items) + 1, 2, "+ press : to add a new item, e to change list name, r to remove list.", curses.color_pair(4 + (selected[0] == (len(items) + 2))))

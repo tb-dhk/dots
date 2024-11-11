@@ -1272,7 +1272,6 @@ def main(stdscr):
                         ls = list(lists.keys())[inner_option]
                         items = List.get_list(ls)["items"]
                         try:
-                            item = list(items.keys())[(selected[0] - 2)]
                             item = items[list(items.keys())[(selected[0] + 2)]]
                         except:
                             match chr(key):
@@ -1284,6 +1283,9 @@ def main(stdscr):
                                     text_mode = ["edit list name", ls]
                                 case "r":
                                     removing = "."
+                                case "e":
+                                    text_input = True
+                                    text_mode = ["edit list name", ls]
                         else:
                             match chr(key):
                                 case "x":

@@ -10,11 +10,12 @@ from dateutil.relativedelta import relativedelta
 from misc import display_borders, load_items, save_items
 
 class Habit:
-    def __init__(self, name, habit_type, unit, target_value=""):
+    def __init__(self, name, habit_type, unit, description="", target_value=0):
         self.id = str(uuid.uuid4())  # Unique identifier for the habit
         self.name = name  # Habit name
         self.type = habit_type  # Habit type
         self.unit = unit  # Measurement unit
+        self.description = ""
         self.target_value = target_value  # Target value (optional)
         self.data = {}  # Data will be saved to habits.json
 
@@ -27,9 +28,9 @@ class Habit:
         save_items(habits, filename)
 
     @classmethod
-    def add_habit(cls, name, habit_type, unit, target_value=""):
+    def add_habit(cls, name, habit_type, unit, target_value=0):  
         """Add a new habit."""
-        habit = cls(name, habit_type, unit, target_value)
+        habit = cls(name, habit_type, unit, target_value=target_value)
         habits = cls.load_habits()  # Load existing habits
         habits[habit.id] = vars(habit)  # Add habit to the dictionary
         cls.save_habits(habits)  # Save updated habits to JSON
@@ -68,7 +69,7 @@ class Habit:
         return habits.get(habit_id, None)  # Return the habit if it exists, else None
 
 class DurationHabit(Habit):
-    def __init__(self, name, target_value=""):
+    def __init__(self, name, target_value=0):
         super().__init__(name, habit_type="duration", unit="hours", target_value=target_value)
 
     @classmethod

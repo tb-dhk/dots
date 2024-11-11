@@ -1062,9 +1062,6 @@ def main(stdscr):
                                     text_mode = ["edit list name", ls]
                                 case "r":
                                     removing = "."
-                                case "e":
-                                    text_input = True
-                                    text_mode = ["edit list name", ls]
                         else:
                             match chr(key):
                                 case "x":

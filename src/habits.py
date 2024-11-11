@@ -10,12 +10,11 @@ from dateutil.relativedelta import relativedelta
 from misc import display_borders, load_items, save_items
 
 class Habit:
-    def __init__(self, name, habit_type, unit, description="", target_value=""):
+    def __init__(self, name, habit_type, unit, target_value=""):
         self.id = str(uuid.uuid4())  # Unique identifier for the habit
         self.name = name  # Habit name
         self.type = habit_type  # Habit type
-        self.unit = unit  # Measurement uni:
-        self.description = description
+        self.unit = unit  # Measurement unit
         self.target_value = target_value  # Target value (optional)
         self.data = {}  # Data will be saved to habits.json
 

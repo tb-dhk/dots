@@ -9,9 +9,8 @@ from misc import display_borders, load_items, save_items
 config = toml.load(os.path.join(os.path.expanduser("~"), ".dots", "config.toml"))
 
 class Task:
-    def __init__(self, name, description="", due_date=date.today().strftime("%Y-%m-%d"), due_type="day", priority=2, tags=[], subtasks=[], parent=[]):
+    def __init__(self, name, due_date=date.today().strftime("%Y-%m-%d"), due_type="day", priority=2, tags=[], subtasks=[], parent=[]):
         self.id = str(uuid.uuid4())  # Unique identifier for the task
-        self.description = ""
         self.name = name  # Task name
         self.due_date = due_date  # Task due date (string, could be a day/week/month-based format)
         self.due_type = due_type

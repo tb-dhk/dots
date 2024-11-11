@@ -506,6 +506,10 @@ def main(stdscr):
                                     List.add_item(ls, text_box)
                                     ls_name = List.get_list(ls)["name"]
                                     message = f"new list item '{text_box}' added to list {ls_name}."
+                                case ["edit list item", ls, item]:
+                                    List.edit_item(ls, item, name=text_box)
+                                    ls_name = List.get_list(ls)["name"]
+                                    message = f"list item in list {ls_name} changed to {text_box}."
                             if clear:
                                 text_input = False
                                 text_box = ""
@@ -1042,7 +1046,7 @@ def main(stdscr):
                         ls = list(lists.keys())[inner_option]
                         items = List.get_list(ls)["items"]
                         try:
-                            item = items[list(items.keys())[(selected[0] + 2)]]
+                            item = list(items.keys())[(selected[0] - 2)]
                         except:
                             match chr(key):
                                 case ":":
@@ -1051,7 +1055,11 @@ def main(stdscr):
                         else:
                             match chr(key):
                                 case "x":
-                                    List.edit_item(ls, item, completed=True)
+                                    completed = items[item]["completed"]
+                                    List.edit_item(ls, item, completed=not completed)
+                                case "e":
+                                    text_input = True
+                                    text_mode = ["edit list item", ls, item]
                     else:
                         if chr(key) == ":":
                             text_input = True

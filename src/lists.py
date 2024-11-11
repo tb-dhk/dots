@@ -21,11 +21,11 @@ class List:
     @classmethod
     def add_list(cls, name):
         """Create a new list and add it to the lists dictionary."""
-        list = cls(name)
+        list_instance = cls(name)
         lists = cls.load_lists()  # Load existing lists
-        lists[list.id] = vars(list)  # Add list to the dictionary
+        lists[list_instance.id] = vars(list_instance)  # Add list to the dictionary
         cls.save_lists(lists)  # Save updated lists to JSON
-        return list.id  # Return the ID of the new list
+        return list_instance.id  # Return the ID of the new list
 
     @classmethod
     def edit_list(cls, list_id, **kwargs):
@@ -59,6 +59,9 @@ class List:
         lists = cls.load_lists()  # Load existing lists
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> eae076f (src/lists.py:)
         return lists.get(list_id)  # Return the list if it exists, else None
 
     @classmethod
@@ -109,7 +112,11 @@ def add_new_list(window, selected):
 
     window.addstr(1, 2, "+ press : to add a new list.", curses.color_pair(4 + (selected[0] == 2)))
 
+<<<<<<< HEAD
 def view_list(window, inner_option, selected, removing):
+=======
+def view_list(window, inner_option, selected):
+>>>>>>> eae076f (src/lists.py:)
     display_borders(window, selected)
 
     lists = List.load_lists()
@@ -117,6 +124,7 @@ def view_list(window, inner_option, selected, removing):
 
     for i, item in enumerate(items):
         symbol = "x" if items[item]["completed"] else "•"
+<<<<<<< HEAD
         if removing == item:
             window.addstr(i + 1, 2, symbol + " press r to confirm removal, esc to cancel", curses.color_pair(7))
         else:
@@ -132,3 +140,8 @@ def view_list(window, inner_option, selected, removing):
 =======
         return lists[list_id]  # Return the list if it exists, else None
 >>>>>>> 2018eca (created src/lists.py (#2))
+=======
+        window.addstr(i + 1, 2, symbol + " " + items[item]["name"], curses.color_pair(1 + (selected[0] == i + 2)))
+
+    window.addstr(len(items) + 1, 2, "+ press : to add a new item.", curses.color_pair(4 + (selected[0] == (len(items) + 2))))
+>>>>>>> eae076f (src/lists.py:)

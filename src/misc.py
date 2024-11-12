@@ -300,7 +300,7 @@ def open_editor_and_return_text(window, data=""):
     else:
         os.remove(tmp_file_path)
 
-    # Make sure the terminal is in a usable state for curses
+# Make sure the terminal is in a usable state for curses
     window.clear()
     window.refresh()
     curses.curs_set(0)  # Hide cursor after the editor

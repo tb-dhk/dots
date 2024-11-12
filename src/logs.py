@@ -103,9 +103,9 @@ def view_log(window, inner_option, selected, removing):
 
     for i, date in enumerate(entries):
         if removing == date:
-            window.addstr(i + 1, 2, f"- press r to confirm removal, esc to cancel", curses.color_pair(7))
+            window.addstr(i + 1, 2, f"• press r to confirm removal, esc to cancel", curses.color_pair(7))
         else:
-            window.addstr(i + 1, 2, f"- {date}", curses.color_pair(1 + (selected[0] == i + 2)))
+            window.addstr(i + 1, 2, f"• {date}", curses.color_pair(1 + (selected[0] == i + 2)))
 
     if removing == ".":
         window.addstr(len(entries) + 1, 2, "+ press r to confirm removal, esc to cancel", curses.color_pair(7))

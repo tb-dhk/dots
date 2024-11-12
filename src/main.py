@@ -858,6 +858,9 @@ def main(stdscr):
                     case " ":
                         started = True
                         stdscr.clear()
+            elif key in [23, 5, 18, 20]:
+                outer_option = [23, 5, 18, 20].index(key)
+                inner_option = 0
             elif selected[0] >= 2:
                 if outer_option == 0:
                     if inner_option == 0:

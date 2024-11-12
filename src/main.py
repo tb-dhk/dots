@@ -32,6 +32,8 @@ from misc import (
     check_date, center_string
 )
 
+from logs import Log, add_new_log, view_log
+
 from content import content
 
 config = toml.load(os.path.join(os.path.expanduser("~"), ".dots", "config.toml"))
@@ -114,7 +116,7 @@ def main(stdscr):
             except:
                 pass
 
-        # fetch all habits, and add a log for today (unless type == duration)
+        # fetch all habits, and add a value for today (unless type == duration)
         habits = Habit.load_habits()
         for habit_id in habits:
             habit = habits[habit_id]
@@ -156,6 +158,16 @@ def main(stdscr):
                                 List.remove_list(ls)
                             else:
                                 List.remove_item(ls, removing)
+                    elif outer_option == 3:
+                        logs = Log.load_logs()
+                        if inner_option < len(logs):
+                            log = list(logs.keys())[inner_option]
+                            if removing == ".":
+                                Log.remove_log(log)
+                            else:
+                                Log.remove_entry(log, removing)
+                    removing = ""
+                    content_window.clear()
                 elif chr(key) in "123456789":
                     if outer_option == 1 and inner_option == 0:
                         if map_settings["based_on"] == 0:
@@ -224,7 +236,7 @@ def main(stdscr):
                         else:
                             task_name = ""
                         text_box = text_box.strip()
-                        if text_box:
+                        if text_box or "entry" in text_mode[0]:
                             match text_mode:
                                 case "new task":
                                     if inner_option < 2:
@@ -502,6 +514,23 @@ def main(stdscr):
                                     List.edit_item(ls, item, name=text_box)
                                     ls_name = List.get_list(ls)["name"]
                                     message = f"list item in list {ls_name} changed to {text_box}."
+                                case "new log":
+                                    Log.add_log(text_box)
+                                    message = f"new log '{text_box}' added."
+                                case ["edit log name", log]:
+                                    og_name = Log.get_log(log)["name"]
+                                    Log.edit_log(log, name=text_box)
+                                    message = f"log '{og_name}' renamed to '{text_box}'."
+                                case ["new log entry", log]:
+                                    today = date.today()
+                                    Log.add_entry(log, stdscr, markdown=text_box)
+                                    log_name = Log.get_log(log)["name"]
+                                    message = f"new log entry for '{today}' added to log '{log_name}'."
+                                case ["edit log entry", log, entry]:
+                                    today = date.today()
+                                    Log.edit_entry(log, stdscr, entry, markdown=text_box)
+                                    log_name = Log.get_log(log)["name"]
+                                    message = f"log entry for '{today}' in log '{log_name}' changed."
                             if clear:
                                 text_input = False
                                 text_box = ""
@@ -561,17 +590,21 @@ def main(stdscr):
                             selected[0] = 2 + len(Habit.load_habits())
                         elif inner_option == 4:
                             selected[0] = 6
-                elif outer_option == 2:
-                    lists = List.load_lists()
-                    if inner_option < len(lists):
-                        ls = lists[list(lists.keys())[inner_option]]
-                        if selected[0] == -1:
+                    elif outer_option == 2:
+                        lists = List.load_lists()
+                        if inner_option < len(lists):
+                            ls = lists[list(lists.keys())[inner_option]]
                             selected[0] = len(ls["items"]) + 2
+                        else:
+                            selected[0] = 2
+                    elif outer_option == 3:
+                        logs = Log.load_logs()
+                        if inner_option < len(logs):
+                            log = logs[list(logs.keys())[inner_option]]
+                            selected[0] = len(log["entries"]) + 2
+                        else:
+                            selected[0] = 2
                     else:
-                        if selected[0] == 0:
-                            selected[0] = 3
-                else:
-                    if selected[0] == -1:
                         selected[0] = 2
             elif key == curses.KEY_DOWN:
                 selected[0] += 1
@@ -620,6 +653,15 @@ def main(stdscr):
                     if inner_option < len(lists):
                         ls = lists[list(lists.keys())[inner_option]]
                         if selected[0] == len(ls["items"]) + 3:
+                            selected[0] = 0
+                    else:
+                        if selected[0] == 3:
+                            selected[0] = 0
+                elif outer_option == 3:
+                    logs = Log.load_logs()
+                    if inner_option < len(logs):
+                        log = logs[list(logs.keys())[inner_option]]
+                        if selected[0] == len(log["entries"]) + 3:
                             selected[0] = 0
                     else:
                         if selected[0] == 3:
@@ -1028,14 +1070,6 @@ def main(stdscr):
                                 target_value=new_habit["target_value"]
                             )
                             message = f"new habit '{new_habit['name']}' added"
-<<<<<<< HEAD
-                            new_habit = {
-                                "name": " ",
-                                "type": "progress",
-                                "unit": " ",
-                                "target_value": 0
-                            }
-=======
                             new_habit = {"name": " ", "type": "progress", "unit": " ", "target_value": 0}
                 elif outer_option == 2:
                     lists = List.load_lists()
@@ -1068,7 +1102,34 @@ def main(stdscr):
                         if chr(key) == ":":
                             text_input = True
                             text_mode = "new list"
->>>>>>> fe0dc5f (src/lists.py:)
+                elif outer_option == 3:
+                    logs = Log.load_logs()
+                    if inner_option < len(logs):
+                        log_id = list(logs.keys())[inner_option]
+                        entries = Log.get_log(log_id)["entries"]
+                        try:
+                            entry_date = list(entries.keys())[selected[0] - 2]
+                        except:
+                            match chr(key):
+                                case ":":
+                                    text_input = True
+                                    text_mode = ["new log entry", log_id]
+                                case "e":
+                                    text_input = True
+                                    text_mode = ["edit log name", log_id]
+                                case "r":
+                                    removing = "."
+                        else:
+                            match chr(key):
+                                case "e":
+                                    text_input = True
+                                    text_mode = ["edit log entry", log_id, entry_date]
+                                case "r":
+                                    removing = entry_date
+                    else:
+                        if chr(key) == ":":
+                            text_input = True
+                            text_mode = "new log"
             else:
                 pass
 

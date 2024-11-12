@@ -1035,8 +1035,6 @@ def main(stdscr):
                     case " ":
                         started = True
                         stdscr.clear()
-            elif chr(key) == "h":
-                hide_completed = not hide_completed
             elif key in [23, 5, 18, 20]:
                 outer_option = [23, 5, 18, 20].index(key)
                 inner_option = 0

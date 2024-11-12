@@ -87,6 +87,9 @@ class Log:
                 if markdown_content:
                     logs[log_id]["entries"][date] = markdown_content  # Save changes to the specific entry
                     cls.save_logs(logs)  # Save changes to JSON
+            markdown_content = open_editor_and_return_text(window) if not markdown else markdown
+            logs[log_id]["entries"][date] = markdown_content  # Save changes to the specific entry
+            cls.save_logs(logs)  # Save changes to JSON
             return True  # Return success if entry updated
         return False  # Return failure if entry or log ID not found
 

@@ -8,7 +8,7 @@ class List:
         self.id = str(uuid.uuid4())
         self.name = name
         self.description = description
-        self.items = items if items is not None else {}
+        self.items = items
 
     @staticmethod
     def load_lists(filename=os.path.join(os.path.expanduser("~"), ".dots", "lists.json")):

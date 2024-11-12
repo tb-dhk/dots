@@ -14,6 +14,7 @@ from points import points
 from tasks import Task, get_task_list, tasks_for_day, tasks_for_week, tasks_for_month, tasks_for_year, display_tasks, day_view, week_view, month_view, year_view
 from habits import Habit, DurationHabit, FrequencyHabit, ProgressHabit, get_records_from_habits, duration_maps, progress_maps, get_sunday, get_bounds, get_dates, heatmaps, manage_habits, add_new_habit
 from lists import List, add_new_list, view_list
+from logs import Log, add_new_log, view_log
 
 from misc import display_text_box, coming_soon
 
@@ -94,6 +95,9 @@ def inner_options(outer_option):
     if outer_option == 2:
         lists = List.load_lists()
         return [lists[ls]["name"] for ls in lists] + ["+ new"]
+    if outer_option == 3:
+        logs = Log.load_logs()
+        return [logs[log]["name"] for log in logs] + ["+ new"]
     if outer_option == 4:
         return ["main"]
     return ["+ new"]
@@ -134,6 +138,12 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
             view_list(window, inner_option, selected, removing) 
         else:
             add_new_list(window, selected) 
+    elif outer_option == 3:
+        logs = Log.load_logs()
+        if inner_option < len(logs):
+            view_log(window, inner_option, selected, removing) 
+        else:
+            add_new_log(window, selected) 
     else:
         coming_soon(window)
     display_text_box(window, text_input, text_box, text_index)
@@ -183,6 +193,12 @@ def status_bar(window, text_input, text_mode, message):
                 display = "enter the list name"
             case [("new list item" | "edit list item"), *args]:
                 display = "enter the item name"
+            case "new log":
+                display = "enter the log name"
+            case ["edit log name", *args]:
+                display = "enter the log name"
+            case [("new log entry" | "edit log entry"), *args]:
+                display = "enter the entry name"
             case _:
                 display = str(message)
     display = display.lower()
@@ -322,6 +338,16 @@ def main(stdscr):
                                 List.remove_list(ls)
                             else:
                                 List.remove_item(ls, removing)
+                    elif outer_option == 3:
+                        logs = Log.load_logs()
+                        if inner_option < len(logs):
+                            log = list(logs.keys())[inner_option]
+                            if removing == ".":
+                                Log.remove_log(log)
+                            else:
+                                Log.remove_entry(log, removing)
+                    removing = ""
+                    content_window.clear()
                 elif chr(key) in "123456789":
                     if outer_option == 1 and inner_option == 0:
                         if map_settings["based_on"] == 0:
@@ -542,6 +568,23 @@ def main(stdscr):
                                     List.edit_item(ls, item, name=text_box)
                                     ls_name = List.get_list(ls)["name"]
                                     message = f"list item in list {ls_name} changed to {text_box}."
+                                case "new log":
+                                    Log.add_log(text_box)
+                                    message = f"new log '{text_box}' added."
+                                case ["edit log name", log]:
+                                    og_name = Log.get_log(log)["name"]
+                                    Log.edit_log(log, name=text_box)
+                                    message = f"log '{og_name}' renamed to '{text_box}'."
+                                case ["new log entry", log]:
+                                    today = date.today()
+                                    Log.add_entry(log, stdscr, markdown=text_box)
+                                    log_name = Log.get_log(log)["name"]
+                                    message = f"new log entry for '{today}' added to log '{log_name}'."
+                                case ["edit log entry", log, entry]:
+                                    today = date.today()
+                                    Log.edit_entry(log, stdscr, entry, markdown=text_box)
+                                    log_name = Log.get_log(log)["name"]
+                                    message = f"log entry for '{today}' in log '{log_name}' changed."
                             if clear:
                                 text_input = False
                                 text_box = ""
@@ -591,17 +634,21 @@ def main(stdscr):
                             selected[0] = 2 + len(Habit.load_habits())
                         elif inner_option == 4:
                             selected[0] = 6
-                elif outer_option == 2:
-                    lists = List.load_lists()
-                    if inner_option < len(lists):
-                        ls = lists[list(lists.keys())[inner_option]]
-                        if selected[0] == -1:
+                    elif outer_option == 2:
+                        lists = List.load_lists()
+                        if inner_option < len(lists):
+                            ls = lists[list(lists.keys())[inner_option]]
                             selected[0] = len(ls["items"]) + 2
+                        else:
+                            selected[0] = 2
+                    elif outer_option == 3:
+                        logs = Log.load_logs()
+                        if inner_option < len(logs):
+                            log = logs[list(logs.keys())[inner_option]]
+                            selected[0] = len(log["entries"]) + 2
+                        else:
+                            selected[0] = 2
                     else:
-                        if selected[0] == 0:
-                            selected[0] = 3
-                else:
-                    if selected[0] == -1:
                         selected[0] = 2
             elif key == curses.KEY_DOWN:
                 selected[0] += 1
@@ -648,6 +695,15 @@ def main(stdscr):
                     if inner_option < len(lists):
                         ls = lists[list(lists.keys())[inner_option]]
                         if selected[0] == len(ls["items"]) + 3:
+                            selected[0] = 0
+                    else:
+                        if selected[0] == 3:
+                            selected[0] = 0
+                elif outer_option == 3:
+                    logs = Log.load_logs()
+                    if inner_option < len(logs):
+                        log = logs[list(logs.keys())[inner_option]]
+                        if selected[0] == len(log["entries"]) + 3:
                             selected[0] = 0
                     else:
                         if selected[0] == 3:
@@ -1020,6 +1076,34 @@ def main(stdscr):
                         if chr(key) == ":":
                             text_input = True
                             text_mode = "new list"
+                elif outer_option == 3:
+                    logs = Log.load_logs()
+                    if inner_option < len(logs):
+                        log_id = list(logs.keys())[inner_option]
+                        entries = Log.get_log(log_id)["entries"]
+                        try:
+                            entry_date = list(entries.keys())[selected[0] - 2]
+                        except:
+                            match chr(key):
+                                case ":":
+                                    text_input = True
+                                    text_mode = ["new log entry", log_id]
+                                case "e":
+                                    text_input = True
+                                    text_mode = ["edit log name", log_id]
+                                case "r":
+                                    removing = "."
+                        else:
+                            match chr(key):
+                                case "e":
+                                    text_input = True
+                                    text_mode = ["edit log entry", log_id, entry_date]
+                                case "r":
+                                    removing = entry_date
+                    else:
+                        if chr(key) == ":":
+                            text_input = True
+                            text_mode = "new log"
             else:
                 pass
 

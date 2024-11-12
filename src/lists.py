@@ -4,11 +4,11 @@ import uuid
 from misc import display_borders, load_items, save_items
 
 class List:
-    def __init__(self, name, description="", items=None):
+    def __init__(self, name, description="", items={}):
         self.id = str(uuid.uuid4())
         self.name = name
         self.description = description
-        self.items = items if items is not None else {}
+        self.items = items
 
     @staticmethod
     def load_lists(filename=os.path.join(os.path.expanduser("~"), ".dots", "lists.json")):

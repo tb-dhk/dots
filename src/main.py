@@ -38,182 +38,6 @@ from content import content
 
 config = toml.load(os.path.join(os.path.expanduser("~"), ".dots", "config.toml"))
 
-<<<<<<< HEAD
-=======
-def check_date(string):
-    try:
-        dt.strptime(string, "%Y-%m-%d")
-    except:
-        return False
-    return True
-
-def center_string(window, string, color_pair, offset=(0, 0)):
-    height, width = window.getmaxyx()
-    x = width // 2 - len(string) // 2 + offset[0]
-    y = height // 2 + offset[1]
-    window.addstr(y, x, string, curses.color_pair(color_pair))
-
-def change_task_parent(task_id, new_parent_id):
-    """Change the parent of a task and update subtasks of both old and new parents."""
-    tasks = Task.load_tasks()
-    task = tasks[task_id]
-
-    # If removing the parent (new_parent_id is None)
-    if new_parent_id is None:
-        # Remove the task from its current parent's subtasks
-        for parent_id in tasks:
-            if task_id in tasks[parent_id]["subtasks"]:
-                Task.edit_task(parent_id, subtasks=list(set(tasks[parent_id]["subtasks"]) - {task_id}))
-        Task.edit_task(task_id, parent=None)
-    else:
-        new_parent = tasks[new_parent_id]
-
-        # Remove the task from its old parent if it had one
-        if task["parent"]:
-            for parent_id in tasks:
-                if task_id in tasks[parent_id]["subtasks"]:
-                    Task.edit_task(parent_id, subtasks=list(set(tasks[parent_id]["subtasks"]) - {task_id}))
-
-        # Set the new parent and update its subtasks
-        Task.edit_task(task_id, parent=new_parent_id)
-        Task.edit_task(new_parent_id, subtasks=list(set(new_parent["subtasks"] + [task_id])))
-
-def edit_task_parent(selected, text_box, task_list):
-    """Process the input to edit the parent of the selected task."""
-    task_id = task_list[selected[0] - 2]  # Task to edit
-    task_name = Task.get_task(task_id)['name']
-
-    if text_box.isdigit():
-        new_parent_index = int(text_box)
-        if 0 <= new_parent_index < len(task_list) and new_parent_index != selected[0] - 2:
-            new_parent_id = task_list[new_parent_index]
-            change_task_parent(task_id, new_parent_id)
-            message = f"Parent of task '{task_name}' changed to '{Task.get_task(new_parent_id)['name']}'"
-        else:
-            message = "Invalid parent. Please try again!"
-    elif text_box == "-1":
-        # Remove the parent if text_box == "-1"
-        change_task_parent(task_id, None)
-        message = f"Parent of task '{task_name}' removed."
-    else:
-        message = "Invalid input. Please try again!"
-
-    return message
-
-def outer_navbar(stdscr, outer_option, selected):
-    options = ["tasks", "habits", "lists", "logs"]
-    stdscr.addstr(0, 0, " " * stdscr.getmaxyx()[1], curses.color_pair(2 + 4 * (selected[0] == 0)))
-    stdscr.move(0, 0)
-    for i, option in enumerate(options):
-        stdscr.addstr(f" {option} ", curses.color_pair(1 + int(i != outer_option) + 4 * (selected[0] == 0)))
-
-def inner_options(outer_option):
-    if outer_option == 0:
-        return ["list", "day", "week", "month", "year"]
-    if outer_option == 1:
-        return ["duration", "progress", "heatmap", "manage", "+ new"]
-    if outer_option == 2:
-        lists = List.load_lists()
-        return [lists[ls]["name"] for ls in lists] + ["+ new"]
-    if outer_option == 4:
-        return ["main"]
-    return ["+ new"]
-
-def inner_navbar(stdscr, outer_option, inner_option, selected):
-    stdscr.addstr(1, 0, " " * stdscr.getmaxyx()[1], curses.color_pair(2 + 4 * (selected[0] == 1)))
-    stdscr.move(1, 0)
-    options = inner_options(outer_option)
-    for i, option in enumerate(options):
-        stdscr.addstr(f" {option} ", curses.color_pair(1 + (i != inner_option) + 4 * (selected[0] == 1)))
-
-def content(window, outer_option, inner_option, selected, text_input, text_mode, text_box, text_index, removing, day, map_settings, new_habit, hide_completed):
-    if outer_option == 0:
-        if inner_option == 0:
-            display_tasks(window, selected, text_mode, removing, hide_completed)
-        elif inner_option == 1:
-            day_view(window, selected, day, removing, hide_completed)
-        elif inner_option == 2:
-            week_view(window, selected, day, removing, hide_completed)
-        elif inner_option == 3:
-            month_view(window, selected, day, removing, hide_completed)
-        elif inner_option == 4:
-            year_view(window, selected, day, removing, hide_completed)
-    elif outer_option == 1:
-        if inner_option == 0:
-            duration_maps(window, selected, map_settings)
-        elif inner_option == 1:
-            progress_maps(window, selected, map_settings)
-        elif inner_option == 2:
-            heatmaps(window, selected, map_settings)
-        elif inner_option == 3:
-            manage_habits(window, selected, removing)
-        elif inner_option == 4:
-            add_new_habit(window, selected, new_habit)
-    elif outer_option == 2:
-        lists = List.load_lists()
-        if inner_option < len(lists):
-            view_list(window, inner_option, selected, removing) 
-        else:
-            add_new_list(window, selected) 
-    else:
-        coming_soon(window)
-    display_text_box(window, text_input, text_box, text_index)
-    window.refresh()
-
-def status_bar(window, text_input, text_mode, message):
-    window.addstr(window.getmaxyx()[0] - 1, 0, " " * (window.getmaxyx()[1] - 1))
-    display = ""
-    if (message or not text_input) and not text_mode:
-        display = str(message)
-    else:
-        match text_mode:
-            case "new task" | "edit task":
-                display = "enter new task name"
-            case "migrate":
-                display = "enter due date to migrate to in the format yyyy-mm-dd"
-            case "schedule":
-                display = "enter due date to schedule for in the format yyyy-mm-dd"
-            case "edit priority":
-                display = "enter a number from 1 (low) to 3 (high)"
-            case "edit tags":
-                display = "enter + to add or - to remove, followed by tags (comma-separated)"
-            case "edit parent":
-                display = "enter the number to the right of the task you would like to set as the new parent (-1 for no parent)"
-            case "choose date":
-                display = "enter the date in the format yyyy-mm-dd"
-            case "habit name":
-                display = "enter new habit name"
-            case "habit unit":
-                display = "enter habit unit (to provide singular and plural forms, separate with /)"
-            case "habit target value":
-                display = "enter target value for habit"
-            case ["new duration record", selected_day, selected_habit, habits]:
-                display = f"enter start and end for habit '{habits[selected_habit]['name']}' on {selected_day}, in format yyyy-mm-dd-hh:mm,yyyy-mm-dd-hh:mm"
-            case ["new progress record", selected_day, selected_habit, habits] | ["new frequency record", selected_day, selected_habit, habits]:
-                display = f"enter value for habit '{habits[selected_habit]['name']}' on {selected_day}"
-            case ["add date", selected_habit]:
-                display = "enter the date in the format yyyy-mm-dd"
-            case ["edit habit", selected_habit, selected_header]:
-                if selected_header in ["unit", "target value"]:
-                    display = f"enter new {selected_header} for habit '{Habit.load_habits()[selected_habit]['name']}'"
-                else:
-                    display = f"enter new unit for habit '{Habit.load_habits()[selected_habit]['name']}' (to provide singular and plural forms, separate with /)"
-            case "new list":
-                display = "enter the list name"
-            case ["edit list name", *args]:
-                display = "enter the list name"
-            case [("new list item" | "edit list item"), *args]:
-                display = "enter the item name"
-            case _:
-                display = str(message)
-    display = display.lower()
-    if display:
-        if display[-1] not in ".!?":
-            display += "."
-    window.addstr(window.getmaxyx()[0] - 1, 0, display[:window.getmaxyx()[1] - 1])
-    window.refresh()
-
->>>>>>> b929ff3 (added ability to rename lists (resolved #5))
 def main(stdscr):
     """
     the main function.
@@ -334,6 +158,16 @@ def main(stdscr):
                                 List.remove_list(ls)
                             else:
                                 List.remove_item(ls, removing)
+                    elif outer_option == 3:
+                        logs = Log.load_logs()
+                        if inner_option < len(logs):
+                            log = list(logs.keys())[inner_option]
+                            if removing == ".":
+                                Log.remove_log(log)
+                            else:
+                                Log.remove_entry(log, removing)
+                    removing = ""
+                    content_window.clear()
                 elif chr(key) in "123456789":
                     if outer_option == 1 and inner_option == 0:
                         if map_settings["based_on"] == 0:
@@ -680,6 +514,23 @@ def main(stdscr):
                                     List.edit_item(ls, item, name=text_box)
                                     ls_name = List.get_list(ls)["name"]
                                     message = f"list item in list {ls_name} changed to {text_box}."
+                                case "new log":
+                                    Log.add_log(text_box)
+                                    message = f"new log '{text_box}' added."
+                                case ["edit log name", log]:
+                                    og_name = Log.get_log(log)["name"]
+                                    Log.edit_log(log, name=text_box)
+                                    message = f"log '{og_name}' renamed to '{text_box}'."
+                                case ["new log entry", log]:
+                                    today = date.today()
+                                    Log.add_entry(log, stdscr, markdown=text_box)
+                                    log_name = Log.get_log(log)["name"]
+                                    message = f"new log entry for '{today}' added to log '{log_name}'."
+                                case ["edit log entry", log, entry]:
+                                    today = date.today()
+                                    Log.edit_entry(log, stdscr, entry, markdown=text_box)
+                                    log_name = Log.get_log(log)["name"]
+                                    message = f"log entry for '{today}' in log '{log_name}' changed."
                             if clear:
                                 text_input = False
                                 text_box = ""
@@ -739,17 +590,21 @@ def main(stdscr):
                             selected[0] = 2 + len(Habit.load_habits())
                         elif inner_option == 4:
                             selected[0] = 6
-                elif outer_option == 2:
-                    lists = List.load_lists()
-                    if inner_option < len(lists):
-                        ls = lists[list(lists.keys())[inner_option]]
-                        if selected[0] == -1:
+                    elif outer_option == 2:
+                        lists = List.load_lists()
+                        if inner_option < len(lists):
+                            ls = lists[list(lists.keys())[inner_option]]
                             selected[0] = len(ls["items"]) + 2
+                        else:
+                            selected[0] = 2
+                    elif outer_option == 3:
+                        logs = Log.load_logs()
+                        if inner_option < len(logs):
+                            log = logs[list(logs.keys())[inner_option]]
+                            selected[0] = len(log["entries"]) + 2
+                        else:
+                            selected[0] = 2
                     else:
-                        if selected[0] == 0:
-                            selected[0] = 3
-                else:
-                    if selected[0] == -1:
                         selected[0] = 2
             elif key == curses.KEY_DOWN:
                 selected[0] += 1
@@ -798,6 +653,15 @@ def main(stdscr):
                     if inner_option < len(lists):
                         ls = lists[list(lists.keys())[inner_option]]
                         if selected[0] == len(ls["items"]) + 3:
+                            selected[0] = 0
+                    else:
+                        if selected[0] == 3:
+                            selected[0] = 0
+                elif outer_option == 3:
+                    logs = Log.load_logs()
+                    if inner_option < len(logs):
+                        log = logs[list(logs.keys())[inner_option]]
+                        if selected[0] == len(log["entries"]) + 3:
                             selected[0] = 0
                     else:
                         if selected[0] == 3:
@@ -1241,6 +1105,34 @@ def main(stdscr):
                         if chr(key) == ":":
                             text_input = True
                             text_mode = "new list"
+                elif outer_option == 3:
+                    logs = Log.load_logs()
+                    if inner_option < len(logs):
+                        log_id = list(logs.keys())[inner_option]
+                        entries = Log.get_log(log_id)["entries"]
+                        try:
+                            entry_date = list(entries.keys())[selected[0] - 2]
+                        except:
+                            match chr(key):
+                                case ":":
+                                    text_input = True
+                                    text_mode = ["new log entry", log_id]
+                                case "e":
+                                    text_input = True
+                                    text_mode = ["edit log name", log_id]
+                                case "r":
+                                    removing = "."
+                        else:
+                            match chr(key):
+                                case "e":
+                                    text_input = True
+                                    text_mode = ["edit log entry", log_id, entry_date]
+                                case "r":
+                                    removing = entry_date
+                    else:
+                        if chr(key) == ":":
+                            text_input = True
+                            text_mode = "new log"
             else:
                 pass
 

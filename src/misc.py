@@ -282,22 +282,9 @@ def center_string(window, string, color_pair=0, offset=(0, 0)):
     y = height // 2 + offset[1]
     window.addstr(y, x, string, curses.color_pair(color_pair))
 
-def save_terminal_state(fd):
-    """Save the current terminal state."""
-    old_settings = termios.tcgetattr(fd)
-    return old_settings
-
-def restore_terminal_state(fd, old_settings):
-    """Restore the terminal state to what it was before the editor."""
-    termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-
 def open_editor_and_return_text(window):
     """Open the user's preferred editor to edit a temporary file, then return the edited text."""
     
-    # Save terminal settings
-    fd = sys.stdin.fileno()
-    old_settings = save_terminal_state(fd)
-     
     with tempfile.NamedTemporaryFile(suffix=".md", delete=False) as tmp_file:
         tmp_file_path = tmp_file.name
     
@@ -305,7 +292,7 @@ def open_editor_and_return_text(window):
         curses.endwin()
         editor = os.getenv('EDITOR', 'lvim')  # Default to nano if not specified
         subprocess.call([editor, tmp_file_path])  # Run the editor
-        stdscr = curses.initscr()
+        curses.initscr()
         with open(tmp_file_path, 'r') as file:
             content = file.read().strip()
     except:
@@ -313,17 +300,10 @@ def open_editor_and_return_text(window):
         content = ""
     else:
         os.remove(tmp_file_path)
-
-    # Restore terminal settings after the editor exits
-    restore_terminal_state(fd, old_settings)
-    
+ 
     # Make sure the terminal is in a usable state for curses
     window.clear()
     window.refresh()
     curses.curs_set(0)  # Hide cursor after the editor
 
     return content
-    curses.curs_set(0)  # Hide cursor
-
-    return content
-

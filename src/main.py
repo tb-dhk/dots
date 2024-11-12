@@ -114,6 +114,9 @@ def inner_options(outer_option):
     if outer_option == 2:
         lists = List.load_lists()
         return [lists[ls]["name"] for ls in lists] + ["+ new"]
+    if outer_option == 3:
+        logs = Log.load_logs()
+        return [logs[log]["name"] for log in logs] + ["+ new"]
     if outer_option == 4:
         return ["main"]
     return ["+ new"]
@@ -154,6 +157,12 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
             view_list(window, inner_option, selected, removing) 
         else:
             add_new_list(window, selected) 
+    elif outer_option == 3:
+        logs = Log.load_logs()
+        if inner_option < len(logs):
+            view_log(window, inner_option, selected, removing) 
+        else:
+            add_new_log(window, selected) 
     else:
         coming_soon(window)
     display_text_box(window, text_input, text_box, text_index)
@@ -202,6 +211,12 @@ def status_bar(window, text_input, text_mode, message):
                 display = "enter the list name"
             case [("new list item" | "edit list item"), *args]:
                 display = "enter the item name"
+            case "new log":
+                display = "enter the log name"
+            case ["edit log name", *args]:
+                display = "enter the log name"
+            case [("new log entry" | "edit log entry"), *args]:
+                display = "enter the entry name"
             case _:
                 display = str(message)
     display = display.lower()

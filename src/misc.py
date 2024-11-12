@@ -299,36 +299,8 @@ def open_editor_and_return_text(window, data=""):
         content = data
     else:
         os.remove(tmp_file_path)
-
     window.clear()
     window.refresh()
     curses.curs_set(0)  # Hide cursor after the editor
 
     return content
-
-def update_special_color(special_color):
-    # Update special color
-    base_value = 750
-    color_offset = 100
-    if special_color[0] == 1000:
-        if special_color[2] > base_value:
-            special_color[2] -= color_offset
-        elif special_color[1] < 1000:
-            special_color[1] += color_offset
-        else:
-            special_color[0] -= color_offset
-    elif special_color[1] == 1000:
-        if special_color[0] > base_value:
-            special_color[0] -= color_offset
-        elif special_color[2] < 1000:
-            special_color[2] += color_offset
-        else:
-            special_color[1] -= color_offset
-    elif special_color[2] == 1000:
-        if special_color[1] > base_value:
-            special_color[1] -= color_offset
-        elif special_color[0] < 1000:
-            special_color[0] += color_offset
-        else:
-            special_color[2] -= color_offset
-    return special_color

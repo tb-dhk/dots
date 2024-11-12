@@ -66,8 +66,7 @@ class Log:
         logs = cls.load_logs()
         if log_id in logs:
             markdown_content = open_editor_and_return_text(window) if not markdown else markdown
-            if markdown_content:
-                logs[log_id]["entries"][date] = markdown_content # Add new entry to the dictionary
+            logs[log_id]["entries"][date] = markdown_content  # Add new entry to the dictionary
             cls.save_logs(logs)  # Save changes to JSON
             return date  # Return the date of the new entry
         return None  # Return None if log ID not found
@@ -77,15 +76,9 @@ class Log:
         """Edit an entry within a specific log."""
         logs = cls.load_logs()
         if log_id in logs and date in logs[log_id]["entries"]:
-            try:
-                data = logs[log_id]["entries"][date]
-            except:
-                data = ""
-            finally:
-                markdown_content = open_editor_and_return_text(window, data=data) if not markdown else markdown
-                if markdown_content:
-                    logs[log_id]["entries"][date] = markdown_content  # Save changes to the specific entry
-                    cls.save_logs(logs)  # Save changes to JSON
+            markdown_content = open_editor_and_return_text(window) if not markdown else markdown
+            logs[log_id]["entries"][date] = markdown_content  # Save changes to the specific entry
+            cls.save_logs(logs)  # Save changes to JSON
             return True  # Return success if entry updated
         return False  # Return failure if entry or log ID not found
 
@@ -110,9 +103,9 @@ def view_log(window, inner_option, selected, removing):
 
     for i, date in enumerate(entries):
         if removing == date:
-            window.addstr(i + 1, 2, f"• press r to confirm removal, esc to cancel", curses.color_pair(7))
+            window.addstr(i + 1, 2, f"- press r to confirm removal, esc to cancel", curses.color_pair(7))
         else:
-            window.addstr(i + 1, 2, f"• {date}", curses.color_pair(1 + (selected[0] == i + 2)))
+            window.addstr(i + 1, 2, f"- {date}", curses.color_pair(1 + (selected[0] == i + 2)))
 
     if removing == ".":
         window.addstr(len(entries) + 1, 2, "+ press r to confirm removal, esc to cancel", curses.color_pair(7))

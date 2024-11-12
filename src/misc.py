@@ -3,6 +3,11 @@ import json
 import os
 import tempfile
 import subprocess
+<<<<<<< HEAD
+=======
+import termios
+import sys
+>>>>>>> 154098a (added logs)
 
 def display_borders(window, selected, split=False, task_list=[]):
     """
@@ -61,6 +66,7 @@ def coming_soon(window):
     display_borders(window, [0, 0])
     window.addstr(2, 5, "coming soon...")
 
+<<<<<<< HEAD
 def status_bar(window, text_input, text_mode, message):
     window.addstr(window.getmaxyx()[0] - 1, 0, " " * (window.getmaxyx()[1] - 1))
     display = ""
@@ -301,11 +307,51 @@ def open_editor_and_return_text(window, data=""):
         os.remove(tmp_file_path)
 
 # Make sure the terminal is in a usable state for curses
+=======
+
+def save_terminal_state(fd):
+    """Save the current terminal state."""
+    old_settings = termios.tcgetattr(fd)
+    return old_settings
+
+def restore_terminal_state(fd, old_settings):
+    """Restore the terminal state to what it was before the editor."""
+    termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+
+def open_editor_and_return_text(window):
+    """Open the user's preferred editor to edit a temporary file, then return the edited text."""
+    
+    # Save terminal settings
+    fd = sys.stdin.fileno()
+    old_settings = save_terminal_state(fd)
+     
+    with tempfile.NamedTemporaryFile(suffix=".md", delete=False) as tmp_file:
+        tmp_file_path = tmp_file.name
+    
+    try:
+        curses.endwin()
+        editor = os.getenv('EDITOR', 'lvim')  # Default to nano if not specified
+        subprocess.call([editor, tmp_file_path])  # Run the editor
+        stdscr = curses.initscr()
+        with open(tmp_file_path, 'r') as file:
+            content = file.read().strip()
+    except:
+        os.remove(tmp_file_path)
+        content = ""
+    else:
+        os.remove(tmp_file_path)
+
+    # Restore terminal settings after the editor exits
+    restore_terminal_state(fd, old_settings)
+    
+    # Make sure the terminal is in a usable state for curses
+>>>>>>> 154098a (added logs)
     window.clear()
     window.refresh()
     curses.curs_set(0)  # Hide cursor after the editor
 
     return content
+<<<<<<< HEAD
 
 def update_special_color(special_color):
     # Update special color
@@ -333,3 +379,9 @@ def update_special_color(special_color):
         else:
             special_color[2] -= color_offset
     return special_color
+=======
+    curses.curs_set(0)  # Hide cursor
+
+    return content
+
+>>>>>>> 154098a (added logs)

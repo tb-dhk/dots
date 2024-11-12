@@ -14,17 +14,10 @@ import subprocess
 
 from points import points
 
-<<<<<<< HEAD
 from tasks import (
     get_task_list,
     tasks_for_day, tasks_for_week, tasks_for_month, tasks_for_year,
 )
-=======
-from tasks import Task, get_task_list, tasks_for_day, tasks_for_week, tasks_for_month, tasks_for_year, display_tasks, day_view, week_view, month_view, year_view
-from habits import Habit, DurationHabit, FrequencyHabit, ProgressHabit, get_records_from_habits, duration_maps, progress_maps, get_sunday, get_bounds, get_dates, heatmaps, manage_habits, add_new_habit
-from lists import List, add_new_list, view_list
-from logs import Log, add_new_log, view_log
->>>>>>> 154098a (added logs)
 
 from habits import (
     get_records_from_habits,
@@ -226,11 +219,8 @@ def status_bar(window, text_input, text_mode, message):
                 display = "enter the log name"
             case [("new log entry" | "edit log entry"), *args]:
                 display = "enter the entry name"
-<<<<<<< HEAD
             case ["new list item", ls]:
                 display = "enter the item name"
-=======
->>>>>>> 154098a (added logs)
             case _:
                 display = str(message)
     display = display.lower()
@@ -284,7 +274,6 @@ def main(stdscr):
 
         height, width = stdscr.getmaxyx()
 
-<<<<<<< HEAD
         # draw screen
         try:
             if not started:
@@ -319,8 +308,6 @@ def main(stdscr):
             except:
                 pass
 
-=======
->>>>>>> 154098a (added logs)
         # fetch all habits, and add a value for today (unless type == duration)
         habits = Habit.load_habits()
         for habit_id in habits:
@@ -735,11 +722,7 @@ def main(stdscr):
                                     today = date.today()
                                     Log.edit_entry(log, stdscr, entry, markdown=text_box)
                                     log_name = Log.get_log(log)["name"]
-<<<<<<< HEAD
                                     message = f"log entry for '{entry}' in log '{log_name}' changed."
-=======
-                                    message = f"log entry for '{today}' in log '{log_name}' changed."
->>>>>>> 154098a (added logs)
                             if clear:
                                 text_input = False
                                 text_box = ""
@@ -1338,7 +1321,6 @@ def main(stdscr):
                                     text_mode = ["edit log entry", log_id, entry_date]
                                 case "r":
                                     removing = entry_date
-<<<<<<< HEAD
                                 case "o":
                                     # assuming logs[log_id]["entries"][entry_date] is the markdown content to display
                                     with tempfile.NamedTemporaryFile(suffix=".md", delete=False) as tmp_file:
@@ -1349,8 +1331,6 @@ def main(stdscr):
                                     subprocess.run(["glow", tmp_file_path, "-p"], check=True)  # run `glow` to display the content
                                     os.remove(tmp_file_path)
                                     curses.initscr()  # reinitialize curses after `glow` ends
-=======
->>>>>>> 154098a (added logs)
                     else:
                         if chr(key) == ":":
                             text_input = True

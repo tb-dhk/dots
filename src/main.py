@@ -12,7 +12,7 @@ import subprocess
 from points import points
 
 from tasks import Task, get_task_list, tasks_for_day, tasks_for_week, tasks_for_month, tasks_for_year, display_tasks, day_view, week_view, month_view, year_view
-from habits import Habit, get_records_from_habits, duration_maps, progress_maps, get_sunday, get_bounds, get_dates, heatmaps, manage_habits, add_new_habit
+from habits import Habit, ProgressHabit, DurationHabit, get_records_from_habits, duration_maps, progress_maps, get_sunday, get_bounds, get_dates, heatmaps, manage_habits, add_new_habit
 from lists import List, add_new_list, view_list
 from logs import Log, add_new_log, view_log
 
@@ -584,7 +584,7 @@ def main(stdscr):
                                     today = date.today()
                                     Log.edit_entry(log, stdscr, entry, markdown=text_box)
                                     log_name = Log.get_log(log)["name"]
-                                    message = f"log entry for '{today}' in log '{log_name}' changed."
+                                    message = f"log entry for '{entry}' in log '{log_name}' changed."
                             if clear:
                                 text_input = False
                                 text_box = ""
@@ -1097,6 +1097,15 @@ def main(stdscr):
                                     text_mode = ["edit log entry", log_id, entry_date]
                                 case "r":
                                     removing = entry_date
+                                case "o":
+                                    # assuming logs[log_id]["entries"][entry_date] is the markdown content to display
+                                    with tempfile.NamedTemporaryFile(suffix=".md", delete=False) as tmp_file:
+                                        tmp_file.write(logs[log_id]["entries"][entry_date].encode('utf-8'))  # write content as bytes
+                                        tmp_file_path = tmp_file.name
+
+                                    curses.endwin()  # exit curses window to properly display `glow`
+                                    subprocess.run(["glow", tmp_file_path, "-p"])  # run `glow` to display the content
+                                    curses.initscr()  # reinitialize curses after `glow` ends
                     else:
                         if chr(key) == ":":
                             text_input = True

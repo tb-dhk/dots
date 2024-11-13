@@ -534,7 +534,7 @@ def main(stdscr):
                         if inner_option < 2:
                             habits = Habit.load_habits()
                             if habits:
-                                if map_settings["based_on"] == 0: 
+                                if map_settings["based_on"] == 0:
                                     habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "duration"}
                                     selected[0] = 3 + len(habits)
                                 else:

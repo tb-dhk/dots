@@ -215,12 +215,12 @@ def duration_maps(window, selected, map_settings):
             # all records that start or end on this day (fetch date from datetime)
             records = {habit: [record for record in habits[habit]['data'] if record[0][:10] == on] for habit in habits}
 
-            try: 
+            try:
                 earliest_time = min(min(dt.strptime(record[0], "%Y-%m-%d-%H:%M") for record in records[habit]) for habit in records if records[habit]).hour
                 latest_time = max(max(dt.strptime(record[1], "%Y-%m-%d-%H:%M") for record in records[habit]) for habit in records if records[habit])
             except:
                 earliest_time = timedelta(hours=0)
-                latest_time = timedelta(hours=24)  
+                latest_time = timedelta(hours=24)
                 try:
                     earliest_time = earliest_time.seconds // 3600
                 except:

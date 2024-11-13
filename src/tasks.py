@@ -338,7 +338,7 @@ def draw_task_table(window, data, start_y, start_x, selected, removing):
             for col_index in all_columns:
                 # Further proportional reduction
                 reduction_ratio = column_widths[col_index] / total_current_width
-                reduction_amount = int(total_excess * reduction_ratio) 
+                reduction_amount = int(total_excess * reduction_ratio)
                 column_widths[col_index] = max(len(headers[col_index]) + 3, column_widths[col_index] - reduction_amount)
 
     # Draw table header

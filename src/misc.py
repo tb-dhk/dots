@@ -294,7 +294,7 @@ def open_editor_and_return_text(window, data=""):
         curses.initscr()
         with open(tmp_file_path, 'r', encoding="utf-8") as file:
             content = file.read().strip()
-    except:
+    except Exception as e:
         os.remove(tmp_file_path)
         content = data
     else:

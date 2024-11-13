@@ -1328,7 +1328,11 @@ def main(stdscr):
                                         tmp_file_path = tmp_file.name
 
                                     curses.endwin()  # exit curses window to properly display `glow`
+<<<<<<< HEAD
                                     subprocess.run(["glow", tmp_file_path, "-p"], check=True)  # run `glow` to display the content
+=======
+                                    subprocess.run(["glow", tmp_file_path, "-p"])  # run `glow` to display the content
+>>>>>>> 3e0d62b (removed tmp_file at the end of viewing and return data if something goes wrong while editing (i.e. data will not be erased))
                                     os.remove(tmp_file_path)
                                     curses.initscr()  # reinitialize curses after `glow` ends
                     else:

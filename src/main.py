@@ -1136,6 +1136,7 @@ def main(stdscr):
 
                                     curses.endwin()  # exit curses window to properly display `glow`
                                     subprocess.run(["glow", tmp_file_path, "-p"])  # run `glow` to display the content
+                                    os.remove(tmp_file_path)
                                     curses.initscr()  # reinitialize curses after `glow` ends
                     else:
                         if chr(key) == ":":

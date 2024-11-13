@@ -296,7 +296,7 @@ def open_editor_and_return_text(window, data=""):
             content = file.read().strip()
     except Exception as e:
         os.remove(tmp_file_path)
-        content = ""
+        content = data
     else:
         os.remove(tmp_file_path)
  

@@ -153,7 +153,7 @@ def display_task(window, task_key, selected, task_list, text_mode, indent=0, spl
     end_col = split_x - 13 if box == 'left' else window.getmaxyx()[1] - 13
     window.move(window.getyx()[0] + 1, start_col)
     completed = task['completed']
-    symbol = 'x' if completed else '•'
+    symbol = '⨯' if completed else '•'
     important = "! " if task['priority'] == 3 else "  "
 
     if text_mode == "edit parent":

@@ -3,8 +3,6 @@ import json
 import os
 import tempfile
 import subprocess
-import termios
-import sys
 
 def display_borders(window, selected, split=False, task_list=[]):
     """
@@ -282,20 +280,21 @@ def center_string(window, string, color_pair=0, offset=(0, 0)):
     y = height // 2 + offset[1]
     window.addstr(y, x, string, curses.color_pair(color_pair))
 
-def open_editor_and_return_text(window):
+def open_editor_and_return_text(window, data=""):
     """Open the user's preferred editor to edit a temporary file, then return the edited text."""
     
     with tempfile.NamedTemporaryFile(suffix=".md", delete=False) as tmp_file:
-        tmp_file_path = tmp_file.name
+        tmp_file.write(data.encode('utf-8'))
+        tmp_file_path = tmp_file.name 
     
     try:
         curses.endwin()
         editor = os.getenv('EDITOR', 'lvim')  # Default to nano if not specified
-        subprocess.call([editor, tmp_file_path])  # Run the editor
+        subprocess.run([editor, tmp_file_path])  # Run the editor
         curses.initscr()
         with open(tmp_file_path, 'r') as file:
             content = file.read().strip()
-    except:
+    except Exception as e:
         os.remove(tmp_file_path)
         content = ""
     else:

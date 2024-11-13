@@ -66,7 +66,8 @@ class Log:
         logs = cls.load_logs()
         if log_id in logs:
             markdown_content = open_editor_and_return_text(window) if not markdown else markdown
-            logs[log_id]["entries"][date] = markdown_content  # Add new entry to the dictionary
+            if markdown_content:
+                logs[log_id]["entries"][date] = markdown_content # Add new entry to the dictionary
             cls.save_logs(logs)  # Save changes to JSON
             return date  # Return the date of the new entry
         return None  # Return None if log ID not found
@@ -76,9 +77,15 @@ class Log:
         """Edit an entry within a specific log."""
         logs = cls.load_logs()
         if log_id in logs and date in logs[log_id]["entries"]:
-            markdown_content = open_editor_and_return_text(window) if not markdown else markdown
-            logs[log_id]["entries"][date] = markdown_content  # Save changes to the specific entry
-            cls.save_logs(logs)  # Save changes to JSON
+            try:
+                data = logs[log_id]["entries"][date]
+            except:
+                data = ""
+            finally:
+                markdown_content = open_editor_and_return_text(window, data=data) if not markdown else markdown
+                if markdown_content:
+                    logs[log_id]["entries"][date] = markdown_content  # Save changes to the specific entry
+                    cls.save_logs(logs)  # Save changes to JSON
             return True  # Return success if entry updated
         return False  # Return failure if entry or log ID not found
 

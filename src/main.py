@@ -753,7 +753,7 @@ def main(stdscr):
                         except:
                             if key == ord(":"):
                                 text_input = True
-                                text_mode = "edit task"
+                                text_mode = "new task"
                         else:
                             task_name = Task.get_task(task)["name"]
                             text_modes = {

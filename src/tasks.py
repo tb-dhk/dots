@@ -264,18 +264,31 @@ def display_task_details(window, task_id, split_x, selected):
         window.move(window.getyx()[0] + 1, split_x + 3)
         count += 1
 
-def display_tasks(window, selected, text_mode, removing):
+def display_tasks(window, selected, text_mode, removing, hide_completed):
     """Main function to display tasks, with task details in the right box when selected."""
     max_x = window.getmaxyx()[1]
     display_borders(window, selected, split=True, task_list=get_task_list())
     tasks = Task.load_tasks()
+
+    # Group tasks by parent ID
+    tasks_by_parent = {}
+
+    for task in tasks:
+        parent_id = tasks[task]['parent']
+        if parent_id and parent_id in [t['id'] for t in tasks]:
+            tasks_by_parent.setdefault(parent_id, []).append(task)
+
+    # Filter tasks if hide_completed is true
+    if hide_completed:
+        tasks = {key: task for key, task in tasks.items()
+                 if not task['completed'] or not all_subtasks_completed(task, tasks_by_parent)}
 
     split_x = max_x // 2 - 1 if selected[0] >= 2 else 0
     task_list = []
 
     if selected[0] >= 2 and selected[0] < len(get_task_list()) + 2:
         # Display tasks in the left box
-        window.move(0, 0)  # Changed to start at row 3
+        window.move(0, 0)
         for task_key in tasks:
             if not tasks[task_key]['parent']:
                 display_task(window, task_key, selected, task_list, text_mode, split_x=split_x, box='left', removing=removing)
@@ -291,7 +304,7 @@ def display_tasks(window, selected, text_mode, removing):
         display_task_details(window, selected_task_key, split_x, selected)
     else:
         # Single full-width box display
-        window.move(0, 0)  # Changed to start at row 3
+        window.move(0, 0)
         for task_key in tasks:
             if not tasks[task_key]['parent']:
                 display_task(window, task_key, selected, task_list, text_mode)
@@ -380,8 +393,21 @@ def draw_task_table(window, data, start_y, start_x, selected, removing):
 
         window.addstr(start_y + row_idx + 3, start_x + sum(column_widths) + 5, '|')
 
-def render_task_and_children(window, data, task, tasks_by_parent, indent, day, removing, bullets=False, removing_subtask=False):
-    """Recursively render task and its children with appropriate indentation."""
+def all_subtasks_completed(task, tasks_by_parent):
+    if task['id'] in tasks_by_parent:
+        for child in tasks_by_parent[task['id']]:
+            if not child['completed'] or not all_subtasks_completed(child, tasks_by_parent):
+                return False
+    return True
+
+def render_task_and_children(window, data, task, tasks_by_parent, indent, day, removing, hide_completed, bullets=False, removing_subtask=False):
+    """Recursively render task and its children with appropriate indentation and hide completed tasks if required."""
+    
+    # If hide_completed is True and both the task and all its subtasks are completed, skip rendering
+    if hide_completed and task['completed'] and all_subtasks_completed(task, tasks_by_parent):
+        return
+
+    # Mark task priority and bullet style
     important = "! " if task['priority'] == 3 else "  "
     if not bullets:
         bullet = "x" if task['completed'] else "•"
@@ -412,9 +438,9 @@ def render_task_and_children(window, data, task, tasks_by_parent, indent, day, r
     # Recursively render child tasks
     if task['id'] in tasks_by_parent:
         for child in tasks_by_parent[task['id']]:
-            render_task_and_children(window, data, child, tasks_by_parent, indent + 1, day, removing, bullets=bullets, removing_subtask=task['id']==removing)
+            render_task_and_children(window, data, child, tasks_by_parent, indent + 1, day, removing, hide_completed, bullets=bullets, removing_subtask=(task['id'] == removing))
 
-def day_view(window, selected, day, removing):
+def day_view(window, selected, day, removing, hide_completed):
     display_borders(window, selected)
 
     window.addstr(2, 5, "tasks for ")
@@ -438,7 +464,7 @@ def day_view(window, selected, day, removing):
 
     # Recursively render orphaned tasks and their children
     for task in orphaned_tasks:
-        render_task_and_children(window, data, task, tasks_by_parent, 0, day, removing, bullets=True)
+        render_task_and_children(window, data, task, tasks_by_parent, 0, day, removing, hide_completed, bullets=True)
 
     # Draw the table
     draw_task_table(window, data, 4, 5, selected, removing)
@@ -461,7 +487,7 @@ def day_view(window, selected, day, removing):
 
     # Display text box input (for text entry mode)
 
-def week_view(window, selected, day, removing):
+def week_view(window, selected, day, removing, hide_completed):
     display_borders(window, selected)
 
     start = (dt.strptime(day, "%Y-%m-%d") - timedelta(days=dt.strptime(day, "%Y-%m-%d").weekday() + 1)).strftime("%Y-%m-%d")
@@ -488,7 +514,7 @@ def week_view(window, selected, day, removing):
 
     # Recursively render orphaned tasks and their children
     for task in orphaned_tasks:
-        render_task_and_children(window, data, task, tasks_by_parent, 0, day, removing)
+        render_task_and_children(window, data, task, tasks_by_parent, 0, day, removing, hide_completed)
 
     # Draw the table
     draw_task_table(window, data, 4, 5, selected, removing)
@@ -504,7 +530,7 @@ def week_view(window, selected, day, removing):
 
     # Display text box input (for text entry mode)
 
-def month_view(window, selected, day, removing):
+def month_view(window, selected, day, removing, hide_completed):
     display_borders(window, selected)
 
     start = dt.strptime(day, "%Y-%m-%d").replace(day=1).strftime("%Y-%m-%d")
@@ -534,7 +560,7 @@ def month_view(window, selected, day, removing):
 
     # Recursively render orphaned tasks and their children
     for task in orphaned_tasks:
-        render_task_and_children(window, data, task, tasks_by_parent, 0, day, removing)
+        render_task_and_children(window, data, task, tasks_by_parent, 0, day, removing, hide_completed)
 
     # Draw the table
     draw_task_table(window, data, 4, 5, selected, removing)
@@ -548,7 +574,7 @@ def month_view(window, selected, day, removing):
         f"({str(round(completed_today / len(due_today) * 100, 2)) + '%' if len(due_today) else 'n/a'})"
     )
 
-def year_view(window, selected, day, removing):
+def year_view(window, selected, day, removing, hide_completed):
     display_borders(window, selected)
 
     start = dt.strptime(day, "%Y-%m-%d").replace(month=1, day=1).strftime("%Y-%m-%d")
@@ -578,7 +604,7 @@ def year_view(window, selected, day, removing):
 
     # Recursively render orphaned tasks and their children
     for task in orphaned_tasks:
-        render_task_and_children(window, data, task, tasks_by_parent, 0, day, removing)
+        render_task_and_children(window, data, task, tasks_by_parent, 0, day, removing, hide_completed)
 
     # Draw the table
     draw_task_table(window, data, 4, 5, selected, removing)

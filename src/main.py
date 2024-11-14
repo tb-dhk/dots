@@ -99,18 +99,18 @@ def inner_navbar(stdscr, outer_option, inner_option, selected):
     for i, option in enumerate(options):
         stdscr.addstr(f" {option} ", curses.color_pair(1 + (i != inner_option) + 4 * (selected[0] == 1)))
 
-def content(window, outer_option, inner_option, selected, text_input, text_mode, text_box, text_index, removing, day, map_settings, new_habit):
+def content(window, outer_option, inner_option, selected, text_input, text_mode, text_box, text_index, removing, day, map_settings, new_habit, hide_completed):
     if outer_option == 0:
         if inner_option == 0:
-            display_tasks(window, selected, text_mode, removing)
+            display_tasks(window, selected, text_mode, removing, hide_completed)
         elif inner_option == 1:
-            day_view(window, selected, day, removing)
+            day_view(window, selected, day, removing, hide_completed)
         elif inner_option == 2:
-            week_view(window, selected, day, removing)
+            week_view(window, selected, day, removing, hide_completed)
         elif inner_option == 3:
-            month_view(window, selected, day, removing)
+            month_view(window, selected, day, removing, hide_completed)
         elif inner_option == 4:
-            year_view(window, selected, day, removing)
+            year_view(window, selected, day, removing, hide_completed)
     elif outer_option == 1:
         if inner_option == 0:
             duration_maps(window, selected, map_settings)
@@ -209,6 +209,7 @@ def main(stdscr):
     text_index = 0
     message = ""
     removing = ""
+    hide_completed = False
     day = date.today().strftime("%Y-%m-%d")
     map_settings = {"based_on": 0, "index": 0, "index2": 0}
     new_habit = {"name": " ", "type": "progress", "unit": "", "target_value": 0}
@@ -220,7 +221,7 @@ def main(stdscr):
 
     while True:
         # Update special color
-        base_value = 500
+        base_value = 750
         color_offset = 100
         if special_color[0] == 1000:
             if special_color[2] > base_value:
@@ -261,7 +262,7 @@ def main(stdscr):
         else:
             outer_navbar(stdscr, outer_option, selected)
             inner_navbar(stdscr, outer_option, inner_option, selected)
-            content(content_window, outer_option, inner_option, selected, text_input, text_mode, text_box, text_index, removing, day, map_settings, new_habit)
+            content(content_window, outer_option, inner_option, selected, text_input, text_mode, text_box, text_index, removing, day, map_settings, new_habit, hide_completed)
             status_bar(stdscr, text_input, text_mode, message)
 
         # fetch all habits, and add a log for today (unless type == duration)
@@ -750,6 +751,8 @@ def main(stdscr):
                     case " ":
                         started = True
                         stdscr.clear()
+            elif chr(key) == "h":
+                hide_completed = not hide_completed
             elif selected[0] >= 2:
                 if outer_option == 0:
                     if inner_option == 0:

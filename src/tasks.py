@@ -356,18 +356,18 @@ def draw_task_table(window, data, start_y, start_x, selected, removing):
 
     # Draw table header
     for i, header in enumerate(data[0][1:-1]):
-        window.addstr(start_y + 0, start_x + sum(column_widths[:i]) + i, '+' + '-' * column_widths[i])
-        window.addstr(start_y + 1, start_x + sum(column_widths[:i]) + i, "| " + header.ljust(column_widths[i]))
-        window.addstr(start_y + 2, start_x + sum(column_widths[:i]) + i, '+' + '-' * column_widths[i])
-        window.addstr(start_y + len(data) + 2, start_x + sum(column_widths[:i]) + i, '+' + '-' * column_widths[i])
+        window.addstr(start_y + 0, start_x + sum(column_widths[:i]) + i, ('╔' if not i else "╦") + '═' * column_widths[i])
+        window.addstr(start_y + 1, start_x + sum(column_widths[:i]) + i, "║ " + header.ljust(column_widths[i]))
+        window.addstr(start_y + 2, start_x + sum(column_widths[:i]) + i, ('╠' if not i else "╬") + '═' * column_widths[i])
+        window.addstr(start_y + len(data) + 2, start_x + sum(column_widths[:i]) + i, ('╚' if not i else "╩") + '═' * column_widths[i])
     for row in range(3):
-        window.addstr(start_y + row, start_x + sum(column_widths) + 5, '|' if row % 2 else '+')
-    window.addstr(start_y + len(data) + 2, start_x + sum(column_widths) + 5, '+')
+        window.addstr(start_y + row, start_x + sum(column_widths) + 5, '║' if row % 2 else ('╗' if not row else '╣'))
+    window.addstr(start_y + len(data) + 2, start_x + sum(column_widths) + 5, '╝')
 
     # Draw table rows
     for row_idx, row in enumerate(data[1:]):
         for i, item in enumerate(row[1:-1]):
-            window.addstr(start_y + row_idx + 3, start_x + sum(column_widths[:i]) + i, "| ")
+            window.addstr(start_y + row_idx + 3, start_x + sum(column_widths[:i]) + i, "║ ")
 
             # Handle priority and completed columns
             if i == 0:
@@ -391,7 +391,7 @@ def draw_task_table(window, data, start_y, start_x, selected, removing):
 
                 window.addstr(item_str[:column_widths[i] - 2], curses.color_pair((1 + 4 * ((selected[0] - 3) == row_idx and (selected[1] + 1) == i))) if not row[-1] else curses.color_pair(7))
 
-        window.addstr(start_y + row_idx + 3, start_x + sum(column_widths) + 5, '|')
+        window.addstr(start_y + row_idx + 3, start_x + sum(column_widths) + 5, '║')
 
 def all_subtasks_completed(task, tasks_by_parent):
     if task['id'] in tasks_by_parent:

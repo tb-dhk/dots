@@ -129,7 +129,7 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
 
 def status_bar(window, text_input, text_mode, message):
     window.addstr(window.getmaxyx()[0] - 1, 0, " " * (window.getmaxyx()[1] - 1))
-    if message or not text_input and not text_mode:
+    if (message or not text_input) and not text_mode:
         display = str(message)
     else:
         match text_mode:
@@ -942,7 +942,7 @@ def main(stdscr):
                             new_habit = {"name": " ", "type": "progress", "unit": " ", "target_value": 0}
             else:
                 pass
-        time.sleep(0.1)
+        time.sleep(0.02)
         stdscr.refresh()
 
 if __name__ == "__main__":

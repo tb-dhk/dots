@@ -1,4 +1,5 @@
 import curses
+import time
 import re
 from datetime import datetime as dt, date, timedelta
 import calendar
@@ -69,7 +70,7 @@ def edit_task_parent(selected, text_box, task_list):
     elif text_box == "-1":
         # Remove the parent if text_box == "-1"
         change_task_parent(task_id, None)
-        message = f"Parent of task '{task_name}' removed"
+        message = f"Parent of task '{task_name}' removed."
     else:
         message = "Invalid input. Please try again!"
 
@@ -165,6 +166,10 @@ def status_bar(window, text_input, text_mode, message):
                     display = f"enter new unit for habit '{Habit.load_habits()[selected_habit]['name']}' (to provide singular and plural forms, separate with /)"
             case _:
                 display = str(message)
+    display = display.lower()
+    if display:
+        if display[-1] not in ".!?":
+            display += "."
     window.addstr(window.getmaxyx()[0] - 1, 0, display[:window.getmaxyx()[1] - 1])
     window.refresh()
 
@@ -357,10 +362,10 @@ def main(stdscr):
                                         Task.add_task(text_box, due_date=f"{day[:7]}-{calendar.monthrange(int(day[:4]), int(day[5:7]))[1]}", due_type="month")
                                     elif inner_option == 4:
                                         Task.add_task(text_box, due_date=f"{day[:4]}-12-31", due_type="year")
-                                    message = f"new task '{text_box}' added"
+                                    message = f"new task '{text_box}' added."
                                 case "edit task":
                                     Task.edit_task(task_id, name=text_box)
-                                    message = f"name of task '{task_name}' changed to '{text_box}'"
+                                    message = f"name of task '{task_name}' changed to '{text_box}'."
                                 case "migrate" | "schedule":
                                     if text_box and re.match(r"\d{4}-\d{2}-\d{2}", text_box) and check_date(text_box):
                                         move_day = text_box
@@ -758,7 +763,7 @@ def main(stdscr):
                             task_name = Task.get_task(task)["name"]
                             text_modes = {
                                 ":": "new task",
-                                "n": "edit task",
+                                "e": "edit task",
                                 ">": "migrate",
                                 "<": "schedule",
                                 "t": "edit tags",
@@ -772,11 +777,16 @@ def main(stdscr):
                             match chr(key):
                                 case "x":
                                     Task.edit_task(task, completed=not Task.get_task(str(task))["completed"])
-                                case "n":
+                                case "e":
                                     selected[1] = 0
                                 case ".":
-                                    Task.edit_task(task, due_date=date.today().strftime("%Y-%m-%d"))
-                                    message = f"task '{task_name}' scheduled for today"
+                                    due_date = Task.get_task(task)["due date"]
+                                    if due_date == str(date.today()):
+                                        Task.edit_task(task, due_date="")
+                                        message = f"due date for task '{task}' removed."
+                                    else:
+                                        Task.edit_task(task, due_date=date.today().strftime("%Y-%m-%d"))
+                                        message = f"task '{task_name}' scheduled for today."
                                 case "1" | "2" | "3":
                                     Task.edit_task(task, priority=int(chr(key)))
                                 case ">":
@@ -929,7 +939,7 @@ def main(stdscr):
                             new_habit = {"name": " ", "type": "progress", "unit": " ", "target_value": 0}
             else:
                 pass
-
+        time.sleep(0.1)
         stdscr.refresh()
 
 if __name__ == "__main__":

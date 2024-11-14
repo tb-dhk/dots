@@ -64,15 +64,16 @@ do note that these keybindings require your cursor to be on a task (with the exc
 - `:`: add a new task (navigate to the input field)
 
 #### quick task keybindings
-these are available in all task views.
+these are available in all task views and do not reqiure text input
 - `x`: toggle completion status
-- `.`: schedule a task for today
+- `.`: schedule a task for today / unschedule a task (if task is already due today)
 - `1`, `2`, `3`: set priority to low, normal, or high (respectively)
 - `r`: remove/delete the task (press again to confirm)
 - `Esc`: cancel the removal of a task or exit input field
 
-#### task editing keybindings
+#### task editing keybindings (list view)
 all of these keybindings require text input and are only available in list view.
+- `e`: edit the task name
 - `<`, `>`: migrate or schedule (do note that both of these refer to changing or setting the due date and the difference in recommendation is purely symbolic)
 - `t`: edit tags
 - `m`: move the task to another parent (or orphan the task)

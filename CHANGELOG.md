@@ -1,11 +1,6 @@
 # changelog
 
-## [0.2.1] - 2024-11-14
-### bugs fixed
-- updated changelog
-- further linted code
-
-## [0.2.0] - 2024-11-12
+## [0.2.0] - 2024-11-??
 
 ### new features
 - **habit management screen**: added a dedicated screen to manage habits with options to edit and delete habits.

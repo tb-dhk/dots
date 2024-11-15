@@ -17,7 +17,7 @@ build:
 	@echo "build successful. executable is located in the dist/ directory."
 
 install:
-	@echo "updating and installing dots..."
+	@echo "installing dots..."
 	@read -p "Enter tag or branch to checkout (default: latest stable): " ref; \
 	ref=$${ref:-`git describe --tags $(git rev-list --tags --max-count=1)`}; \
 	git fetch --tags || { echo "error: failed to fetch tags."; exit 1; } \

@@ -776,8 +776,9 @@ def main(stdscr):
                                 case "e":
                                     selected[1] = 0
                                 case ".":
-                                    due_date = Task.get_task(task)["due date"]
+                                    due_date = Task.get_task(task)["due_date"]
                                     if due_date == str(date.today()):
+
                                         Task.edit_task(task, due_date="")
                                         message = f"due date for task '{task}' removed."
                                     else:
@@ -927,6 +928,7 @@ def main(stdscr):
                             new_habit = {"name": " ", "type": "progress", "unit": " ", "target_value": 0}
             else:
                 pass
+
         time.sleep(0.02)
         stdscr.refresh()
 

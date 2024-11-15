@@ -75,27 +75,43 @@ class Task:
         tasks = cls.load_tasks()  # Load existing tasks
         return tasks[task_id]  # Return the task if it exists, else None
 
-def traverse_tasks(task_key, tasks, clean_list):
-    """Recursively traverse through the task and its subtasks, adding them to the clean list."""
+def all_subtasks_completed(task_key):
+    """Check if the task and all its subtasks are marked as completed."""
+    task = Task.get_task(task_key)
+    if not task.get('completed', False):  # Check if the task itself is not completed
+        return False
+
+    # Check recursively for all subtasks
+    for subtask_key in task.get('subtasks', []):
+        if not all_subtasks_completed(subtask_key):
+            return False
+    return True
+
+def traverse_tasks(task_key, tasks, clean_list, hide_completed=False):
+    """
+    Recursively traverse through the task and its subtasks, adding them to the clean list.
+    If hide_completed is True, skip tasks where the task and all its subtasks are completed.
+    """
+    # Skip the task if hide_completed is True and all subtasks are completed
+    if hide_completed and all_subtasks_completed(task_key):
+        return
+
     clean_list.append(task_key)  # Add the parent task key
 
-    # Get the subtasks (children) of the current task
-    try:
-        for subtask_key in tasks[task_key]['subtasks']:
-            traverse_tasks(subtask_key, tasks, clean_list)  # Recursively add subtasks
-    except:
-        pass
+    # Recursively add subtasks
+    for subtask_key in tasks[task_key].get('subtasks', []):
+        traverse_tasks(subtask_key, tasks, clean_list, hide_completed=hide_completed)
 
 
-def get_task_list():
+def get_task_list(hide_completed=False):
     """Return a clean list of tasks and their subtasks in a structured order."""
     tasks = Task.load_tasks()  # Load all tasks
     clean_list = []
 
     # Find tasks without parents (root tasks)
     for task_key in tasks:
-        if not tasks[task_key]['parent']:
-            traverse_tasks(task_key, tasks, clean_list)
+        if not tasks[task_key].get('parent'):
+            traverse_tasks(task_key, tasks, clean_list, hide_completed=hide_completed)
 
     return clean_list
 
@@ -140,13 +156,13 @@ def tasks_for_year(day):
     tasks = tasks_for_days(start, end)
     return tasks
 
-def display_task(window, task_key, selected, task_list, text_mode, indent=0, split_x=0, box='wide', removing="", removing_subtask=False):
+def display_task(window, task_key, selected, task_list, text_mode, indent=0, split_x=0, box='wide', removing="", removing_subtask=False, hide_completed=False):
     """Display a task and its subtasks with indentation, adapted for two split boxes."""
     task = Task.load_tasks()[str(task_key)]
     if not task or window.getyx()[0] + 1 > window.getmaxyx()[0] - 5:
         return  # Skip if task not found
 
-    task_number = get_task_list().index(task_key)
+    task_number = get_task_list(hide_completed).index(task_key)
 
     # Choose the starting column based on the box ('left' or 'right')
     start_col = 2 if box != 'right' else split_x + 3
@@ -195,7 +211,7 @@ def display_task(window, task_key, selected, task_list, text_mode, indent=0, spl
 
     task_list.append(task_key)
     for subtask_key in task['subtasks']:
-        display_task(window, subtask_key, selected, task_list, text_mode, indent + 1, split_x, box, removing, bool(removing == task_key))
+        display_task(window, subtask_key, selected, task_list, text_mode, indent + 1, split_x, box, removing, bool(removing == task_key), hide_completed=hide_completed)
 
 def display_task_details(window, task_id, split_x, selected):
     """Display the attributes of the selected task in the right box, with aligned colons and edit commands."""
@@ -267,7 +283,7 @@ def display_task_details(window, task_id, split_x, selected):
 def display_tasks(window, selected, text_mode, removing, hide_completed):
     """Main function to display tasks, with task details in the right box when selected."""
     max_x = window.getmaxyx()[1]
-    display_borders(window, selected, split=True, task_list=get_task_list())
+    display_borders(window, selected, split=True, task_list=get_task_list(hide_completed))
     tasks = Task.load_tasks()
 
     # Group tasks by parent ID
@@ -281,23 +297,23 @@ def display_tasks(window, selected, text_mode, removing, hide_completed):
     # Filter tasks if hide_completed is true
     if hide_completed:
         tasks = {key: task for key, task in tasks.items()
-                 if not task['completed'] or not all_subtasks_completed(task, tasks_by_parent)}
+                 if not task['completed'] or not all_subtasks_completed(task["id"])}
 
     split_x = max_x // 2 - 1 if selected[0] >= 2 else 0
     task_list = []
 
-    if selected[0] >= 2 and selected[0] < len(get_task_list()) + 2:
+    if selected[0] >= 2 and selected[0] < len(get_task_list(hide_completed)) + 2:
         # Display tasks in the left box
         window.move(0, 0)
         for task_key in tasks:
             if not tasks[task_key]['parent']:
-                display_task(window, task_key, selected, task_list, text_mode, split_x=split_x, box='left', removing=removing)
+                display_task(window, task_key, selected, task_list, text_mode, split_x=split_x, box='left', removing=removing, hide_completed=hide_completed)
 
         window.move(window.getyx()[0] + 1, 4)
         new_task_msg = "+ press : to enter a new task"
         if len(new_task_msg) > split_x - 2:
             new_task_msg = new_task_msg[:split_x - 5] + "..."
-        window.addstr(new_task_msg, curses.color_pair(4 + 1 * (selected[0] == len(get_task_list()) + 2)))
+        window.addstr(new_task_msg, curses.color_pair(4 + 1 * (selected[0] == len(get_task_list(hide_completed)) + 2)))
 
         # Find the selected task and display its details in the right box
         selected_task_key = task_list[selected[0] - 2]
@@ -307,10 +323,10 @@ def display_tasks(window, selected, text_mode, removing, hide_completed):
         window.move(0, 0)
         for task_key in tasks:
             if not tasks[task_key]['parent']:
-                display_task(window, task_key, selected, task_list, text_mode)
+                display_task(window, task_key, selected, task_list, text_mode, hide_completed=hide_completed)
 
         window.move(window.getyx()[0] + 1, 4)
-        window.addstr("+ press : to enter a new task", curses.color_pair(4 + 1 * (selected[0] == len(get_task_list()) + 2)))
+        window.addstr("+ press : to enter a new task", curses.color_pair(4 + 1 * (selected[0] == len(get_task_list(hide_completed)) + 2)))
 
 def draw_task_table(window, data, start_y, start_x, selected, removing):
     # Calculate the maximum width of each column
@@ -393,18 +409,11 @@ def draw_task_table(window, data, start_y, start_x, selected, removing):
 
         window.addstr(start_y + row_idx + 3, start_x + sum(column_widths) + 5, '║')
 
-def all_subtasks_completed(task, tasks_by_parent):
-    if task['id'] in tasks_by_parent:
-        for child in tasks_by_parent[task['id']]:
-            if not child['completed'] or not all_subtasks_completed(child, tasks_by_parent):
-                return False
-    return True
-
 def render_task_and_children(window, data, task, tasks_by_parent, indent, day, removing, hide_completed, bullets=False, removing_subtask=False):
     """Recursively render task and its children with appropriate indentation and hide completed tasks if required."""
     
     # If hide_completed is True and both the task and all its subtasks are completed, skip rendering
-    if hide_completed and task['completed'] and all_subtasks_completed(task, tasks_by_parent):
+    if hide_completed and task['completed'] and all_subtasks_completed(task["id"]):
         return
 
     # Mark task priority and bullet style

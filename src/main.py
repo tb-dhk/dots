@@ -280,6 +280,7 @@ def main(stdscr):
         # Non-blocking check for key input
         key = stdscr.getch()
         if key != -1:  # -1 means no key was pressed
+            content_window.erase()
             if removing:
                 if key == ord("r"):
                     if outer_option == 0 and inner_option == 0:
@@ -290,11 +291,9 @@ def main(stdscr):
                             Task.remove_task(subtask)
                         Task.remove_task(removing)
                         removing = ""
-                        content_window.clear()
                     elif outer_option == 1 and inner_option == 3:
                         Habit.remove_habit(removing)
                         removing = ""
-                        content_window.clear()
                 elif chr(key) in "123456789":
                     if outer_option == 1 and inner_option == 0:
                         if map_settings["based_on"] == 0:
@@ -313,10 +312,8 @@ def main(stdscr):
                             record = records[for_day][int(chr(key)) - 1]
                         DurationHabit.remove_duration_record(habit, record)
                         removing = ""
-                        content_window.clear()
                 elif key == 27:
                     removing = ""
-                    content_window.clear()
                 elif key == ord("q"):
                     break
             elif text_input:
@@ -336,7 +333,7 @@ def main(stdscr):
                         if outer_option == 0:
                             if inner_option == 0:
                                 try:
-                                    task_id = get_task_list()[selected[0] - 2]
+                                    task_id = get_task_list(hide_completed)[selected[0] - 2]
                                 except:
                                     task_id = ""
                             elif inner_option == 1:
@@ -407,7 +404,7 @@ def main(stdscr):
                                         message = "invalid priority. try again!"
                                         clear = False
                                 case "edit tags":
-                                    original_tags = list(set(Task.load_tasks()[get_task_list()[selected[0] - 2]]["tags"]))
+                                    original_tags = list(set(Task.load_tasks()[get_task_list(hide_completed)[selected[0] - 2]]["tags"]))
                                     if text_box[0] in ["+", "-"]:
                                         tags = [tag.strip() for tag in text_box[1:].split(",")]
                                         if text_box[0] == "+":
@@ -423,7 +420,7 @@ def main(stdscr):
                                         message = "invalid tag operation. try again!"
                                         clear = False
                                 case "edit parent":
-                                    message = edit_task_parent(selected, text_box, get_task_list())
+                                    message = edit_task_parent(selected, text_box, get_task_list(hide_completed))
                                 case "choose date":
                                     if text_box and re.match(r"\d{4}-\d{2}-\d{2}", text_box) and check_date(text_box):
                                         day = text_box
@@ -508,7 +505,6 @@ def main(stdscr):
                                 text_mode = ""
                                 if outer_option == 0 and inner_option == 0:
                                     selected[1] = -1
-                    content_window.clear()
                 elif key == curses.KEY_LEFT:
                     text_index = max(0, text_index - 1)
                 elif key == curses.KEY_RIGHT:
@@ -522,12 +518,11 @@ def main(stdscr):
                         text_box = text_box[:text_index] + chr(key) + text_box[text_index:]
                         text_index = min(len(text_box), text_index + 1)
             elif key == curses.KEY_UP:
-                content_window.clear()
                 selected[0] -= 1
                 if selected[0] == -1:
                     if outer_option == 0:
                         if inner_option == 0:
-                            selected[0] = 2 + len(get_task_list())
+                            selected[0] = 2 + len(get_task_list(hide_completed))
                         elif inner_option == 1:
                             selected[0] = len(tasks_for_day(day)) + 2
                         elif inner_option == 2:
@@ -557,11 +552,10 @@ def main(stdscr):
                     if selected[0] == -1:
                         selected[0] = 2
             elif key == curses.KEY_DOWN:
-                content_window.clear()
                 selected[0] += 1
                 if outer_option == 0:
                     if inner_option == 0:
-                        if selected[0] == 3 + len(get_task_list()):
+                        if selected[0] == 3 + len(get_task_list(hide_completed)):
                             selected[0] = 0
                     elif inner_option == 1:
                         if selected[0] == len(tasks_for_day(day)) + 3:
@@ -603,7 +597,7 @@ def main(stdscr):
             elif key == curses.KEY_END:
                 if outer_option == 0:
                     if inner_option == 0:
-                        selected[0] = 2 + len(get_task_list())
+                        selected[0] = 2 + len(get_task_list(hide_completed))
                 else:
                     selected[0] = 3
             elif key == curses.KEY_LEFT:
@@ -753,11 +747,12 @@ def main(stdscr):
                         stdscr.clear()
             elif chr(key) == "h":
                 hide_completed = not hide_completed
+                selected[0] = min(selected[0], len(get_task_list(hide_completed)) + 1)
             elif selected[0] >= 2:
                 if outer_option == 0:
                     if inner_option == 0:
                         try:
-                            task = get_task_list()[selected[0] - 2]
+                            task = get_task_list(hide_completed)[selected[0] - 2]
                         except:
                             if key == ord(":"):
                                 text_input = True
@@ -775,8 +770,6 @@ def main(stdscr):
                             if chr(key) in text_modes:
                                 text_input = True
                                 text_mode = text_modes[chr(key)]
-                            if chr(key) in "xn.123><tmr":
-                                content_window.clear()
                             match chr(key):
                                 case "x":
                                     Task.edit_task(task, completed=not Task.get_task(str(task))["completed"])
@@ -802,7 +795,6 @@ def main(stdscr):
                                     selected[1] = 3
                                 case "r":
                                     removing = task
-                                    content_window.clear()
                     elif inner_option in [1, 2, 3, 4]:
                         task = [tasks_for_day, tasks_for_week, tasks_for_month, tasks_for_year][inner_option - 1](day)[selected[0] - 3]
                         task_name = task["name"]
@@ -810,12 +802,10 @@ def main(stdscr):
                             case "v":
                                 outer_option = 0
                                 inner_option = 0
-                                selected[0] = 2 + get_task_list().index(task["id"])
+                                selected[0] = 2 + get_task_list(hide_completed).index(task["id"])
                                 selected[1] = -1
-                                content_window.clear()
                             case "e":
                                 text_input = True
-                                content_window.clear()
                                 try:
                                     due_date = task["due_date"].strftime("%Y-%m-%d")
                                 except:
@@ -838,10 +828,8 @@ def main(stdscr):
                                 text_mode = "edit task"
                             case "x":
                                 Task.edit_task(task["id"], completed=not task["completed"])
-                                content_window.clear()
                             case "1" | "2" | "3":
                                 Task.edit_task(task["id"], priority=int(chr(key)))
-                                content_window.clear()
                             case "d":
                                 if selected[0] == 2:
                                     text_input = True
@@ -851,7 +839,6 @@ def main(stdscr):
                                 message = f"task '{task_name}' scheduled for today"
                             case "r":
                                 removing = task["id"]
-                                content_window.clear()
                 elif outer_option == 1:
                     habits = Habit.load_habits()
                     habits = dict(sorted(habits.items(), key=lambda x: x[0]))
@@ -897,7 +884,6 @@ def main(stdscr):
                                     selected_habit = list(habits.keys())[index % len(habits)]
                                     daylist = list(get_records_from_habits(habits, index).keys())
                                     removing = daylist[selected[0] - 4]
-                                content_window.clear()
                     elif inner_option == 2:
                         if selected[0] >= 5:
                             if chr(key) == "e":
@@ -926,7 +912,6 @@ def main(stdscr):
                                 text_mode = ["edit habit", list(habits.keys())[selected[0] - 2], selected_header.replace("_", " ")]
                         elif chr(key) == "r":
                             removing = list(habits.keys())[selected[0] - 2]
-                            content_window.clear()
                     elif inner_option == 4:
                         text_modes = {
                             2: "habit name",

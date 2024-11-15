@@ -6,5 +6,5 @@ Sleep 1
 Down 
 Sleep 1
 Enter
-Sleep 2.5
+Sleep 1
 Output out.gif

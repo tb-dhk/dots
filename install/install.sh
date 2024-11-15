@@ -55,7 +55,7 @@ if [ -z "$ref" ]; then
 fi
 
 # Fetch and checkout the selected ref
-gum spin --show-error --title "fetching and checking out..." -- \
+gum spin --spinner=points --show-error --title "fetching and checking out..." -- \
 "
 git fetch --tags || { echo "error: failed to fetch tags."; exit 1; }
 git checkout $ref || { echo "error: failed to checkout $ref."; exit 1; }
@@ -63,11 +63,11 @@ git checkout $ref || { echo "error: failed to checkout $ref."; exit 1; }
 echo "fetched and checked out to branch/tag \"$ref\"!"
 
 # Building executable
-gum spin --show-error ./install/build.sh --title "building executable..." || { echo "error: failed to build the project."; exit 1; }
+gum spin --spinner=points --show-error ./install/build.sh --title "building executable..." || { echo "error: failed to build the project."; exit 1; }
 echo "executable built!"
 
 # Check if the build artifacts exist
-gum spin --show-error --title "checking for build artifacts..." -- \
+gum spin --spinner=points --show-error --title "checking for build artifacts..." -- \
 "
 if [ ! -f dist/dots-linux ] && [ ! -f dist/dots-macos ] && [ ! -f dist/dots-windows.exe ]; then
   echo \"error: no build artifact found. please build the project first.\";
@@ -77,7 +77,7 @@ fi
 echo "build artifacts found!"
 
 # Installing executable
-gum spin --show-error --title "installing executable..." -- \
+gum spin --spinner=points --show-error --title "installing executable..." -- \
 "
 if [ \"\$(uname)\" = \"Linux\" ]; then
   sudo cp dist/dots-linux /usr/local/bin/dots || { echo \"error: failed to copy to /usr/local/bin.\"; exit 1; }
@@ -95,7 +95,7 @@ echo "executable installed"!
 DOTS_DIR=~/.dots
 FILES="tasks.json habits.json lists.json logs.json"
 
-gum spin --show-error --title "setting up ~/.dots..." -- \
+gum spin --spinner=points --show-error --title "setting up ~/.dots..." -- \
 "
 mkdir -p \$DOTS_DIR || { echo \"error: failed to create \$DOTS_DIR.\"; exit 1; }
 

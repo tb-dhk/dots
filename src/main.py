@@ -778,7 +778,6 @@ def main(stdscr):
                                 case ".":
                                     due_date = Task.get_task(task)["due_date"]
                                     if due_date == str(date.today()):
-
                                         Task.edit_task(task, due_date="")
                                         message = f"due date for task '{task}' removed."
                                     else:

@@ -21,12 +21,12 @@ compare_versions() {
 }
 
 # Welcome message
-echo "welcome to the dots installer!"
+echo -e "welcome to the \x1b[1mdots \x1b[0minstaller!"
 
 latest_stable_version=$(git tag --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
 
 # Build the table rows with version information
-table_rows=$'version or branch,type\n'
+table_rows="version or branch,type\n"
 
 # Get the tags and branches, and categorize them
 for ref in $(git for-each-ref --format='%(refname:short)' refs/heads/ && git tag | sort -r); do
@@ -47,20 +47,20 @@ done
 
 # Display the table using gum
 ref=$(echo -e "$table_rows" | gum table --height=$(echo -e "$table_rows" | wc -l) --widths=20,50)
-ref=$(echo $ref | cut -d',' -f1)
+ref=$(echo "$ref" | cut -d',' -f1)
 
 # If no selection is made or invalid ref
 if [ -z "$ref" ]; then 
-	echo "error: No selection made or invalid reference."; exit 1; 
+    echo "error: No selection made or invalid reference."; exit 1; 
 fi
 
 # Fetch and checkout the selected ref
 gum spin --spinner=points --show-error --title "fetching and checking out..." -- \
 "
-git fetch --tags || { echo "error: failed to fetch tags."; exit 1; }
-git checkout $ref || { echo "error: failed to checkout $ref."; exit 1; }
+git fetch --tags || { echo \"error: failed to fetch tags.\"; exit 1; }
+git checkout $ref || { echo \"error: failed to checkout $ref.\"; exit 1; }
 "
-echo "fetched and checked out to branch/tag \"$ref\"!"
+echo -e "fetched and checked out to branch/tag \x1b[1m$ref\x1b[0m!"
 
 # Building executable
 gum spin --spinner=points --show-error ./install/build.sh --title "building executable..." || { echo "error: failed to build the project."; exit 1; }
@@ -89,30 +89,30 @@ else
   echo \"error: unsupported operating system.\"; exit 1
 fi
 "
-echo "executable installed"!
+echo "executable installed!"
 
 # Setting up ~/.dots
 DOTS_DIR=~/.dots
 FILES="tasks.json habits.json lists.json logs.json"
 
-gum spin --spinner=points --show-error --title "setting up ~/.dots..." -- \
+gum spin --spinner=points --show-error --title "setting up \x1b[1m~/.dots\x1b[0m..." -- \
 "
-mkdir -p \$DOTS_DIR || { echo \"error: failed to create \$DOTS_DIR.\"; exit 1; }
+mkdir -p \$DOTS_DIR || { echo \"error: failed to create \x1b[1m\$DOTS_DIR\x1b[0m\"; exit 1; }
 
 if [ ! -f \$DOTS_DIR/config.toml ]; then
-  cp src/config.toml \$DOTS_DIR/config.toml || { echo \"error: failed to copy config.toml.\"; exit 1; }
+  cp src/config.toml \$DOTS_DIR/config.toml || { echo \"error: failed to copy \x1b[1mconfig.toml\x1b[0m.\"; exit 1; }
 else
-  echo \"warning: \$DOTS_DIR/config.toml already exists. Skipping...\"
+  echo \"warning: \x1b[1m\$DOTS_DIR/config.toml\x1b[0m already exists. Skipping...\"
 fi
 
 for file in \$FILES; do
   if [ ! -f \$DOTS_DIR/\$file ]; then
-    echo \"{}\" > \$DOTS_DIR/\$file || { echo \"error: failed to create \$file.\"; exit 1; }
+    echo \"{}\" > \$DOTS_DIR/\$file || { echo \"error: failed to create \x1b[1m\$file\x1b[0m.\"; exit 1; }
   else
-    echo \"warning: \$DOTS_DIR/\$file already exists. skipping...\"
+    echo \"warning: \x1b[1m\$DOTS_DIR/\$file\x1b[0m already exists. skipping...\"
   fi
 done
 "
-echo "~/.dots set up!"
+echo -e "\x1b[1m~/.dots\x1b[0m set up!"
 
-echo "dots installed successfully. type \"dots\" in your terminal to continue."
+echo -e "dots installed successfully. run \x1b[1mdots\x1b[0m to continue."

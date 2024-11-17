@@ -5,9 +5,10 @@ from datetime import datetime as dt, date, timedelta
 import calendar
 import sys
 import os
-import toml
 import tempfile
 import subprocess
+
+import toml
 
 from points import points
 
@@ -1133,7 +1134,7 @@ def main(stdscr):
                                         tmp_file_path = tmp_file.name
 
                                     curses.endwin()  # exit curses window to properly display `glow`
-                                    subprocess.run(["glow", tmp_file_path, "-p"])  # run `glow` to display the content
+                                    subprocess.run(["glow", tmp_file_path, "-p"], check=True)  # run `glow` to display the content
                                     os.remove(tmp_file_path)
                                     curses.initscr()  # reinitialize curses after `glow` ends
                     else:

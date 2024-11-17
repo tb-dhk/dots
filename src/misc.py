@@ -282,27 +282,54 @@ def center_string(window, string, color_pair=0, offset=(0, 0)):
 
 def open_editor_and_return_text(window, data=""):
     """Open the user's preferred editor to edit a temporary file, then return the edited text."""
-    
+
     with tempfile.NamedTemporaryFile(suffix=".md", delete=False) as tmp_file:
         tmp_file.write(data.encode('utf-8'))
-        tmp_file_path = tmp_file.name 
-    
+        tmp_file_path = tmp_file.name
+
     try:
         curses.endwin()
         editor = os.getenv('EDITOR', 'lvim')  # Default to nano if not specified
-        subprocess.run([editor, tmp_file_path])  # Run the editor
+        subprocess.run([editor, tmp_file_path], check=True)  # Run the editor
         curses.initscr()
-        with open(tmp_file_path, 'r') as file:
+        with open(tmp_file_path, 'r', encoding="utf-8") as file:
             content = file.read().strip()
-    except Exception as e:
+    except:
         os.remove(tmp_file_path)
         content = data
     else:
         os.remove(tmp_file_path)
- 
+
     # Make sure the terminal is in a usable state for curses
     window.clear()
     window.refresh()
     curses.curs_set(0)  # Hide cursor after the editor
 
     return content
+
+def update_special_color(special_color):
+    # Update special color
+    base_value = 750
+    color_offset = 100
+    if special_color[0] == 1000:
+        if special_color[2] > base_value:
+            special_color[2] -= color_offset
+        elif special_color[1] < 1000:
+            special_color[1] += color_offset
+        else:
+            special_color[0] -= color_offset
+    elif special_color[1] == 1000:
+        if special_color[0] > base_value:
+            special_color[0] -= color_offset
+        elif special_color[2] < 1000:
+            special_color[2] += color_offset
+        else:
+            special_color[1] -= color_offset
+    elif special_color[2] == 1000:
+        if special_color[1] > base_value:
+            special_color[1] -= color_offset
+        elif special_color[0] < 1000:
+            special_color[0] += color_offset
+        else:
+            special_color[2] -= color_offset
+    return special_color

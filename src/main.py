@@ -129,6 +129,7 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
 
 def status_bar(window, text_input, text_mode, message):
     window.addstr(window.getmaxyx()[0] - 1, 0, " " * (window.getmaxyx()[1] - 1))
+    display = ""
     if (message or not text_input) and not text_mode:
         display = str(message)
     else:

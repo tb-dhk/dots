@@ -411,7 +411,7 @@ def draw_task_table(window, data, start_y, start_x, selected, removing):
 
 def render_task_and_children(window, data, task, tasks_by_parent, indent, day, removing, hide_completed, bullets=False, removing_subtask=False):
     """Recursively render task and its children with appropriate indentation and hide completed tasks if required."""
-    
+
     # If hide_completed is True and both the task and all its subtasks are completed, skip rendering
     if hide_completed and task['completed'] and all_subtasks_completed(task["id"]):
         return
@@ -447,7 +447,7 @@ def render_task_and_children(window, data, task, tasks_by_parent, indent, day, r
     # Recursively render child tasks
     if task['id'] in tasks_by_parent:
         for child in tasks_by_parent[task['id']]:
-            render_task_and_children(window, data, child, tasks_by_parent, indent + 1, day, removing, hide_completed, bullets=bullets, removing_subtask=(task['id'] == removing))
+            render_task_and_children(window, data, child, tasks_by_parent, indent + 1, day, removing, hide_completed, bullets=bullets, removing_subtask=task['id'] == removing)
 
 def day_view(window, selected, day, removing, hide_completed):
     display_borders(window, selected)

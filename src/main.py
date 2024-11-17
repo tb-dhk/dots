@@ -9,6 +9,8 @@ import tempfile
 import subprocess
 
 import toml
+import tempfile
+import subprocess
 
 from points import points
 
@@ -921,7 +923,11 @@ def main(stdscr):
                         ls = list(lists.keys())[inner_option]
                         items = List.get_list(ls)["items"]
                         try:
+<<<<<<< HEAD
                             item = list(items.keys())[(selected[0] - 2)]
+=======
+                            item = items[list(items.keys())[(selected[0] + 2)]]
+>>>>>>> fa327e1cc9ff5fe30366165b88737e4245b97aff
                         except:
                             match chr(key):
                                 case ":":
@@ -977,7 +983,11 @@ def main(stdscr):
                                         tmp_file_path = tmp_file.name
 
                                     curses.endwin()  # exit curses window to properly display `glow`
+<<<<<<< HEAD
                                     subprocess.run(["glow", tmp_file_path, "-p"], check=True)  # run `glow` to display the content
+=======
+                                    subprocess.run(["glow", tmp_file_path, "-p"])  # run `glow` to display the content
+>>>>>>> fa327e1cc9ff5fe30366165b88737e4245b97aff
                                     os.remove(tmp_file_path)
                                     curses.initscr()  # reinitialize curses after `glow` ends
                     else:

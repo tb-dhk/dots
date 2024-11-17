@@ -63,7 +63,6 @@ def coming_soon(window):
     display_borders(window, [0, 0])
     window.addstr(2, 5, "coming soon...")
 
-
 def open_editor_and_return_text(window, data=""):
     """Open the user's preferred editor to edit a temporary file, then return the edited text."""
 

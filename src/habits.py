@@ -15,7 +15,7 @@ class Habit:
         self.name = name  # Habit name
         self.type = habit_type  # Habit type
         self.unit = unit  # Measurement unit
-        self.description = ""
+        self.description = description
         self.target_value = target_value  # Target value (optional)
         self.data = {}  # Data will be saved to habits.json
 
@@ -28,7 +28,7 @@ class Habit:
         save_items(habits, filename)
 
     @classmethod
-    def add_habit(cls, name, habit_type, unit, target_value=0):  
+    def add_habit(cls, name, habit_type, unit, target_value=0):
         """Add a new habit."""
         habit = cls(name, habit_type, unit, target_value=target_value)
         habits = cls.load_habits()  # Load existing habits
@@ -222,19 +222,10 @@ def duration_maps(window, selected, map_settings):
             except:
                 earliest_time = timedelta(hours=0)
                 latest_time = timedelta(hours=24)
-<<<<<<< HEAD
                 try:
                     earliest_time = earliest_time.seconds // 3600
                 except:
                     earliest_time = 0
-=======
-            latest_time_diff = math.ceil((latest_time - earliest_time) / timedelta(hours=1))
-            try:                                                   
-                earliest_time = earliest_time.hour
-            except:
-                earliest_time = 0
->>>>>>> 31e39e3 (src/tasks.py:)
-
             latest_time_diff = math.ceil((latest_time - earliest_time) / timedelta(hours=1))
         else:
             habitid = list(habits.keys())[index % len(habits)]

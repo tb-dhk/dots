@@ -1,8 +1,9 @@
 import curses
 import os
 import uuid
+import datetime
+
 from misc import display_borders, load_items, save_items, open_editor_and_return_text
-from datetime import date 
 
 class Log:
     def __init__(self, name, description="", entries={}):
@@ -61,7 +62,7 @@ class Log:
         return logs.get(log_id)  # Return the log if it exists, else None
 
     @classmethod
-    def add_entry(cls, log_id, window, date=str(date.today()), markdown=""):
+    def add_entry(cls, log_id, window, date=str(datetime.date.today()), markdown=""):
         """Add a new entry to a specific log."""
         logs = cls.load_logs()
         if log_id in logs:
@@ -110,7 +111,7 @@ def view_log(window, inner_option, selected, removing):
 
     for i, date in enumerate(entries):
         if removing == date:
-            window.addstr(i + 1, 2, f"• press r to confirm removal, esc to cancel", curses.color_pair(7))
+            window.addstr(i + 1, 2, "• press r to confirm removal, esc to cancel", curses.color_pair(7))
         else:
             window.addstr(i + 1, 2, f"• {date}", curses.color_pair(1 + (selected[0] == i + 2)))
 

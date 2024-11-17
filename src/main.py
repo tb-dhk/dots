@@ -5,18 +5,20 @@ from datetime import datetime as dt, date, timedelta
 import calendar
 import sys
 import os
-import toml
 import tempfile
 import subprocess
 
+import toml
+
 from points import points
 
-from tasks import Task, get_task_list, tasks_for_day, tasks_for_week, tasks_for_month, tasks_for_year, display_tasks, day_view, week_view, month_view, year_view
-from habits import Habit, ProgressHabit, DurationHabit, get_records_from_habits, duration_maps, progress_maps, get_sunday, get_bounds, get_dates, heatmaps, manage_habits, add_new_habit
+from tasks import Task, get_task_list, tasks_for_day, tasks_for_week, tasks_for_month, tasks_for_year, display_tasks, day_view, week_view, month_view, year_view, edit_task_parent
+from habits import Habit, FrequencyHabit, ProgressHabit, DurationHabit, get_records_from_habits, duration_maps, progress_maps, get_sunday, get_bounds, get_dates, heatmaps, manage_habits, add_new_habit
 from lists import List, add_new_list, view_list
 from logs import Log, add_new_log, view_log
 
-from misc import display_text_box, coming_soon
+from misc import display_text_box, coming_soon, update_special_color
+from components import status_bar
 
 config = toml.load(os.path.join(os.path.expanduser("~"), ".dots", "config.toml"))
 
@@ -32,53 +34,6 @@ def center_string(window, string, color_pair, offset=(0, 0)):
     x = width // 2 - len(string) // 2 + offset[0]
     y = height // 2 + offset[1]
     window.addstr(y, x, string, curses.color_pair(color_pair))
-
-def change_task_parent(task_id, new_parent_id):
-    """Change the parent of a task and update subtasks of both old and new parents."""
-    tasks = Task.load_tasks()
-    task = tasks[task_id]
-
-    # If removing the parent (new_parent_id is None)
-    if new_parent_id is None:
-        # Remove the task from its current parent's subtasks
-        for parent_id in tasks:
-            if task_id in tasks[parent_id]["subtasks"]:
-                Task.edit_task(parent_id, subtasks=list(set(tasks[parent_id]["subtasks"]) - {task_id}))
-        Task.edit_task(task_id, parent=None)
-    else:
-        new_parent = tasks[new_parent_id]
-
-        # Remove the task from its old parent if it had one
-        if task["parent"]:
-            for parent_id in tasks:
-                if task_id in tasks[parent_id]["subtasks"]:
-                    Task.edit_task(parent_id, subtasks=list(set(tasks[parent_id]["subtasks"]) - {task_id}))
-
-        # Set the new parent and update its subtasks
-        Task.edit_task(task_id, parent=new_parent_id)
-        Task.edit_task(new_parent_id, subtasks=list(set(new_parent["subtasks"] + [task_id])))
-
-def edit_task_parent(selected, text_box, task_list):
-    """Process the input to edit the parent of the selected task."""
-    task_id = task_list[selected[0] - 2]  # Task to edit
-    task_name = Task.get_task(task_id)['name']
-
-    if text_box.isdigit():
-        new_parent_index = int(text_box)
-        if 0 <= new_parent_index < len(task_list) and new_parent_index != selected[0] - 2:
-            new_parent_id = task_list[new_parent_index]
-            change_task_parent(task_id, new_parent_id)
-            message = f"Parent of task '{task_name}' changed to '{Task.get_task(new_parent_id)['name']}'"
-        else:
-            message = "Invalid parent. Please try again!"
-    elif text_box == "-1":
-        # Remove the parent if text_box == "-1"
-        change_task_parent(task_id, None)
-        message = f"Parent of task '{task_name}' removed."
-    else:
-        message = "Invalid input. Please try again!"
-
-    return message
 
 def outer_navbar(stdscr, outer_option, selected):
     options = ["tasks", "habits", "lists", "logs"]
@@ -135,77 +90,18 @@ def content(window, outer_option, inner_option, selected, text_input, text_mode,
     elif outer_option == 2:
         lists = List.load_lists()
         if inner_option < len(lists):
-            view_list(window, inner_option, selected, removing) 
+            view_list(window, inner_option, selected, removing)
         else:
-            add_new_list(window, selected) 
+            add_new_list(window, selected)
     elif outer_option == 3:
         logs = Log.load_logs()
         if inner_option < len(logs):
-            view_log(window, inner_option, selected, removing) 
+            view_log(window, inner_option, selected, removing)
         else:
-            add_new_log(window, selected) 
+            add_new_log(window, selected)
     else:
         coming_soon(window)
     display_text_box(window, text_input, text_box, text_index)
-    window.refresh()
-
-def status_bar(window, text_input, text_mode, message):
-    window.addstr(window.getmaxyx()[0] - 1, 0, " " * (window.getmaxyx()[1] - 1))
-    display = ""
-    if (message or not text_input) and not text_mode:
-        display = str(message)
-    else:
-        match text_mode:
-            case "new task" | "edit task":
-                display = "enter new task name"
-            case "migrate":
-                display = "enter due date to migrate to in the format yyyy-mm-dd"
-            case "schedule":
-                display = "enter due date to schedule for in the format yyyy-mm-dd"
-            case "edit priority":
-                display = "enter a number from 1 (low) to 3 (high)"
-            case "edit tags":
-                display = "enter + to add or - to remove, followed by tags (comma-separated)"
-            case "edit parent":
-                display = "enter the number to the right of the task you would like to set as the new parent (-1 for no parent)"
-            case "choose date":
-                display = "enter the date in the format yyyy-mm-dd"
-            case "habit name":
-                display = "enter new habit name"
-            case "habit unit":
-                display = "enter habit unit (to provide singular and plural forms, separate with /)"
-            case "habit target value":
-                display = "enter target value for habit"
-            case ["new duration record", selected_day, selected_habit, habits]:
-                display = f"enter start and end for habit '{habits[selected_habit]['name']}' on {selected_day}, in format yyyy-mm-dd-hh:mm,yyyy-mm-dd-hh:mm"
-            case ["new progress record", selected_day, selected_habit, habits] | ["new frequency record", selected_day, selected_habit, habits]:
-                display = f"enter value for habit '{habits[selected_habit]['name']}' on {selected_day}"
-            case ["add date", selected_habit]:
-                display = "enter the date in the format yyyy-mm-dd"
-            case ["edit habit", selected_habit, selected_header]:
-                if selected_header in ["unit", "target value"]:
-                    display = f"enter new {selected_header} for habit '{Habit.load_habits()[selected_habit]['name']}'"
-                else:
-                    display = f"enter new unit for habit '{Habit.load_habits()[selected_habit]['name']}' (to provide singular and plural forms, separate with /)"
-            case "new list":
-                display = "enter the list name"
-            case ["edit list name", *args]:
-                display = "enter the list name"
-            case [("new list item" | "edit list item"), *args]:
-                display = "enter the item name"
-            case "new log":
-                display = "enter the log name"
-            case ["edit log name", *args]:
-                display = "enter the log name"
-            case [("new log entry" | "edit log entry"), *args]:
-                display = "enter the entry name"
-            case _:
-                display = str(message)
-    display = display.lower()
-    if display:
-        if display[-1] not in ".!?":
-            display += "."
-    window.addstr(window.getmaxyx()[0] - 1, 0, display[:window.getmaxyx()[1] - 1])
     window.refresh()
 
 def main(stdscr):
@@ -255,30 +151,7 @@ def main(stdscr):
     content_window = curses.newwin(content_height, content_width, 2, 0)  # Starting from row 2
 
     while True:
-        # Update special color
-        base_value = 750
-        color_offset = 100
-        if special_color[0] == 1000:
-            if special_color[2] > base_value:
-                special_color[2] -= color_offset
-            elif special_color[1] < 1000:
-                special_color[1] += color_offset
-            else:
-                special_color[0] -= color_offset
-        elif special_color[1] == 1000:
-            if special_color[0] > base_value:
-                special_color[0] -= color_offset
-            elif special_color[2] < 1000:
-                special_color[2] += color_offset
-            else:
-                special_color[1] -= color_offset
-        elif special_color[2] == 1000:
-            if special_color[1] > base_value:
-                special_color[1] -= color_offset
-            elif special_color[0] < 1000:
-                special_color[0] += color_offset
-            else:
-                special_color[2] -= color_offset
+        special_color = update_special_color(special_color)
 
         curses.init_color(69, *special_color)
 
@@ -1104,7 +977,7 @@ def main(stdscr):
                                         tmp_file_path = tmp_file.name
 
                                     curses.endwin()  # exit curses window to properly display `glow`
-                                    subprocess.run(["glow", tmp_file_path, "-p"])  # run `glow` to display the content
+                                    subprocess.run(["glow", tmp_file_path, "-p"], check=True)  # run `glow` to display the content
                                     os.remove(tmp_file_path)
                                     curses.initscr()  # reinitialize curses after `glow` ends
                     else:

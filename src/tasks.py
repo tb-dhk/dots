@@ -12,7 +12,7 @@ class Task:
     def __init__(self, name, description="", due_date=date.today().strftime("%Y-%m-%d"), due_type="day", priority=2, tags=[], subtasks=[], parent=[]):
         self.id = str(uuid.uuid4())  # Unique identifier for the task
         self.name = name  # Task name
-        self.description = ""
+        self.description = description
         self.due_date = due_date  # Task due date (string, could be a day/week/month-based format)
         self.due_type = due_type
         self.priority = priority  # Priority: low, medium, high (default: medium)
@@ -75,6 +75,53 @@ class Task:
         """Get a task by its ID."""
         tasks = cls.load_tasks()  # Load existing tasks
         return tasks[task_id]  # Return the task if it exists, else None
+
+def change_task_parent(task_id, new_parent_id):
+    """Change the parent of a task and update subtasks of both old and new parents."""
+    tasks = Task.load_tasks()
+    task = tasks[task_id]
+
+    # If removing the parent (new_parent_id is None)
+    if new_parent_id is None:
+        # Remove the task from its current parent's subtasks
+        for parent_id in tasks:
+            if task_id in tasks[parent_id]["subtasks"]:
+                Task.edit_task(parent_id, subtasks=list(set(tasks[parent_id]["subtasks"]) - {task_id}))
+        Task.edit_task(task_id, parent=None)
+    else:
+        new_parent = tasks[new_parent_id]
+
+        # Remove the task from its old parent if it had one
+        if task["parent"]:
+            for parent_id in tasks:
+                if task_id in tasks[parent_id]["subtasks"]:
+                    Task.edit_task(parent_id, subtasks=list(set(tasks[parent_id]["subtasks"]) - {task_id}))
+
+        # Set the new parent and update its subtasks
+        Task.edit_task(task_id, parent=new_parent_id)
+        Task.edit_task(new_parent_id, subtasks=list(set(new_parent["subtasks"] + [task_id])))
+
+def edit_task_parent(selected, text_box, task_list):
+    """Process the input to edit the parent of the selected task."""
+    task_id = task_list[selected[0] - 2]  # Task to edit
+    task_name = Task.get_task(task_id)['name']
+
+    if text_box.isdigit():
+        new_parent_index = int(text_box)
+        if 0 <= new_parent_index < len(task_list) and new_parent_index != selected[0] - 2:
+            new_parent_id = task_list[new_parent_index]
+            change_task_parent(task_id, new_parent_id)
+            message = f"Parent of task '{task_name}' changed to '{Task.get_task(new_parent_id)['name']}'"
+        else:
+            message = "Invalid parent. Please try again!"
+    elif text_box == "-1":
+        # Remove the parent if text_box == "-1"
+        change_task_parent(task_id, None)
+        message = f"Parent of task '{task_name}' removed."
+    else:
+        message = "Invalid input. Please try again!"
+
+    return message
 
 def all_subtasks_completed(task_key):
     """Check if the task and all its subtasks are marked as completed."""

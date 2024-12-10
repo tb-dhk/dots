@@ -104,7 +104,10 @@ class DurationHabit(Habit):
             habits[habit_id]['data'] += updated_sessions
 
             # Sort the records by start time
-            habits[habit_id]['data'] = sorted(habits[habit_id]['data'], key=lambda x: dt.strptime(x[0], "%Y-%m-%d-%H:%M"))
+            habits[habit_id]['data'] = sorted(
+                habits[habit_id]['data'],
+                key=lambda x: dt.strptime(x[0], "%Y-%m-%d-%H:%M")
+            )
 
             cls.save_habits(habits)  # Save updated habits to JSON
             return True
@@ -214,19 +217,30 @@ def duration_maps(window, selected, map_settings):
             day = datetime.date.today() + timedelta(days=index)
             on = day.strftime("%Y-%m-%d")
             # all records that start or end on this day (fetch date from datetime)
-            records = {habit: [record for record in habits[habit]['data'] if record[0][:10] == on] for habit in habits}
+            records = {habit: [
+                record for record in habits[habit]['data'] if record[0][:10] == on
+            ] for habit in habits}
 
             try:
-                earliest_time = min(min(dt.strptime(record[0], "%Y-%m-%d-%H:%M") for record in records[habit]) for habit in records if records[habit])
-                latest_time = max(max(dt.strptime(record[1], "%Y-%m-%d-%H:%M") for record in records[habit]) for habit in records if records[habit])
+                earliest_time = min(
+                    min(
+                        dt.strptime(record[0], "%Y-%m-%d-%H:%M") for record in records[habit]
+                    ) for habit in records if records[habit]
+                )
+                latest_time = max(
+                    max(
+                        dt.strptime(record[1], "%Y-%m-%d-%H:%M") for record in records[habit]
+                    ) for habit in records if records[habit]
+                )
             except:
                 earliest_time = dt.combine(day, time(hour=0, minute=0, second=0))
                 latest_time = dt.combine(day, time(hour=12, minute=0, second=0))
 
                 try:
-                    # Ensure earliest_time aligns to the nearest hour (if necessary adjustments are needed)
+                    # Ensure earliest_time aligns to the nearest hour
+                    # (if necessary adjustments are needed)
                     earliest_time = earliest_time.replace(minute=0, second=0)
-                except Exception as e:
+                except:
                     # Fallback in case of errors
                     earliest_time = dt.combine(day, time(hour=0, minute=0, second=0))
 
@@ -246,10 +260,10 @@ def duration_maps(window, selected, map_settings):
                 for hour in range(start_dt.hour, end_dt.hour + 1):
                     hour_counts[hour % 24] += 1
 
-            off_peak = 24 - hour_counts[::-1].index(min(hour_counts))
-
             # Find the hour with the least records
-            earliest_record = min(raw_records, key=lambda r: dt.strptime(r[0], "%Y-%m-%d-%H:%M").hour)
+            earliest_record = min(
+                raw_records, key=lambda r: dt.strptime(r[0], "%Y-%m-%d-%H:%M").hour
+            )
             earliest_time = dt.strptime(earliest_record[0], "%Y-%m-%d-%H:%M")
             latest_time_diff = 24
 
@@ -257,7 +271,9 @@ def duration_maps(window, selected, map_settings):
 
         window.addstr(6, 5, f"< {on} >", curses.color_pair(1 + (selected[0] == 3)))
 
-        max_length = max(len(habits[habit]['name']) for habit in records) if based_on == "day" else 10
+        max_length = max(
+            len(habits[habit]['name']) for habit in records
+        ) if based_on == "day" else 10
         max_width = window.getmaxyx()[1] - 13 - max_length
 
         try:
@@ -266,7 +282,10 @@ def duration_maps(window, selected, map_settings):
             hour_width = 0
         else:
             hour_widths = [4, 6, 12]
-            hour_widths = [width for width in hour_widths if width * (latest_time_diff) <= max_width]
+            hour_widths = [
+                width for width in hour_widths
+                if width * (latest_time_diff) <= max_width
+            ]
             gaps = [abs(hour_width - width) for width in hour_widths]
             try:
                 hour_width = hour_widths[gaps.index(min(gaps))]
@@ -274,27 +293,46 @@ def duration_maps(window, selected, map_settings):
                 hour_width = 4
 
         for x in range(latest_time_diff + 1):
-            window.addstr(8, 7 + max_length + round(hour_width * x), str((earliest_time.hour) + x % 24).rjust(2, "0"))
+            window.addstr(
+                8, 7 + max_length + round(hour_width * x),
+                str((earliest_time.hour) + x % 24).rjust(2, "0")
+            )
 
         for i, record in enumerate(records):
             if i + 9 <= window.getmaxyx()[0] - 6:
                 if based_on == "day":
-                    window.addstr(9 + i, 5, habits[record]["name"].rjust(max_length), curses.color_pair(1 + (selected[0] == i + 4)))
+                    window.addstr(
+                        9 + i, 5,
+                        habits[record]["name"].rjust(max_length),
+                        curses.color_pair(1 + (selected[0] == i + 4))
+                    )
                 else:
-                    window.addstr(9 + i, 5, record.rjust(max_length), curses.color_pair(1 + (selected[0] == i + 4)))
+                    window.addstr(
+                        9 + i, 5,
+                        record.rjust(max_length),
+                        curses.color_pair(1 + (selected[0] == i + 4))
+                    )
                 count = 0
                 for entry in records[record]:
                     count += 1
-                    width = hour_width * ((dt.strptime(entry[1], "%Y-%m-%d-%H:%M").hour - dt.strptime(entry[0], "%Y-%m-%d-%H:%M").hour) % 24)
+                    entry = [dt.strptime(e, "%Y-%m-%d-%H:%M").hour for e in entry]
+                    width = hour_width * ((entry[1] - entry[0]) % 24)
                     message = " " * width
                     if len(message) > width:
                         message = message[:width-3] + "..."
-                    try:
-                        window.addstr(9 + i, 8 + max_length + hour_width * (((dt.strptime(entry[0], "%Y-%m-%d-%H:%M") - earliest_time).seconds // 3600) % 24), message, curses.color_pair(2))
-                    except:
-                        raise Exception(8 + max_length + hour_width * ((dt.strptime(entry[0], "%Y-%m-%d-%H:%M") - earliest_time).seconds % (3600 * 24)))
+                    duration_hours = (
+                        dt.strptime(entry[0], "%Y-%m-%d-%H:%M") - earliest_time
+                    ).seconds // 3600
+                    window.addstr(
+                        9 + i, 8 + max_length + hour_width * (duration_hours % 24),
+                        message, curses.color_pair(2)
+                    )
     else:
-        window.addstr(8, 5, "< no duration habits >", curses.color_pair(1 + (selected[0] == 3)))
+        window.addstr(
+            8, 5,
+            "< no duration habits >",
+            curses.color_pair(1 + (selected[0] == 3))
+        )
 
 def progress_maps(window, selected, map_settings):
     display_borders(window, selected)
@@ -308,11 +346,18 @@ def progress_maps(window, selected, map_settings):
 
     habits = Habit.load_habits()
 
-    # Filter habits based on type and include both 'progress' and 'frequency' types for habit-based view
+    # filter habits based on type
+    # include both 'progress' and 'frequency' types for habit-based view
     if based_on == "habit":
-        habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] in ["progress", "frequency"]}
+        habits = {
+            habit: habits[habit] for habit in habits
+            if habits[habit]['type'] in ["progress", "frequency"]
+        }
     else:
-        habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] == "progress"}
+        habits = {
+            habit: habits[habit] for habit in habits
+            if habits[habit]['type'] == "progress"
+        }
     habits = dict(sorted(habits.items(), key=lambda x: x[1]['name']))
 
     if habits:
@@ -333,7 +378,9 @@ def progress_maps(window, selected, map_settings):
 
         window.addstr(6, 5, f"< {on} >", curses.color_pair(1 + (selected[0] == 3)))
 
-        max_length = max(len(habits[habit]['name']) for habit in records) if based_on == "day" else 10
+        max_length = max(
+            len(habits[habit]['name']) for habit in records
+        ) if based_on == "day" else 10
         max_width = window.getmaxyx()[1] - 23 - max_length
 
         interval = max_width // 10
@@ -349,21 +396,39 @@ def progress_maps(window, selected, map_settings):
                     if habits[habitid]['type'] == "progress":
                         target = habits[habitid]['target_value']
                     else:  # For frequency tasks, use the maximum value in the displayed data
-                        target = max(max(records.values()), 1)
+                        target = max(*records.values(), 1)
 
                 for x in range(interval + 1):
                     if based_on == "day" or habits[habitid]['type'] == "progress":
-                        window.addstr(8, 7 + max_length + round(max_width * (x / interval)), str(round(x / interval * 100)).rjust(2))
+                        window.addstr(
+                            8, 7 + max_length + round(max_width * (x / interval)),
+                            str(round(x / interval * 100)).rjust(2)
+                        )
                     else:
-                        window.addstr(8, 7 + max_length + round(max_width * (x / interval)), f'{float(f"{x / interval * target:.2g}"):g}'.rjust(2))
+                        window.addstr(
+                            8, 7 + max_length + round(max_width * (x / interval)),
+                            f'{float(f"{x / interval * target:.2g}"):g}'.rjust(2)
+                        )
 
-                window.addstr(9 + i, 5, key.rjust(max_length), curses.color_pair(1 + (selected[0] == i + 4)))
-                window.addstr(9 + i, 8 + max_length, " " * min(round(max_width * value / target), max_width), curses.color_pair(2))
+                window.addstr(
+                    9 + i, 5,
+                    key.rjust(max_length), curses.color_pair(1 + (selected[0] == i + 4))
+                )
+                window.addstr(
+                    9 + i, 8 + max_length,
+                    " " * min(round(max_width * value / target), max_width), curses.color_pair(2)
+                )
                 if habits[habitid]['type'] == "progress":
-                    window.addstr(9 + i, window.getmaxyx()[1] - 15, f"{round(value / target * 100, 2):.2f}%".rjust(10))
+                    window.addstr(
+                        9 + i, window.getmaxyx()[1] - 15,
+                        f"{round(value / target * 100, 2):.2f}%".rjust(10)
+                    )
                 else:
                     max_length_values = max(len(str(value)) for value in records.values())
-                    window.addstr(9 + i, window.getmaxyx()[1] - 6 - max_length_values, str(value).rjust(max_length_values))
+                    window.addstr(
+                        9 + i, window.getmaxyx()[1] - 6 - max_length_values,
+                        str(value).rjust(max_length_values)
+                    )
     else:
         window.addstr(8, 5, "no progress habits!")
 
@@ -376,11 +441,21 @@ def get_bounds(based_on, index, index2):
         start_day = (datetime.date.today() + timedelta(days=index)).strftime("%Y-%m-%d")
         end_day = (datetime.date.today() + timedelta(days=index)).strftime("%Y-%m-%d")
     elif based_on == "month":
-        start_day = (datetime.date.today().replace(day=1) + relativedelta(months=index)).strftime("%Y-%m-%d")
-        end_day = (datetime.date.today().replace(day=1) + relativedelta(months=index2 + 1, days=-1)).strftime("%Y-%m-%d")
+        start_day = (
+            datetime.date.today().replace(day=1) + relativedelta(months=index)
+        ).strftime("%Y-%m-%d")
+        end_day = (
+            datetime.date.today().replace(day=1) + relativedelta(
+                months=index2 + 1, days=-1
+            )
+        ).strftime("%Y-%m-%d")
     elif based_on == "year":
-        start_day = datetime.date.today().replace(year=datetime.date.today().year + index, month=1, day=1).strftime("%Y-%m-%d")
-        end_day = datetime.date.today().replace(year=datetime.date.today().year + index2, month=12, day=31).strftime("%Y-%m-%d")
+        start_day = datetime.date.today().replace(
+            year=datetime.date.today().year + index, month=1, day=1
+        ).strftime("%Y-%m-%d")
+        end_day = datetime.date.today().replace(
+            year=datetime.date.today().year + index2, month=12, day=31
+        ).strftime("%Y-%m-%d")
     return start_day, end_day
 
 def get_dates(start_day, end_day, based_on):
@@ -447,7 +522,8 @@ def heatmaps(window, selected, map_settings):
             heat[habit] = {}
             if habits[habit]['type'] == "duration":
                 for record in habits[habit]['data']:
-                    duration = (dt.strptime(record[1], "%Y-%m-%d-%H:%M") - dt.strptime(record[0], "%Y-%m-%d-%H:%M")) / timedelta(hours=1)
+                    record = [dt.strptime(r, "%Y-%M-%d-%H:%M") for r in record]
+                    duration = (record[1] - record[0]) / timedelta(hours=1)
                     target_value = habits[habit]['target_value']
                     try:
                         heat[habit][record[0][:10]] += duration / target_value
@@ -457,13 +533,17 @@ def heatmaps(window, selected, map_settings):
                 for d in habits[habit]['data']:
                     heat[habit][d] = habits[habit]['data'][d] / habits[habit]['target_value']
             elif habits[habit]['type'] == "frequency":
-                max_frequency = max(max(habits[habit]['data'].values()), 1)
+                max_frequency = max(*habits[habit]['data'].values(), 1)
                 for d in habits[habit]['data']:
                     heat[habit][d] = habits[habit]['data'][d] / max_frequency
 
         # condense the information into time blocks
         if based_on in ["day", "calendar"]:
-            condensed = {habit: {day: heat[habit][day] for day in heat[habit] if start_day <= day <= end_day} for habit in heat}
+            condensed = {
+                habit: {
+                    day: heat[habit][day] for day in heat[habit] if start_day <= day <= end_day
+                } for habit in heat
+            }
         elif based_on in ["week", "month", "year"]:
             condensed = {}
             for habit in heat:
@@ -486,7 +566,9 @@ def heatmaps(window, selected, map_settings):
                 elif based_on == "week":
                     length_of_period = 7
                 elif based_on == "month":
-                    length_of_period = calendar.monthrange(int(rounded_date[:4]), int(rounded_date[5:7]))[1]
+                    length_of_period = calendar.monthrange(
+                        int(rounded_date[:4]), int(rounded_date[5:7])
+                    )[1]
                 else:
                     length_of_period = 365
                 for rounded_date in condensed[habit]:
@@ -504,7 +586,11 @@ def heatmaps(window, selected, map_settings):
                 date_headers = ["yy", "mm"]
             side_headers = date_headers + [habits[habit]['name'] for habit in condensed.keys()]
             for i, habit in enumerate(side_headers):
-                window.addstr(10 + i, 5, habit.rjust(max_length), curses.color_pair(1 + (selected[0] == i + 2 if i >= 3 else 0)))
+                window.addstr(
+                    10 + i, 5,
+                    habit.rjust(max_length),
+                    curses.color_pair(1 + (selected[0] == i + 2 if i >= 3 else 0))
+                )
 
             # define shades:
             shades = [" ", "░", "▒", "▓", "█"]
@@ -519,28 +605,53 @@ def heatmaps(window, selected, map_settings):
                 for d, date_header in enumerate(day_list):
                     # only print if different from last round
                     if date_header != dates[n-1][2:].split("-")[:len(date_headers)][d] or n == 0:
-                        window.addstr(10 + d, 6 + max_length + n * 2, date_header.rjust(2, "0"), curses.color_pair(2 if selected_col == n and selected[0] >= 5 else 1))
+                        window.addstr(
+                            10 + d, 6 + max_length + n * 2,
+                            date_header.rjust(2, "0"),
+                            curses.color_pair(2 if selected_col == n and selected[0] >= 5 else 1)
+                        )
                 for i, habit in enumerate(condensed):
                     try:
                         value = condensed[habit][day]
                     except:
                         value = 0
                     this_cell_selected = selected[0] == i + 5 and selected_col == n
-                    window.addstr(10 + len(date_headers) + i, 6 + max_length + n * 2, shades[min(round(value * 4), 4)] * 2, curses.color_pair(8 if this_cell_selected else 1))
+                    window.addstr(
+                        10 + len(date_headers) + i, 6 + max_length + n * 2,
+                        shades[min(round(value * 4), 4)] * 2,
+                        curses.color_pair(8 if this_cell_selected else 1)
+                    )
         else:
             side_headers = ["mm", "dd", "sun", "mon", "tue", "wed", "thu", "fri", "sat"]
             for i, day in enumerate(side_headers):
-                window.addstr(10 + i, 5, day.rjust(3), curses.color_pair(1 + (selected[0] == i + 3 if i >= 2 else 0)))
+                window.addstr(
+                    10 + i, 5, day.rjust(3),
+                    curses.color_pair(1 + (selected[0] == i + 3 if i >= 2 else 0))
+                )
 
             habit = list(habits.keys())[index2 % len(habits)]
             shades = [" ", "░", "▒", "▓", "█"]
 
             year_length = datetime.date(year, 12, 31).timetuple().tm_yday
-            year_length_in_weeks = (dt.strptime(get_sunday(f"{year}-12-31"), "%Y-%m-%d") - dt.strptime(get_sunday(f"{year}-01-01"), "%Y-%m-%d")) // timedelta(weeks=1) + 1
+            year_length_in_weeks = (
+                dt.strptime(
+                    get_sunday(f"{year}-12-31"), "%Y-%m-%d"
+                ) - dt.strptime(
+                    get_sunday(f"{year}-01-01"), "%Y-%m-%d"
+                )
+            ) // timedelta(weeks=1) + 1
             selected_col = selected[1] % (year_length_in_weeks)
 
-            window.addstr(10, 9, get_sunday(start_day)[5:7], curses.color_pair(2 if selected_col == 0 and selected[0] >= 5 else 1))
-            window.addstr(11, 9, get_sunday(start_day)[8:10], curses.color_pair(2 if selected_col == 0 and selected[0] >= 5 else 1))
+            window.addstr(
+                10, 9,
+                get_sunday(start_day)[5:7],
+                curses.color_pair(2 if selected_col == 0 and selected[0] >= 5 else 1)
+            )
+            window.addstr(
+                11, 9,
+                get_sunday(start_day)[8:10],
+                curses.color_pair(2 if selected_col == 0 and selected[0] >= 5 else 1)
+            )
 
             for day in range(0, year_length):
                 this_date = datetime.date(year, 1, 1) + timedelta(days=day)
@@ -548,14 +659,28 @@ def heatmaps(window, selected, map_settings):
                 weeks = math.ceil((day - datetime.date(year, 1, 1).weekday() - 5) / 7)
                 if weekday == 0:
                     if this_date.month != (this_date - timedelta(days=7)).month:
-                        window.addstr(10, 9 + weeks * 2, str(this_date.month).rjust(2, "0"), curses.color_pair(2 if selected_col == weeks and selected[0] >= 5 else 1))
-                    window.addstr(11, 9 + weeks * 2, str(this_date.day).rjust(2, "0"), curses.color_pair(2 if selected_col == weeks and selected[0] >= 5 else 1))
+                        window.addstr(
+                            10, 9 + weeks * 2,
+                            str(this_date.month).rjust(2, "0"),
+                            curses.color_pair(
+                                2 if selected_col == weeks and selected[0] >= 5 else 1
+                            )
+                        )
+                    window.addstr(
+                        11, 9 + weeks * 2,
+                        str(this_date.day).rjust(2, "0"),
+                        curses.color_pair(2 if selected_col == weeks and selected[0] >= 5 else 1)
+                    )
                 try:
                     value = heat[habit][this_date.strftime("%Y-%m-%d")]
                 except:
                     value = 0
                 this_cell_selected = selected[0] == weekday + 5 and selected_col == weeks
-                window.addstr(12 + weekday, 9 + weeks * 2, shades[min(round(value * 4), 4)] * 2, curses.color_pair(8 if this_cell_selected else 1))
+                window.addstr(
+                    12 + weekday, 9 + weeks * 2,
+                    shades[min(round(value * 4), 4)] * 2,
+                    curses.color_pair(8 if this_cell_selected else 1)
+                )
     else:
         window.addstr(8, 5, "no habits!")
 
@@ -577,18 +702,38 @@ def manage_habits(window, selected, removing):
 
     for i, header in enumerate(headers):
         # Draw the top row of the table
-        window.addstr(4, 5 + sum(column_widths[:i]) + i, ('╔' if i == 0 else "╦") + '═' * column_widths[i])
+        window.addstr(
+            4, 5 + sum(column_widths[:i]) + i,
+            ('╔' if i == 0 else "╦") + '═' * column_widths[i]
+        )
         # Draw the header row
-        window.addstr(5, 5 + sum(column_widths[:i]) + i, "║ " + header.ljust(column_widths[i]))
+        window.addstr(
+            5, 5 + sum(column_widths[:i]) + i,
+            "║ " + header.ljust(column_widths[i])
+        )
         # Draw the separator row below the header
-        window.addstr(6, 5 + sum(column_widths[:i]) + i, ('╠' if i == 0 else "╬") + '═' * column_widths[i])
+        window.addstr(
+            6, 5 + sum(column_widths[:i]) + i,
+            ('╠' if i == 0 else "╬") + '═' * column_widths[i]
+        )
         # Draw the bottom border of the table
-        window.addstr(min(7 + len(habits), window.getmaxyx()[0] - 6), 5 + sum(column_widths[:i]) + i, ('╚' if i == 0 else "╩") + '═' * column_widths[i])
+        window.addstr(
+            min(7 + len(habits), window.getmaxyx()[0] - 6),
+            5 + sum(column_widths[:i]) + i,
+            ('╚' if i == 0 else "╩") + '═' * column_widths[i]
+        )
 
     # Draw the right border of the table
     for row in range(3):
-        window.addstr(4 + row, 5 + sum(column_widths) + len(column_widths), '║' if row % 2 else ('╗' if row == 0 else '╣'))
-    window.addstr(min(7 + len(habits), window.getmaxyx()[0] - 6), 5 + sum(column_widths) + len(column_widths), '╝')
+        window.addstr(
+            4 + row, 5 + sum(column_widths) + len(column_widths),
+            '║' if row % 2 else ('╗' if row == 0 else '╣')
+        )
+    window.addstr(
+        min(7 + len(habits), window.getmaxyx()[0] - 6),
+        5 + sum(column_widths) + len(column_widths),
+        '╝'
+    )
 
     for h, habit in enumerate(habits):
         if h + 7 <= window.getmaxyx()[0] - 7:
@@ -597,11 +742,21 @@ def manage_habits(window, selected, removing):
                 if i == 3 and habits[habit]["type"] == "frequency":
                     item = ""
                 # Draw cell contents
-                window.addstr(7 + h, 5 + sum(column_widths[:i]) + i, "║" + " " * column_widths[i])
+                window.addstr(
+                    7 + h, 5 + sum(column_widths[:i]) + i,
+                    "║" + " " * column_widths[i]
+                )
                 if removing == habit:
-                    window.addstr(7 + h, 7 + sum(column_widths[:i]) + i, item.ljust(column_widths[i] - 2), curses.color_pair(7))
+                    window.addstr(
+                        7 + h, 7 + sum(column_widths[:i]) + i,
+                        item.ljust(column_widths[i] - 2), curses.color_pair(7)
+                    )
                 else:
-                    window.addstr(7 + h, 7 + sum(column_widths[:i]) + i, item.ljust(column_widths[i] - 2), curses.color_pair(1 + (selected[0] == h + 2 and selected[1] % 4 == i)))
+                    window.addstr(
+                        7 + h, 7 + sum(column_widths[:i]) + i,
+                        item.ljust(column_widths[i] - 2),
+                        curses.color_pair(1 + (selected[0] == h + 2 and selected[1] % 4 == i))
+                    )
             # Draw the right cell border
             window.addstr(7 + h, 5 + sum(column_widths) + len(column_widths), "║")
 
@@ -612,18 +767,28 @@ def add_new_habit(window, selected, new_habit):
 
     # input for habit name
     window.addstr(4, 5, "name: ")
-    window.addstr(new_habit['name'], curses.color_pair(1 + (selected[0] == 2)))  # display current input for habit name
+    # display current input for habit name
+    window.addstr(new_habit['name'], curses.color_pair(1 + (selected[0] == 2)))
 
     window.addstr(6, 5, "type: ")
-    window.addstr(f"< {new_habit['type']} >", curses.color_pair(1 + (selected[0] == 3)))  # display current input for habit type
+    # display current input for habit type
+    window.addstr(f"< {new_habit['type']} >", curses.color_pair(1 + (selected[0] == 3)))
 
     # input for measurement unit
     window.addstr(8, 5, "unit (e.g. hours): ")
-    window.addstr(new_habit['unit'] if new_habit['unit'] else "(none)", curses.color_pair(1 + (selected[0] == 4)))  # display current input for unit
+    # display current input for unit
+    window.addstr(
+        new_habit['unit'] if new_habit['unit'] else "(none)",
+        curses.color_pair(1 + (selected[0] == 4))
+    )
 
     # input for target value
     window.addstr(10, 5, "target value: ")
-    window.addstr(str(new_habit['target_value']) if new_habit['type'] != "frequency" else "(none)", curses.color_pair(1 + (selected[0] == 5)))  # display current input for target value
+    # display current input for target value
+    window.addstr(
+        str(new_habit['target_value']) if new_habit['type'] != "frequency" else "(none)",
+        curses.color_pair(1 + (selected[0] == 5))
+    )
 
     # additional information if needed
     window.addstr(12, 5, "submit", curses.color_pair(1 + (selected[0] == 6)))

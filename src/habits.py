@@ -551,7 +551,12 @@ def manage_habits(window, selected, removing):
     habits = dict(sorted(habits.items(), key=lambda x: x[0]))
 
     headers = ["name", "type", "unit", "target_value"]
-    column_widths = [max(len(str(habits[habit][key])) for habit in habits) for key in headers]
+    column_widths = []
+    for key in headers:
+        try:
+            column_widths.append(max(len(str(habits[habit][key])) for habit in habits))
+        except:
+            column_widths.append(0)
     column_widths = [max(column_widths[i], len(headers[i])) + 3 for i in range(len(headers))]
 
     window.addstr(2, 5, "manage habits")

@@ -1,4 +1,4 @@
-name: build for linux and windows
+name: build and lint
 
 on:
   push:
@@ -9,21 +9,65 @@ on:
       - main
 
 jobs:
-  cross-platform-build:
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: set up python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint
+
+      - name: analyze code with pylint
+        run: |
+          pylint $(git ls-files '*.py') --disable missing-module-docstring,missing-function-docstring,missing-class-docstring,invalid-name,too-many-locals,too-many-arguments,too-many-branches,too-many-statements,too-many-instance-attributes,too-few-public-methods,too-many-public-methods,too-many-return-statements,too-many-nested-blocks,import-error,wildcard-import,unused-wildcard-import,consider-using-enumerate,consider-using-in,consider-using-get,consider-using-dict-comprehension,consider-using-set-comprehension,consider-using-generator,consider-using-sys-exit,consider-using-join,consider-using-ternary,too-many-positional-arguments,dangerous-default-value,possibly-used-before-assignment,consider-using-dict-items,bare-except
+
+  build-linux:
+    needs: lint
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the code
       - name: checkout code
         uses: actions/checkout@v3
 
-      # Set up Python 3.13
       - name: set up python 3.13
         uses: actions/setup-python@v4
         with:
           python-version: '3.13'
 
-      # Install dependencies
+      - name: install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip
+          python3 -m pip install --upgrade pip
+          pip install -r src/requirements.txt
+
+      - name: build for linux
+        run: |
+          pyinstaller --onefile --name=dots-linux src/main.py
+
+  build-windows:
+    needs: lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+
+      - name: set up python 3.13
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
       - name: install dependencies
         run: |
           sudo apt-get update
@@ -31,24 +75,40 @@ jobs:
           python3 -m pip install --upgrade pip
           pip install -r src/requirements.txt
 
-      # Build for Linux
-      - name: build for linux
-        run: |
-          pyinstaller --onefile --name=dots-linux src/main.py
-
-      # Build for Windows using Wine
       - name: build for windows
         run: |
           pyinstaller --onefile --name=dots-windows.exe src/main.py
 
-      # Build for macOS using dockcross
+  build-macos:
+    needs: lint
+    runs-on: macos-latest
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+
+      - name: set up python 3.13
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.13
+
+      - name: install dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install -r src/requirements.txt
+          pip install pyinstaller  # Ensure pyinstaller is installed in the virtual environment
+
       - name: build for macos
         run: |
-          curl -fsSL https://github.com/dockcross/dockcross/raw/master/macos > ./dockcross-macos
-          chmod +x ./dockcross-macos
-          ./dockcross-macos bash -c "pip install -r src/requirements.txt && pyinstaller --onefile --name=dots-macos src/main.py"
+          source venv/bin/activate
+          pyinstaller --onefile --name=dots-macos src/main.py
 
-      # Upload artifacts
+  upload-artifacts:
+    needs: [build-linux, build-windows, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      # Upload build artifacts
       - name: upload build artifacts
         uses: actions/upload-artifact@v3
         with:

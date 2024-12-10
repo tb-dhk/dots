@@ -44,6 +44,12 @@ cd dots
 # build and install
 make install
 ```
+
+do note that the install script uses **gum** if it is installed. to skip this, run:
+```
+make install USE_GUM=false
+```
+
 ![gif](./gif/out.gif)
 
 ## usage

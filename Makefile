@@ -7,9 +7,9 @@ build:
 install:
 	@chmod +x ./install/install.sh
 	@chmod +x ./install/install-no-gum.sh
-	@if [ "$(USE_GUM)" != "no" ] && which gum > /dev/null 2>&1; then \
+	@if [ "$(USE_GUM)" != "false" ] && which gum > /dev/null 2>&1; then \
 		./install/install.sh; \
-	elif [ "$(USE_GUM)" = "no" ]; then \
+	elif [ "$(USE_GUM)" = "false" ]; then \
 		echo -e "Skipping gum, running installer without gum."; \
 		./install/install-no-gum.sh; \
 	else \

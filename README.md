@@ -11,6 +11,11 @@ only tasks are implemented at the moment, but i plan to add the other components
 
 ## installation
 
+### download
+simply download one of the build artifacts from one of our releases!
+
+### manual build
+
 prerequisites:
 - linux, macos or wsl
 - git
@@ -27,6 +32,7 @@ cd dots
 # build and install
 make install
 ```
+![gif](./gif/out.gif)
 
 ## usage
 to run the app, simply run the following command:

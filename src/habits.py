@@ -145,8 +145,8 @@ def duration_maps(window, selected, map_settings):
                     if len(message) > width:
                         message = message[:width-3] + "..."
                     duration_hours = (
-                        dt.strptime(entry[0], "%Y-%m-%d-%H:%M") - earliest_time
-                    ).seconds // 3600
+                        entry[0] - earliest_time.hour
+                    )
                     window.addstr(
                         9 + i, 8 + max_length + hour_width * (duration_hours % 24),
                         message, curses.color_pair(2)
@@ -263,7 +263,7 @@ def get_sunday(this_date):
 def get_bounds(based_on, index, index2):
     if based_on in ["day", "week"]:
         start_day = (datetime.date.today() + timedelta(days=index)).strftime("%Y-%m-%d")
-        end_day = (datetime.date.today() + timedelta(days=index)).strftime("%Y-%m-%d")
+        end_day = (datetime.date.today() + timedelta(days=index2)).strftime("%Y-%m-%d")
     elif based_on == "month":
         start_day = (
             datetime.date.today().replace(day=1) + relativedelta(months=index)
@@ -283,8 +283,6 @@ def get_bounds(based_on, index, index2):
     return start_day, end_day
 
 def get_dates(start_day, end_day, based_on):
-    start_day = dt.strptime(start_day, "%Y-%m-%d")
-    end_day = dt.strptime(end_day, "%Y-%m-%d")
     if based_on == "day":
         length = math.ceil((end_day - start_day) / timedelta(days=1)) + 1
         length = max(1, length)
@@ -346,20 +344,23 @@ def heatmaps(window, selected, map_settings):
             heat[habit] = {}
             if habits[habit]['type'] == "duration":
                 for record in habits[habit]['data']:
-                    record = [dt.strptime(r, "%Y-%M-%d-%H:%M") for r in record]
+                    record = [dt.strptime(r, "%Y-%m-%d-%H:%M") for r in record]
                     duration = (record[1] - record[0]) / timedelta(hours=1)
                     target_value = habits[habit]['target_value']
                     try:
-                        heat[habit][record[0][:10]] += duration / target_value
+                        heat[habit][record[0].date()] += duration / target_value
                     except:
-                        heat[habit][record[0][:10]] = duration / target_value
+                        heat[habit][record[0].date()] = duration / target_value
             elif habits[habit]['type'] == "progress":
                 for d in habits[habit]['data']:
-                    heat[habit][d] = habits[habit]['data'][d] / habits[habit]['target_value']
+                    heat[habit][dt.strptime(d, "%Y-%m-%d").date()] = habits[habit]['data'][d] / habits[habit]['target_value']
             elif habits[habit]['type'] == "frequency":
                 max_frequency = max(*habits[habit]['data'].values(), 1)
                 for d in habits[habit]['data']:
-                    heat[habit][d] = habits[habit]['data'][d] / max_frequency
+                    heat[habit][dt.strptime(d, "%Y-%m-%d").date()] = habits[habit]['data'][d] / max_frequency
+
+        start_day = dt.strptime(start_day, "%Y-%m-%d").date()
+        end_day = dt.strptime(end_day, "%Y-%m-%d").date()
 
         # condense the information into time blocks
         if based_on in ["day", "calendar"]:
@@ -374,13 +375,13 @@ def heatmaps(window, selected, map_settings):
                 condensed[habit] = {}
                 for og_date in heat[habit]:
                     if og_date < start_day or og_date > end_day:
-                        continue
+                        continue 
                     if based_on == "week":
-                        rounded_date = get_sunday(og_date)
+                        rounded_date = get_sunday(dt.strftime(og_date, "%Y-%m-%d"))
                     elif based_on == "month":
-                        rounded_date = og_date[:7] + "-01"
+                        rounded_date = dt.strftime(og_date, "%Y-%m-%d")[:7] + "-01"
                     else:
-                        rounded_date = og_date[:4] + "-01-01"
+                        rounded_date = dt.strftime(og_date, "%Y-%m-%d")[:4] + "-01-01"
                     try:
                         condensed[habit][rounded_date] += heat[habit][og_date]
                     except:
@@ -436,7 +437,7 @@ def heatmaps(window, selected, map_settings):
                         )
                 for i, habit in enumerate(condensed):
                     try:
-                        value = condensed[habit][day]
+                        value = condensed[habit][dt.strptime(day, "%Y-%m-%d").date()]
                     except:
                         value = 0
                     this_cell_selected = selected[0] == i + 5 and selected_col == n
@@ -468,12 +469,12 @@ def heatmaps(window, selected, map_settings):
 
             window.addstr(
                 10, 9,
-                get_sunday(start_day)[5:7],
+                get_sunday(dt.strftime(start_day, "%Y-%m-%d"))[5:7],
                 curses.color_pair(2 if selected_col == 0 and selected[0] >= 5 else 1)
             )
             window.addstr(
                 11, 9,
-                get_sunday(start_day)[8:10],
+                get_sunday(dt.strftime(start_day, "%Y-%m-%d"))[8:10],
                 curses.color_pair(2 if selected_col == 0 and selected[0] >= 5 else 1)
             )
 
@@ -496,7 +497,7 @@ def heatmaps(window, selected, map_settings):
                         curses.color_pair(2 if selected_col == weeks and selected[0] >= 5 else 1)
                     )
                 try:
-                    value = heat[habit][this_date.strftime("%Y-%m-%d")]
+                    value = heat[habit][this_date]
                 except:
                     value = 0
                 this_cell_selected = selected[0] == weekday + 5 and selected_col == weeks

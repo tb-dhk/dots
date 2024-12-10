@@ -11,6 +11,32 @@ only tasks are implemented at the moment, but i plan to add the other components
 
 ## installation
 
+### manual build
+
+prerequisites:
+- linux, macos or wsl
+- git
+- python 3.10 or later
+- make
+- pip
+- gum (for pretty installer)
+
+run the following code:
+```
+# clone the repository
+git clone https://github.com/tb-dhk/dots
+cd dots
+
+# build and install
+make install
+```
+![gif](./gif/out.gif)
+
+do note that the install script uses **gum** if it is installed. to skip this, run:
+```
+make install USE_GUM=false
+```
+
 ### download
 simply download one of the build artifacts from one of our releases!
 
@@ -25,32 +51,6 @@ curl -LO https://github.com/tb-dhk/dots/releases/download/0.2.0/dots-macos -o /u
 # windows
 curl -LO https://github.com/tb-dhk/dots/releases/download/0.2.0/dots-windows.exe -o /usr/local/bin/dots
 ```
-
-### manual build
-
-prerequisites:
-- linux, macos or wsl
-- git
-- python 3.10 or later
-- make
-- pip
-
-run the following code:
-```
-# clone the repository
-git clone https://github.com/tb-dhk/dots
-cd dots
-
-# build and install
-make install
-```
-
-do note that the install script uses **gum** if it is installed. to skip this, run:
-```
-make install USE_GUM=false
-```
-
-![gif](./gif/out.gif)
 
 ## usage
 to run the app, simply run the following command:

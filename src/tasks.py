@@ -113,6 +113,8 @@ def get_task_list(hide_completed=False):
         if not tasks[task_key].get('parent'):
             traverse_tasks(task_key, tasks, clean_list, hide_completed=hide_completed)
 
+    clean_list.sort(key=lambda x: (int(tasks[x]["completed"]), -dt.timestamp(dt.strptime(tasks[x]["due_date"], "%Y-%m-%d"))))
+
     return clean_list
 
 def check_migrated(history, to_date):
@@ -125,6 +127,7 @@ def tasks_for_day(day=None):
     if day is None:
         day = date.today().strftime("%Y-%m-%d")
     tasks = [task for _, task in Task.load_tasks().items() if task['due_date'] == day or task['date_added'] == day or check_migrated(task['date_history'], day)]
+    tasks.sort(key=lambda x: (int(x["completed"]), -dt.timestamp(dt.strptime(x["due_date"], "%Y-%m-%d"))))
     return tasks
 
 def tasks_for_days(start, end):
@@ -136,24 +139,28 @@ def tasks_for_days(start, end):
         for task in tasks_for_day(this_date):
             if task not in tasks:
                 tasks.append(task)
+    tasks.sort(key=lambda x: (int(x["completed"]), -dt.timestamp(dt.strptime(x["due_date"], "%Y-%m-%d"))))
     return tasks
 
 def tasks_for_week(day):
     start = (dt.strptime(day, "%Y-%m-%d") - timedelta(days=dt.strptime(day, "%Y-%m-%d").weekday()-1)).strftime("%Y-%m-%d")
     end = (dt.strptime(start, "%Y-%m-%d") + timedelta(days=6)).strftime("%Y-%m-%d")
     tasks = tasks_for_days(start, end)
+    tasks.sort(key=lambda x: (int(x["completed"]), -dt.timestamp(dt.strptime(x["due_date"], "%Y-%m-%d"))))
     return tasks
 
 def tasks_for_month(day):
     start = dt.strptime(day, "%Y-%m-%d").replace(day=1).strftime("%Y-%m-%d")
     end = (dt.strptime(start, "%Y-%m-%d") + timedelta(days=31)).strftime("%Y-%m-%d")
     tasks = tasks_for_days(start, end)
+    tasks.sort(key=lambda x: (int(x["completed"]), -dt.timestamp(dt.strptime(x["due_date"], "%Y-%m-%d"))))
     return tasks
 
 def tasks_for_year(day):
     start = dt.strptime(day, "%Y-%m-%d").replace(month=1, day=1).strftime("%Y-%m-%d")
     end = dt.strptime(start, "%Y-%m-%d").replace(month=12, day=31).strftime("%Y-%m-%d")
     tasks = tasks_for_days(start, end)
+    tasks.sort(key=lambda x: (int(x["completed"]), -dt.timestamp(dt.strptime(x["due_date"], "%Y-%m-%d"))))
     return tasks
 
 def display_task(window, task_key, selected, task_list, text_mode, indent=0, split_x=0, box='wide', removing="", removing_subtask=False, hide_completed=False):
@@ -298,6 +305,16 @@ def display_tasks(window, selected, text_mode, removing, hide_completed):
     if hide_completed:
         tasks = {key: task for key, task in tasks.items()
                  if not task['completed'] or not all_subtasks_completed(task["id"])}
+
+    tasks = dict(
+                sorted(
+                    tasks.items(), 
+                    key=lambda x: (
+                        int(tasks[x[0]]["completed"]), 
+                        -dt.timestamp(dt.strptime(tasks[x[0]]["due_date"], "%Y-%m-%d"))
+                    )
+                )
+            )
 
     split_x = max_x // 2 - 1 if selected[0] >= 2 else 0
     task_list = []

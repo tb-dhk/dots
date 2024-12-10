@@ -166,55 +166,56 @@ def tasks_for_year(day):
 def display_task(window, task_key, selected, task_list, text_mode, indent=0, split_x=0, box='wide', removing="", removing_subtask=False, hide_completed=False):
     """Display a task and its subtasks with indentation, adapted for two split boxes."""
     task = Task.load_tasks()[str(task_key)]
-    if not task or window.getyx()[0] + 1 > window.getmaxyx()[0] - 5:
+    if not task:
         return  # Skip if task not found
 
-    task_number = get_task_list(hide_completed).index(task_key)
+    if window.getyx()[0] <= window.getmaxyx()[0] - 7:
+        task_number = get_task_list(hide_completed).index(task_key)
 
-    # Choose the starting column based on the box ('left' or 'right')
-    start_col = 2 if box != 'right' else split_x + 3
-    end_col = split_x - 13 if box == 'left' else window.getmaxyx()[1] - 13
-    window.move(window.getyx()[0] + 1, start_col)
-    completed = task['completed']
-    symbol = '⨯' if completed else '•'
-    important = "! " if task['priority'] == 3 else "  "
+        # Choose the starting column based on the box ('left' or 'right')
+        start_col = 2 if box != 'right' else split_x + 3
+        end_col = split_x - 13 if box == 'left' else window.getmaxyx()[1] - 13
+        window.move(window.getyx()[0] + 1, start_col)
+        completed = task['completed']
+        symbol = '⨯' if completed else '•'
+        important = "! " if task['priority'] == 3 else "  "
 
-    if text_mode == "edit parent":
-        number = len(task_list)
-        window.addstr(window.getyx()[0], end_col - 1, f"({number})".rjust(12) if selected[0] != task_number + 2 else " " * 12)
-    else:
-        if task['due_type'] == "day":
-            window.addstr(window.getyx()[0], end_col - 1, f"[{task['due_date'].ljust(10)}]", curses.color_pair(1))
-        elif task['due_type'] == "month":
-            window.addstr(window.getyx()[0], end_col - 1, f"[{task['due_date'][:7].ljust(10)}]", curses.color_pair(1))
-        elif task['due_type'] == "year":
-            window.addstr(window.getyx()[0], end_col - 1, f"[{task['due_date'][:4].ljust(10)}]", curses.color_pair(1))
-    window.move(window.getyx()[0], start_col)
-
-    task_color_pair = 4 if task_number + 2 != selected[0] and task['completed'] else (1 + 4 * (task_number + 2 == selected[0]))
-
-    window.addstr(important, curses.color_pair(8))
-
-    if removing != task_key and not removing_subtask:
-        window.addstr(f"{'  ' * indent}{symbol} ", curses.color_pair(task_color_pair))
-
-        # Wrap text if it exceeds the column width (end_col)
-        task_name = task['name']
-        available_width = end_col - window.getyx()[1] - 2  # Account for space and '...'
-
-        # Check if truncation is needed
-        if len(task_name) > available_width:
-            truncated_name = task_name[:available_width - 3] + "..."  # Truncate and add "..."
+        if text_mode == "edit parent":
+            number = len(task_list)
+            window.addstr(window.getyx()[0], end_col - 1, f"({number})".rjust(12) if selected[0] != task_number + 2 else " " * 12)
         else:
-            truncated_name = task_name
+            if task['due_type'] == "day":
+                window.addstr(window.getyx()[0], end_col - 1, f"[{task['due_date'].ljust(10)}]", curses.color_pair(1))
+            elif task['due_type'] == "month":
+                window.addstr(window.getyx()[0], end_col - 1, f"[{task['due_date'][:7].ljust(10)}]", curses.color_pair(1))
+            elif task['due_type'] == "year":
+                window.addstr(window.getyx()[0], end_col - 1, f"[{task['due_date'][:4].ljust(10)}]", curses.color_pair(1))
+        window.move(window.getyx()[0], start_col)
 
-        # Print the truncated task name
-        window.addstr(truncated_name, curses.color_pair(task_color_pair))
+        task_color_pair = 4 if task_number + 2 != selected[0] and task['completed'] else (1 + 4 * (task_number + 2 == selected[0]))
 
-    else:
-        window.addstr('  ' * indent)
-        window.addstr(f"{symbol} ", curses.color_pair(7))
-        window.addstr("this subtask will be removed" if removing_subtask else "press r to confirm removal, esc to cancel", curses.color_pair(7))
+        window.addstr(important, curses.color_pair(8))
+
+        if removing != task_key and not removing_subtask:
+            window.addstr(f"{'  ' * indent}{symbol} ", curses.color_pair(task_color_pair))
+
+            # Wrap text if it exceeds the column width (end_col)
+            task_name = task['name']
+            available_width = end_col - window.getyx()[1] - 2  # Account for space and '...'
+
+            # Check if truncation is needed
+            if len(task_name) > available_width:
+                truncated_name = task_name[:available_width - 3] + "..."  # Truncate and add "..."
+            else:
+                truncated_name = task_name
+
+            # Print the truncated task name
+            window.addstr(truncated_name, curses.color_pair(task_color_pair))
+
+        else:
+            window.addstr('  ' * indent)
+            window.addstr(f"{symbol} ", curses.color_pair(7))
+            window.addstr("this subtask will be removed" if removing_subtask else "press r to confirm removal, esc to cancel", curses.color_pair(7))
 
     task_list.append(task_key)
     for subtask_key in task['subtasks']:
@@ -287,7 +288,7 @@ def display_task_details(window, task_id, split_x, selected):
         window.move(window.getyx()[0] + 1, split_x + 3)
         count += 1
 
-def display_tasks(window, selected, text_mode, removing, hide_completed):
+def display_tasks(window, selected, text_mode, removing, hide_completed): 
     """Main function to display tasks, with task details in the right box when selected."""
     max_x = window.getmaxyx()[1]
     display_borders(window, selected, split=True, task_list=get_task_list(hide_completed))
@@ -325,11 +326,16 @@ def display_tasks(window, selected, text_mode, removing, hide_completed):
         for task_key in tasks:
             if not tasks[task_key]['parent']:
                 display_task(window, task_key, selected, task_list, text_mode, split_x=split_x, box='left', removing=removing, hide_completed=hide_completed)
+        
+        if window.getyx()[0] >= window.getmaxyx()[0] - 5:
+            window.move(window.getmaxyx()[0] - 5, 4)
+        else:
+            window.move(window.getyx()[0] + 1, 4)
 
-        window.move(window.getyx()[0] + 1, 4)
         new_task_msg = "+ press : to enter a new task"
         if len(new_task_msg) > split_x - 2:
             new_task_msg = new_task_msg[:split_x - 5] + "..."
+
         window.addstr(new_task_msg, curses.color_pair(4 + 1 * (selected[0] == len(get_task_list(hide_completed)) + 2)))
 
         # Find the selected task and display its details in the right box
@@ -342,7 +348,11 @@ def display_tasks(window, selected, text_mode, removing, hide_completed):
             if not tasks[task_key]['parent']:
                 display_task(window, task_key, selected, task_list, text_mode, hide_completed=hide_completed)
 
-        window.move(window.getyx()[0] + 1, 4)
+        if window.getyx()[0] >= window.getmaxyx()[0] - 5:
+            window.move(window.getmaxyx()[0] - 5, 4)
+        else:
+            window.move(window.getyx()[0] + 1, 4)
+
         window.addstr("+ press : to enter a new task", curses.color_pair(4 + 1 * (selected[0] == len(get_task_list(hide_completed)) + 2)))
 
 def draw_task_table(window, data, start_y, start_x, selected, removing):
@@ -352,40 +362,35 @@ def draw_task_table(window, data, start_y, start_x, selected, removing):
     # Identify specific columns for prioritization
     headers = data[0][1:-1]
 
+    # Index of the name column (headers[1])
+    name_column_index = 1  # Adjusted for slicing [1:-1]
+
     table_width = sum(column_widths) + len(column_widths) + 5  # Total width of the table
     max_width = window.getmaxyx()[1] - 10  # Max width allowed for the table
 
     # If the table is wider than the maximum allowed width
     if table_width > max_width:
-        # List of all column indices
-        all_columns = list(range(len(column_widths)))
-
         # Calculate how much the table exceeds the max width
         total_excess = table_width - max_width
 
-        # Calculate the proportional decrease for each column based on their current widths
-        total_current_width = sum(column_widths[i] for i in all_columns)
+        # Reduce only the name column width
+        min_name_width = len(headers[name_column_index]) + 3
+        current_name_width = column_widths[name_column_index]
 
-        # Scale down columns proportionally
-        for col_index in all_columns:
-            # Reduce each column width based on its proportion of the total current width
-            reduction_ratio = column_widths[col_index] / total_current_width
-            reduction_amount = int(total_excess * reduction_ratio)
+        # Calculate the reduced width for the name column
+        reduced_name_width = max(min_name_width, current_name_width - total_excess)
 
-            # Ensure columns do not shrink below the minimum width
-            min_width = len(headers[col_index]) + 3
-            column_widths[col_index] = max(min_width, column_widths[col_index] - reduction_amount)
+        # Update the width for the name column
+        column_widths[name_column_index] = reduced_name_width
 
-        # After reducing all columns, recheck the table width to ensure it fits within the limit
+        # Recalculate the final table width
         final_table_width = sum(column_widths) + len(column_widths) + 5
         if final_table_width > max_width:
-            # If the widths still exceed the limit, iteratively reduce them further
+            # If still exceeding, further reduce the name column width
             total_excess = final_table_width - max_width
-            for col_index in all_columns:
-                # Further proportional reduction
-                reduction_ratio = column_widths[col_index] / total_current_width
-                reduction_amount = int(total_excess * reduction_ratio)
-                column_widths[col_index] = max(len(headers[col_index]) + 3, column_widths[col_index] - reduction_amount)
+            column_widths[name_column_index] = max(
+                min_name_width, column_widths[name_column_index] - total_excess
+            )
 
     # Draw table header
     for i, header in enumerate(data[0][1:-1]):

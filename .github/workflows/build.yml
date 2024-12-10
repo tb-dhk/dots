@@ -55,6 +55,12 @@ jobs:
         run: |
           pyinstaller --onefile --name=dots-linux src/main.py
 
+      - name: upload linux build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dots-linux
+          path: dist/
+
   build-windows:
     needs: lint
     runs-on: ubuntu-latest
@@ -78,6 +84,12 @@ jobs:
       - name: build for windows
         run: |
           pyinstaller --onefile --name=dots-windows.exe src/main.py
+
+      - name: upload linux build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dots-windows.exe
+          path: dist/
 
   build-macos:
     needs: lint
@@ -104,16 +116,8 @@ jobs:
           source venv/bin/activate
           pyinstaller --onefile --name=dots-macos src/main.py
 
-  upload-artifacts:
-    needs: [build-linux, build-windows, build-macos]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Print working directory
-        run: pwd
-      - name: List directory contents
-        run: ls -R
-      - name: upload build artifacts
+      - name: upload linux build artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: cross-platform-build
+          name: dots-macos
           path: dist/

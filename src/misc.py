@@ -1,5 +1,4 @@
 import curses
-import json
 from modules import Task, Habit
 
 def display_borders(window, selected, split=False, task_list=[]):
@@ -51,19 +50,6 @@ def display_text_box(window, text_input, text_box, text_index):
         )
     else:
         window.addstr(max_y - 2, len(text_box) + 2, " ", curses.color_pair(1))
-
-def load_items(filename):
-    try:
-        with open(filename, 'r', encoding='utf-8') as file:
-            return json.load(file)  # Load and return tasks as a dictionary
-    except FileNotFoundError:
-        return {}  # Return empty dict if file does not exist
-    except json.JSONDecodeError:
-        return {}  # Return empty dict if JSON is invalid
-
-def save_items(items, filename):
-    with open(filename, 'w', encoding='utf-8') as file:
-        json.dump(items, file, indent=4)  # Save tasks in a pretty format
 
 def coming_soon(window):
     display_borders(window, [0, 0])

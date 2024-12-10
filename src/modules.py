@@ -1,10 +1,28 @@
 import os
 import uuid
+import json
 
-from misc import load_items, save_items
+from datetime import date, timedelta, datetime as dt
+
+def load_items(filename):
+    try:
+        with open(filename, 'r', encoding='utf-8') as file:
+            return json.load(file)  # Load and return tasks as a dictionary
+    except FileNotFoundError:
+        return {}  # Return empty dict if file does not exist
+    except json.JSONDecodeError:
+        return {}  # Return empty dict if JSON is invalid
+
+def save_items(items, filename):
+    with open(filename, 'w', encoding='utf-8') as file:
+        json.dump(items, file, indent=4)  # Save tasks in a pretty format
 
 class Task:
-    def __init__(self, name, due_date=date.today().strftime("%Y-%m-%d"), due_type="day", priority=2, tags=[], subtasks=[], parent=[]):
+    def __init__(
+        self, name,
+        due_date=date.today().strftime("%Y-%m-%d"),
+        due_type="day", priority=2, tags=[], subtasks=[], parent=[]
+    ):
         self.id = str(uuid.uuid4())  # Unique identifier for the task
         self.name = name  # Task name
         self.due_date = due_date  # Task due date (string, could be a day/week/month-based format)
@@ -189,28 +207,28 @@ class ProgressHabit(Habit):
         super().__init__(name, habit_type="Progress", unit=unit, target_value=target_value)
 
     @classmethod
-    def add_progress_record(cls, habit_id, date, completed_value):
+    def add_progress_record(cls, habit_id, on_date, completed_value):
         habits = cls.load_habits()
         if habit_id in habits:
-            habits[habit_id]['data'][date] = completed_value  # Add record
+            habits[habit_id]['data'][on_date] = completed_value  # Add record
             cls.save_habits(habits)
             return True
         return False
 
     @classmethod
-    def edit_progress_record(cls, habit_id, date, new_completed_value):
+    def edit_progress_record(cls, habit_id, on_date, new_completed_value):
         habits = cls.load_habits()
-        if habit_id in habits and date in habits[habit_id]['data']:
-            habits[habit_id]['data'][date] = new_completed_value  # Edit record
+        if habit_id in habits and on_date in habits[habit_id]['data']:
+            habits[habit_id]['data'][on_date] = new_completed_value  # Edit record
             cls.save_habits(habits)  # Save changes to JSON
             return True
         return False
 
     @classmethod
-    def remove_progress_record(cls, habit_id, date):
+    def remove_progress_record(cls, habit_id, on_date):
         habits = cls.load_habits()
-        if habit_id in habits and date in habits[habit_id]['data']:
-            del habits[habit_id]['data'][date]  # Remove record
+        if habit_id in habits and on_date in habits[habit_id]['data']:
+            del habits[habit_id]['data'][on_date]  # Remove record
             cls.save_habits(habits)  # Save changes to JSON
             return True
         return False
@@ -220,29 +238,28 @@ class FrequencyHabit(Habit):
         super().__init__(name, habit_type="Frequency", unit=unit, target_value=target_value)
 
     @classmethod
-    def add_occurrence_record(cls, habit_id, date, occurrences):
+    def add_occurrence_record(cls, habit_id, on_date, occurrences):
         habits = cls.load_habits()
         if habit_id in habits:
-            habits[habit_id]['data'][date] = occurrences  # Add record
+            habits[habit_id]['data'][on_date] = occurrences  # Add record
             cls.save_habits(habits)  # Save updated habits to JSON
             return True
         return False
 
     @classmethod
-    def edit_occurrence_record(cls, habit_id, date, new_occurrences):
+    def edit_occurrence_record(cls, habit_id, on_date, new_occurrences):
         habits = cls.load_habits()
-        if habit_id in habits and date in habits[habit_id]['data']:
-            habits[habit_id]['data'][date] = new_occurrences  # Edit record
+        if habit_id in habits and on_date in habits[habit_id]['data']:
+            habits[habit_id]['data'][on_date] = new_occurrences  # Edit record
             cls.save_habits(habits)  # Save changes to JSON
             return True
         return False
 
     @classmethod
-    def remove_occurrence_record(cls, habit_id, date):
+    def remove_occurrence_record(cls, habit_id, on_date):
         habits = cls.load_habits()
-        if habit_id in habits and date in habits[habit_id]['data']:
-            del habits[habit_id]['data'][date]  # Remove record
+        if habit_id in habits and on_date in habits[habit_id]['data']:
+            del habits[habit_id]['data'][on_date]  # Remove record
             cls.save_habits(habits)  # Save changes to JSON
             return True
         return False
-

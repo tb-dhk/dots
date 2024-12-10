@@ -48,4 +48,3 @@ def content(
         coming_soon(window)
     display_text_box(window, text_input, text_box, text_index)
     window.refresh()
-

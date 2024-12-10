@@ -1,6 +1,5 @@
 src/__pycache__/
 build/
-dist/
 dots.spec
 dots-linux.spec
 .env

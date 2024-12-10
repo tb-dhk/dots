@@ -397,42 +397,46 @@ def draw_task_table(window, data, start_y, start_x, selected, removing):
         window.addstr(start_y + 0, start_x + sum(column_widths[:i]) + i, ('╔' if not i else "╦") + '═' * column_widths[i])
         window.addstr(start_y + 1, start_x + sum(column_widths[:i]) + i, "║ " + header.ljust(column_widths[i]))
         window.addstr(start_y + 2, start_x + sum(column_widths[:i]) + i, ('╠' if not i else "╬") + '═' * column_widths[i])
-        window.addstr(start_y + len(data) + 2, start_x + sum(column_widths[:i]) + i, ('╚' if not i else "╩") + '═' * column_widths[i])
+        window.addstr(min(window.getmaxyx()[0] - 6, start_y + len(data) + 2), start_x + sum(column_widths[:i]) + i, ('╚' if not i else "╩") + '═' * column_widths[i])
     for row in range(3):
         window.addstr(start_y + row, start_x + sum(column_widths) + 5, '║' if row % 2 else ('╗' if not row else '╣'))
-    window.addstr(start_y + len(data) + 2, start_x + sum(column_widths) + 5, '╝')
+    window.addstr(min(window.getmaxyx()[0] - 6, start_y + len(data) + 2), start_x + sum(column_widths) + 5, '╝')
 
     # Draw table rows
     for row_idx, row in enumerate(data[1:]):
-        for i, item in enumerate(row[1:-1]):
-            window.addstr(start_y + row_idx + 3, start_x + sum(column_widths[:i]) + i, "║ ")
+        if start_y + row_idx + 3 <= window.getmaxyx()[0] - 7:
+            for i, item in enumerate(row[1:-1]):
+                window.addstr(start_y + row_idx + 3, start_x + sum(column_widths[:i]) + i, "║ ")
 
-            # Handle priority and completed columns
-            if i == 0:
-                window.addstr(item[:2], curses.color_pair(8))
-            else:
-                if data[0][i+1] == "priority":
-                    item = ["low", "medium", "high"][item - 1]
-                elif data[0][i+1] == "completed":
-                    item = "yes" if item else "no"
-                if item == "":
-                    item = " " * (column_widths[i] - 2)
+                # Handle priority and completed columns
+                if i == 0:
+                    window.addstr(item[:2], curses.color_pair(8))
+                else:
+                    if data[0][i+1] == "priority":
+                        item = ["low", "medium", "high"][item - 1]
+                    elif data[0][i+1] == "completed":
+                        item = "yes" if item else "no"
+                    if item == "":
+                        item = " " * (column_widths[i] - 2)
 
-                # Handle removing subtasks
-                if row[-1] and i == 1:
-                    item = "this task will be removed" if row[0] == removing else "this subtask will be removed"
+                    # Handle removing subtasks
+                    if row[-1] and i == 1:
+                        item = "this task will be removed" if row[0] == removing else "this subtask will be removed"
 
-                # Truncate text and add ellipses if it exceeds column width
-                item_str = str(item)
-                if len(item_str) > column_widths[i]:
-                    item_str = item_str[:column_widths[i] - 5] + "..."
+                    # Truncate text and add ellipses if it exceeds column width
+                    item_str = str(item)
+                    if len(item_str) > column_widths[i]:
+                        item_str = item_str[:column_widths[i] - 5] + "..."
 
-                window.addstr(
-                    item_str[:column_widths[i] - 2], 
-                    curses.color_pair(4 if row[2][0] == "x" and selected[0] - 3 != row_idx else (1 + 4 * ((selected[0] - 3) == row_idx and (selected[1] + 1) == i))) if not row[-1] else curses.color_pair(7)
-                )
+                    window.addstr(
+                        item_str[:column_widths[i] - 2], 
+                        curses.color_pair(
+                            5 if ((selected[0] - 3) == row_idx and (selected[1] + 1) == i)
+                            else (4 if (row[2][0] == "x") else 1) 
+                        ) if not row[-1] else curses.color_pair(7)
+                    )
 
-        window.addstr(start_y + row_idx + 3, start_x + sum(column_widths) + 5, '║')
+            window.addstr(start_y + row_idx + 3, start_x + sum(column_widths) + 5, '║')
 
 def render_task_and_children(window, data, task, tasks_by_parent, indent, day, removing, hide_completed, bullets=False, removing_subtask=False):
     """Recursively render task and its children with appropriate indentation and hide completed tasks if required."""

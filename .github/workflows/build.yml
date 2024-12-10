@@ -1,4 +1,4 @@
-name: cross-platform build
+name: Cross-Platform Build
 
 on:
   push:
@@ -14,11 +14,17 @@ jobs:
 
     steps:
       # Checkout the code
-      - name: checkout code
+      - name: Checkout code
         uses: actions/checkout@v3
 
+      # Set up Python 3.13
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
       # Install dependencies
-      - name: install dependencies
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y wine python3-pip
@@ -26,24 +32,24 @@ jobs:
           pip install -r src/requirements.txt
 
       # Build for Linux
-      - name: build for Linux
+      - name: Build for Linux
         run: |
           pyinstaller --onefile --name=dots-linux src/main.py
 
       # Build for Windows using Wine
-      - name: build for Windows
+      - name: Build for Windows
         run: |
           pyinstaller --onefile --name=dots-windows.exe src/main.py
 
       # Build for macOS using dockcross
-      - name: build for macOS
+      - name: Build for macOS
         run: |
           curl -fsSL https://github.com/dockcross/dockcross/raw/master/macos > ./dockcross-macos
           chmod +x ./dockcross-macos
           ./dockcross-macos bash -c "pip install -r src/requirements.txt && pyinstaller --onefile --name=dots-macos src/main.py"
 
       # Upload artifacts
-      - name: upload build artifacts
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v3
         with:
           name: cross-platform-build

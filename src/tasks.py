@@ -422,7 +422,10 @@ def draw_task_table(window, data, start_y, start_x, selected, removing):
                 if len(item_str) > column_widths[i]:
                     item_str = item_str[:column_widths[i] - 5] + "..."
 
-                window.addstr(item_str[:column_widths[i] - 2], curses.color_pair((1 + 4 * ((selected[0] - 3) == row_idx and (selected[1] + 1) == i))) if not row[-1] else curses.color_pair(7))
+                window.addstr(
+                    item_str[:column_widths[i] - 2], 
+                    curses.color_pair(4 if row[2][0] == "x" and selected[0] - 3 != row_idx else (1 + 4 * ((selected[0] - 3) == row_idx and (selected[1] + 1) == i))) if not row[-1] else curses.color_pair(7)
+                )
 
         window.addstr(start_y + row_idx + 3, start_x + sum(column_widths) + 5, '║')
 
@@ -508,7 +511,7 @@ def day_view(window, selected, day, removing, hide_completed):
         window.addstr(
             len(data) + 8, 5,
             f"completed tasks due today: ({completed_today}/{len(due_today)}) " +
-            f"({str(round(completed_today / len(due_today) * 100, 2)) + '%' if len(due_today) else 'n/a'})"
+            f"({str(round(completed_today / len(due_today) * 100, 2)) + '%' if len(due_today) else 'n/a'})",
         )
 
     # Display text box input (for text entry mode)

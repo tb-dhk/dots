@@ -14,6 +14,18 @@ only tasks are implemented at the moment, but i plan to add the other components
 ### download
 simply download one of the build artifacts from one of our releases!
 
+the following commands will install dots to /usr/local/bin.
+```
+# linux
+curl -LO https://github.com/tb-dhk/dots/releases/download/0.2.0/dots-linux -o /usr/local/bin/dots
+
+# macos
+curl -LO https://github.com/tb-dhk/dots/releases/download/0.2.0/dots-macos -o /usr/local/bin/dots
+
+# windows
+curl -LO https://github.com/tb-dhk/dots/releases/download/0.2.0/dots-windows.exe -o /usr/local/bin/dots
+```
+
 ### manual build
 
 prerequisites:

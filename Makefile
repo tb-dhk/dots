@@ -7,12 +7,12 @@ build:
 install:
 	@chmod +x ./install/install.sh
 	@chmod +x ./install/install-no-gum.sh
-	@if [ "$(findstring --no-gum, $(MAKECMDGOALS))" ]; then \
-		echo -e "skipping \x1b[1mgum\x1b[0m, running installer without \x1b[1mgum\x1b[0m."; \
-		./install/install-no-gum.sh; \
-	elif which gum > /dev/null 2>&1; then \
+	@if [ "$(USE_GUM)" != "no" ] && which gum > /dev/null 2>&1; then \
 		./install/install.sh; \
+	elif [ "$(USE_GUM)" = "no" ]; then \
+		echo -e "Skipping gum, running installer without gum."; \
+		./install/install-no-gum.sh; \
 	else \
-		echo -e "\x1b[1mgum\x1b[0m not found. install \x1b[1mgum\x1b[0m for a prettier installer."; \
+		echo -e "gum not found. Install gum for a prettier installer."; \
 		./install/install-no-gum.sh; \
 	fi

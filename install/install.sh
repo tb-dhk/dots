@@ -153,4 +153,4 @@ done
 
 echo -e "\x1b[1m~/.dots\x1b[0m set up!"
 
-echo -e "dots installed successfully. run \x1b[1mdots\x1b[0m to continue."
+echo -e "\x1b[1m~/.dots\x1b[0m installed successfully. run \x1b[1mdots\x1b[0m to continue."

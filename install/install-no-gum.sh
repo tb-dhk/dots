@@ -22,18 +22,18 @@ compare_versions() {
 }
 
 # Welcome message
-echo -e "Welcome to the \x1b[1mdots \x1b[0minstaller!"
+echo -e "welcome to the \x1b[1mdots \x1b[0minstaller!"
 
 # Get the latest stable version
 latest_stable_version=$(git tag --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
 
 # Display the prompt with the default version
-echo -e "Enter the version or branch to install (default: \x1b[1m$latest_stable_version\x1b[0m):"
-read -p "Version/branch: " ref
+echo -e "enter the version or branch to install (default: \x1b[1m$latest_stable_version\x1b[0m):"
+read -p "version/branch: " ref
 
 # If no selection is made, use the latest stable version as the default
 if [ -z "$ref" ]; then 
-    echo "No version/branch entered, using default: $latest_stable_version"
+    echo "no version/branch entered, using default: $latest_stable_version"
     ref="$latest_stable_version"
 fi
 
@@ -41,20 +41,20 @@ fi
 git fetch --tags &> /dev/null || { echo "error: failed to fetch tags."; exit 1; }
 git checkout "$ref" &> /dev/null || { echo "error: failed to checkout $ref."; exit 1; }
 
-echo -e "Fetched and checked out to branch/tag \x1b[1m$ref\x1b[0m!"
+echo -e "fetched and checked out to branch/tag \x1b[1m$ref\x1b[0m!"
 
 # Building executable
-echo "Building executable..."
+echo "building executable..."
 ./install/build.sh || { echo "error: failed to build the project."; exit 1; }
-echo "Executable built!"
+echo "executable built!"
 
 # Check if the build artifacts exist
 if [ ! -f dist/dots-linux ] && [ ! -f dist/dots-macos ] && [ ! -f dist/dots-windows.exe ]; then
-  echo "error: no build artifact found. Please build the project first."
+  echo "error: no build artifact found. please build the project first."
   exit 1
 fi
 
-echo "Build artifacts found!"
+echo "build artifacts found!"
 
 # Extract PATH directories
 PATH_DIRS=$(echo "$PATH" | tr ':' '\n')
@@ -72,7 +72,7 @@ fi
 unique_dirs=""
 
 # Loop through the PATH directories
-echo "Available installation directories:"
+echo "available installation directories:"
 while IFS= read -r dir; do
   # If the directory is a symlink, resolve it to the full path
   resolved_dir=$(realpath "$dir" 2>/dev/null || echo "$dir")
@@ -90,7 +90,7 @@ done <<< "$PATH_DIRS"
 echo -e "$unique_dirs"
 
 # Ask user to select the installation directory
-read -p "Enter the installation directory: " INSTALL_DIR
+read -p "enter the installation directory: " INSTALL_DIR
 
 # If no selection is made or invalid ref
 if [ -z "$INSTALL_DIR" ]; then 
@@ -108,7 +108,7 @@ else
   echo "error: unsupported operating system."; exit 1
 fi
 
-echo -e "Executable installed in \x1b[1m$INSTALL_DIR\x1b[0m!"
+echo -e "executable installed in \x1b[1m$INSTALL_DIR\x1b[0m!"
 
 # Setting up ~/.dots
 DOTS_DIR=~/.dots
@@ -119,17 +119,17 @@ mkdir -p $DOTS_DIR || { echo "error: failed to create \x1b[1m$DOTS_DIR\x1b[0m"; 
 if [ ! -f $DOTS_DIR/config.toml ]; then
   cp src/config.toml $DOTS_DIR/config.toml || { echo "error: failed to copy \x1b[1mconfig.toml\x1b[0m."; exit 1; }
 else
-  echo -e "warning: \x1b[1m$DOTS_DIR/config.toml\x1b[0m already exists. Skipping..."
+  echo -e "warning: \x1b[1m$DOTS_DIR/config.toml\x1b[0m already exists. skipping..."
 fi
 
 for file in $FILES; do
   if [ ! -f $DOTS_DIR/$file ]; then
     echo "{}" > $DOTS_DIR/$file || { echo "error: failed to create \x1b[1m$file\x1b[0m."; exit 1; }
   else
-    echo -e "warning: \x1b[1m$DOTS_DIR/$file\x1b[0m already exists. Skipping..."
+    echo -e "warning: \x1b[1m$DOTS_DIR/$file\x1b[0m already exists. skipping..."
   fi
 done
 
 echo -e "\x1b[1m~/.dots\x1b[0m set up!"
 
-echo -e "dots installed successfully. Run \x1b[1mdots\x1b[0m to continue."
+echo -e "dots installed successfully. run \x1b[1mdots\x1b[0m to continue."

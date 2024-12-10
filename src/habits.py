@@ -308,7 +308,7 @@ def progress_maps(window, selected, map_settings):
 
     habits = Habit.load_habits()
 
-    # Filter habits based on type and include both 'progress' and 'frequency' types for habit view
+    # Filter habits based on type and include both 'progress' and 'frequency' types for habit-based view
     if based_on == "habit":
         habits = {habit: habits[habit] for habit in habits if habits[habit]['type'] in ["progress", "frequency"]}
     else:
@@ -575,15 +575,20 @@ def manage_habits(window, selected, removing):
 
     window.addstr(2, 5, "manage habits")
 
-    # draw headers and footer
     for i, header in enumerate(headers):
-        window.addstr(4, 5 + sum(column_widths[:i]), "+" + "-" * (column_widths[i] - 1))
-        window.addstr(5, 5 + sum(column_widths[:i]), "| " + header.ljust(column_widths[i]) + " ")
-        window.addstr(6, 5 + sum(column_widths[:i]), "+" + "-" * (column_widths[i] - 1))
-        window.addstr(min(7 + len(habits), window.getmaxyx()[0] - 6), 5 + sum(column_widths[:i]), "+" + "-" * (column_widths[i] - 1))
-    for c, char in enumerate("+|+"):
-        window.addstr(4 + c, 5 + sum(column_widths), char)
-    window.addstr(min(7 + len(habits), window.getmaxyx()[0] - 6), 5 + sum(column_widths), "+")
+        # Draw the top row of the table
+        window.addstr(4, 5 + sum(column_widths[:i]) + i, ('╔' if i == 0 else "╦") + '═' * column_widths[i])
+        # Draw the header row
+        window.addstr(5, 5 + sum(column_widths[:i]) + i, "║ " + header.ljust(column_widths[i]))
+        # Draw the separator row below the header
+        window.addstr(6, 5 + sum(column_widths[:i]) + i, ('╠' if i == 0 else "╬") + '═' * column_widths[i])
+        # Draw the bottom border of the table
+        window.addstr(min(7 + len(habits), window.getmaxyx()[0] - 6), 5 + sum(column_widths[:i]) + i, ('╚' if i == 0 else "╩") + '═' * column_widths[i])
+
+    # Draw the right border of the table
+    for row in range(3):
+        window.addstr(4 + row, 5 + sum(column_widths) + len(column_widths), '║' if row % 2 else ('╗' if row == 0 else '╣'))
+    window.addstr(min(7 + len(habits), window.getmaxyx()[0] - 6), 5 + sum(column_widths) + len(column_widths), '╝')
 
     for h, habit in enumerate(habits):
         if h + 7 <= window.getmaxyx()[0] - 7:
@@ -591,12 +596,14 @@ def manage_habits(window, selected, removing):
                 item = str(habits[habit][header])
                 if i == 3 and habits[habit]["type"] == "frequency":
                     item = ""
-                window.addstr(7 + h, 5 + sum(column_widths[:i]), "|" + " " * (column_widths[i] + 2))
+                # Draw cell contents
+                window.addstr(7 + h, 5 + sum(column_widths[:i]) + i, "║" + " " * column_widths[i])
                 if removing == habit:
-                    window.addstr(7 + h, 7 + sum(column_widths[:i]), item.ljust(column_widths[i] - 3), curses.color_pair(7))
+                    window.addstr(7 + h, 7 + sum(column_widths[:i]) + i, item.ljust(column_widths[i] - 2), curses.color_pair(7))
                 else:
-                    window.addstr(7 + h, 7 + sum(column_widths[:i]), item.ljust(column_widths[i] - 3), curses.color_pair(1 + (selected[0] == h + 2 and selected[1] % 4 == i)))
-            window.addstr(7 + h, 5 + sum(column_widths), "|")
+                    window.addstr(7 + h, 7 + sum(column_widths[:i]) + i, item.ljust(column_widths[i] - 2), curses.color_pair(1 + (selected[0] == h + 2 and selected[1] % 4 == i)))
+            # Draw the right cell border
+            window.addstr(7 + h, 5 + sum(column_widths) + len(column_widths), "║")
 
 def add_new_habit(window, selected, new_habit):
     display_borders(window, selected)

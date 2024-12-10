@@ -353,11 +353,15 @@ def heatmaps(window, selected, map_settings):
                         heat[habit][record[0].date()] = duration / target_value
             elif habits[habit]['type'] == "progress":
                 for d in habits[habit]['data']:
-                    heat[habit][dt.strptime(d, "%Y-%m-%d").date()] = habits[habit]['data'][d] / habits[habit]['target_value']
+                    heat[habit][
+                        dt.strptime(d, "%Y-%m-%d").date()
+                    ] = habits[habit]['data'][d] / habits[habit]['target_value']
             elif habits[habit]['type'] == "frequency":
                 max_frequency = max(*habits[habit]['data'].values(), 1)
                 for d in habits[habit]['data']:
-                    heat[habit][dt.strptime(d, "%Y-%m-%d").date()] = habits[habit]['data'][d] / max_frequency
+                    heat[habit][
+                        dt.strptime(d, "%Y-%m-%d").date()
+                    ] = habits[habit]['data'][d] / max_frequency
 
         start_day = dt.strptime(start_day, "%Y-%m-%d").date()
         end_day = dt.strptime(end_day, "%Y-%m-%d").date()
@@ -375,7 +379,7 @@ def heatmaps(window, selected, map_settings):
                 condensed[habit] = {}
                 for og_date in heat[habit]:
                     if og_date < start_day or og_date > end_day:
-                        continue 
+                        continue
                     if based_on == "week":
                         rounded_date = get_sunday(dt.strftime(og_date, "%Y-%m-%d"))
                     elif based_on == "month":

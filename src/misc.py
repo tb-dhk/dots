@@ -202,7 +202,7 @@ def inner_navbar(stdscr, outer_option, inner_option, selected):
 
 def change_color(special_color):
     base_value = 750
-    color_offset = 100
+    color_offset = 25
     if special_color[0] == 1000:
         if special_color[2] > base_value:
             special_color[2] -= color_offset

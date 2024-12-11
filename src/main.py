@@ -104,9 +104,12 @@ def main(stdscr):
                 )
                 status_bar(stdscr, text_input, text_mode, message)
         except curses.error:
-            stdscr.clear()
-            center_string(stdscr, "hi, your screen is too small...", offset=(0, -1))
-            center_string(stdscr, "please zoom out or enlarge your window! :3", offset=(0, 1))
+            try:
+                stdscr.clear()
+                center_string(stdscr, "hi, your screen is too small...", offset=(0, -1))
+                center_string(stdscr, "please zoom out or enlarge your window! :3", offset=(0, 1))
+            except:
+                pass
 
         # fetch all habits, and add a log for today (unless type == duration)
         habits = Habit.load_habits()

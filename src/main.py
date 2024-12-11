@@ -42,9 +42,9 @@ def check_date(string):
         return False
     return True
 
-def center_string(window, string, color_pair, offset=(0, 0)):
+def center_string(window, string, color_pair=0, offset=(0, 0)):
     height, width = window.getmaxyx()
-    x = width // 2 - len(string) // 2 + offset[0]
+    x = (width - len(string)) // 2 + offset[0]
     y = height // 2 + offset[1]
     window.addstr(y, x, string, curses.color_pair(color_pair))
 
@@ -87,31 +87,38 @@ def main(stdscr):
 
         curses.init_color(69, *special_color)
 
+        height, width = stdscr.getmaxyx()
+
         # Draw screen
-        if not started:
-            for x in range(width):
-                for y in range(height):
-                    if (x - width // 2 + 26, y - height // 2 + 6) in points:
-                        stdscr.addch(y, x, "•", curses.color_pair(3))
-                    else:
-                        try:
-                            stdscr.addch(y, x, "•", curses.color_pair(4))
-                        except:
-                            pass #stdscr.insstr(y, x-1, "•", curses.color_pair(4))
-            center_string(stdscr, " press SPACE to start ", 1, offset=(0, 10))
-        else:
-            outer_navbar(stdscr, outer_option, selected)
-            inner_navbar(stdscr, outer_option, inner_option, selected)
-            content(
-                content_window,
-                outer_option, inner_option,
-                selected,
-                text_input, text_mode, text_box, text_index,
-                removing, day,
-                map_settings, new_habit,
-                hide_completed
-            )
-            status_bar(stdscr, text_input, text_mode, message)
+        try:
+            if not started:
+                for x in range(width):
+                    for y in range(height):
+                        if (x - width // 2 + 26, y - height // 2 + 6) in points:
+                            stdscr.addch(y, x, "•", curses.color_pair(3))
+                        else:
+                            try:
+                                stdscr.addch(y, x, "•", curses.color_pair(4))
+                            except:
+                                pass #stdscr.insstr(y, x-1, "•", curses.color_pair(4))
+                center_string(stdscr, " press SPACE to start ", 1, offset=(0, 10))
+            else:
+                outer_navbar(stdscr, outer_option, selected)
+                inner_navbar(stdscr, outer_option, inner_option, selected)
+                content(
+                    content_window,
+                    outer_option, inner_option,
+                    selected,
+                    text_input, text_mode, text_box, text_index,
+                    removing, day,
+                    map_settings, new_habit,
+                    hide_completed
+                )
+                status_bar(stdscr, text_input, text_mode, message)
+        except:
+            stdscr.clear()
+            center_string(stdscr, "hi, your screen is too small...", offset=(0, -1))
+            center_string(stdscr, "please zoom out or enlarge your window!", offset=(0, 1))
 
         # fetch all habits, and add a log for today (unless type == duration)
         habits = Habit.load_habits()

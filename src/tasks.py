@@ -591,30 +591,49 @@ def day_view(window, selected, day, removing, hide_completed):
             })",
         )
 
-    # Display text box input (for text entry mode)
-
-def week_view(window, selected, day, removing, hide_completed):
+def days_view(window, selected, day, removing, hide_completed, view_type):
     display_borders(window, selected)
 
-    start = (
-        dt.strptime(day, "%Y-%m-%d") - timedelta(
-            days=dt.strptime(day, "%Y-%m-%d").weekday() + 1
-        )).strftime("%Y-%m-%d")
-    end = (dt.strptime(start, "%Y-%m-%d") + timedelta(days=6)).strftime("%Y-%m-%d")
+    # Determine start and end dates based on the view type
+    if view_type == "week":
+        start = (
+            dt.strptime(day, "%Y-%m-%d") - timedelta(
+                days=dt.strptime(day, "%Y-%m-%d").weekday() + 1
+            )
+        ).strftime("%Y-%m-%d")
+        end = (dt.strptime(start, "%Y-%m-%d") + timedelta(days=6)).strftime("%Y-%m-%d")
+        tasks = tasks_for_week(day)
+    elif view_type == "month":
+        start = dt.strptime(day, "%Y-%m-%d").replace(day=1).strftime("%Y-%m-%d")
+        end = dt.strptime(start, "%Y-%m-%d").replace(
+            day=calendar.monthrange(
+                dt.strptime(day, "%Y-%m-%d").year, dt.strptime(day, "%Y-%m-%d").month
+            )[1]
+        ).strftime("%Y-%m-%d")
+        tasks = tasks_for_month(day)
+    elif view_type == "year":
+        start = dt.strptime(day, "%Y-%m-%d").replace(month=1, day=1).strftime("%Y-%m-%d")
+        end = dt.strptime(start, "%Y-%m-%d").replace(month=12, day=31).strftime("%Y-%m-%d")
+        tasks = tasks_for_year(day)
+    else:
+        raise ValueError("Invalid view type")
 
     window.addstr(2, 5, "tasks for ")
     window.addstr(f"< {start} - {end} >", curses.color_pair(1 + 4 * (selected[0] == 2)))
 
-    tasks = tasks_for_week(day)
-
-    # Group tasks by parent ID
     tasks_by_parent = {}
     orphaned_tasks = []
 
+    # Process tasks
     for task in tasks:
+        if view_type in ["month", "year"]:
+            if task['due_type'] == "month":
+                task['due_date'] = task['due_date'][:7]
+            elif task['due_type'] == "year":
+                task['due_date'] = task['due_date'][:4]
         parent_id = task['parent']
         if not parent_id or parent_id not in [t['id'] for t in tasks]:
-            orphaned_tasks.append(task)  # Task has no parent in today's tasks
+            orphaned_tasks.append(task)
         else:
             tasks_by_parent.setdefault(parent_id, []).append(task)
 
@@ -632,127 +651,23 @@ def week_view(window, selected, day, removing, hide_completed):
     # Draw the table
     draw_task_table(window, data, 4, 5, selected, removing)
 
-    # Calculate and display completed tasks for today
-    due_today = [task for task in tasks if task['due_date'] == day]
-    completed_today = len([task for task in due_today if task['completed']])
+    # Calculate and display completed tasks
+    due_tasks = [task for task in tasks if start <= task['due_date'] <= end]
+    completed_tasks = len([task for task in due_tasks if task['completed']])
+    completion_percentage = (
+        str(round(completed_tasks / len(due_tasks) * 100, 2)) + "%"
+        if len(due_tasks) else "n/a"
+    )
     window.addstr(
         len(data) + 8, 5,
-        f"completed tasks due today: ({completed_today}/{len(due_today)}) " +
-        f"({
-            str(
-                round(completed_today / len(due_today) * 100, 2)
-            ) + '%' if len(due_today) else 'n/a'
-        })"
+        f"completed tasks due this {view_type}: ({completed_tasks}/{len(due_tasks)}) ({completion_percentage})"
     )
 
-    # Display text box input (for text entry mode)
+def week_view(*args):
+    days_view(*args, "week")
 
-def month_view(window, selected, day, removing, hide_completed):
-    display_borders(window, selected)
+def month_view(*args):
+    days_view(*args, "month")
 
-    start = dt.strptime(day, "%Y-%m-%d").replace(day=1).strftime("%Y-%m-%d")
-    end = dt.strptime(start, "%Y-%m-%d").replace(
-        day=calendar.monthrange(
-            dt.strptime(day, "%Y-%m-%d").year, dt.strptime(day, "%Y-%m-%d").month
-        )[1]
-    ).strftime("%Y-%m-%d")
-
-    window.addstr(2, 5, "tasks for ")
-    window.addstr(f"< {start} - {end} >", curses.color_pair(1 + 4 * (selected[0] == 2)))
-
-    tasks = tasks_for_month(day)
-
-    tasks_by_parent = {}
-    orphaned_tasks = []
-
-    for task in tasks:
-        if task['due_type'] == "month":
-            task['due_date'] = task['due_date'][:7]
-        elif task['due_type'] == "year":
-            task['due_date'] = task['due_date'][:4]
-        parent_id = task['parent']
-        if not parent_id or parent_id not in [t['id'] for t in tasks]:
-            orphaned_tasks.append(task)  # Task has no parent in today's tasks
-        else:
-            tasks_by_parent.setdefault(parent_id, []).append(task)
-
-    # Data table for display
-    data = [['id', '', 'task', 'due', 'priority', 'part of', 'removing']]
-
-    # Recursively render orphaned tasks and their children
-    for task in orphaned_tasks:
-        render_task_and_children(
-            window, data,
-            task, tasks_by_parent,
-            0, day,
-            removing, hide_completed
-        )
-
-    # Draw the table
-    draw_task_table(window, data, 4, 5, selected, removing)
-
-    # Calculate and display completed tasks for today
-    due_today = [task for task in tasks if task['due_date'] == day]
-    completed_today = len([task for task in due_today if task['completed']])
-    window.addstr(
-        len(data) + 8, 5,
-        f"completed tasks due today: ({completed_today}/{len(due_today)}) " +
-        f"({
-            str(
-                round(completed_today / len(due_today) * 100, 2)
-            ) + '%' if len(due_today) else 'n/a'
-        })"
-    )
-
-def year_view(window, selected, day, removing, hide_completed):
-    display_borders(window, selected)
-
-    start = dt.strptime(day, "%Y-%m-%d").replace(month=1, day=1).strftime("%Y-%m-%d")
-    end = dt.strptime(start, "%Y-%m-%d").replace(month=12, day=31).strftime("%Y-%m-%d")
-
-    window.addstr(2, 5, "tasks for ")
-    window.addstr(f"< {start} - {end} >", curses.color_pair(1 + 4 * (selected[0] == 2)))
-
-    tasks = tasks_for_year(day)
-
-    tasks_by_parent = {}
-    orphaned_tasks = []
-
-    for task in tasks:
-        if task['due_type'] == "month":
-            task['due_date'] = task['due_date'][:7]
-        elif task['due_type'] == "year":
-            task['due_date'] = task['due_date'][:4]
-        parent_id = task['parent']
-        if not parent_id or parent_id not in [t['id'] for t in tasks]:
-            orphaned_tasks.append(task)  # Task has no parent in today's tasks
-        else:
-            tasks_by_parent.setdefault(parent_id, []).append(task)
-
-    # Data table for display
-    data = [['id', '', 'task', 'due', 'priority', 'part of', 'removing']]
-
-    # Recursively render orphaned tasks and their children
-    for task in orphaned_tasks:
-        render_task_and_children(
-            window, data,
-            task, tasks_by_parent,
-            0, day,
-            removing, hide_completed
-        )
-
-    # Draw the table
-    draw_task_table(window, data, 4, 5, selected, removing)
-
-    # Calculate and display completed tasks for today
-    due_today = [task for task in tasks if task['due_date'] == day]
-    completed_today = len([task for task in due_today if task['completed']])
-    window.addstr(
-        len(data) + 8, 5,
-        f"completed tasks due today: ({completed_today}/{len(due_today)}) " +
-        f"({
-            str(
-                round(completed_today / len(due_today) * 100, 2)
-            ) + '%' if len(due_today) else 'n/a'
-        })"
-    )
+def year_view(*args):
+    days_view(*args, "year")

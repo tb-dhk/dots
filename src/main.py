@@ -118,7 +118,7 @@ def main(stdscr):
         except:
             stdscr.clear()
             center_string(stdscr, "hi, your screen is too small...", offset=(0, -1))
-            center_string(stdscr, "please zoom out or enlarge your window!", offset=(0, 1))
+            center_string(stdscr, "please zoom out or enlarge your window! :3", offset=(0, 1))
 
         # fetch all habits, and add a log for today (unless type == duration)
         habits = Habit.load_habits()

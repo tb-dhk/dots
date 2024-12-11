@@ -103,7 +103,7 @@ def main(stdscr):
                     hide_completed
                 )
                 status_bar(stdscr, text_input, text_mode, message)
-        except:
+        except curses.error:
             stdscr.clear()
             center_string(stdscr, "hi, your screen is too small...", offset=(0, -1))
             center_string(stdscr, "please zoom out or enlarge your window! :3", offset=(0, 1))

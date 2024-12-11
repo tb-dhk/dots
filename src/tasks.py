@@ -298,7 +298,7 @@ def display_tasks(window, selected, text_mode, removing, hide_completed):
 
     for task in tasks:
         parent_id = tasks[task]['parent']
-        if parent_id and parent_id in [t['id'] for t in tasks]:
+        if parent_id and parent_id in list(tasks.keys()):
             tasks_by_parent.setdefault(parent_id, []).append(task)
 
     # Filter tasks if hide_completed is true

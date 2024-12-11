@@ -21,7 +21,7 @@ class Task:
     def __init__(
         self, name,
         due_date=date.today().strftime("%Y-%m-%d"),
-        due_type="day", priority=2, tags=[], subtasks=[], parent=[]
+        due_type="day", priority=2, tags=[], subtasks=[], parent=""
     ):
         self.id = str(uuid.uuid4())  # Unique identifier for the task
         self.name = name  # Task name

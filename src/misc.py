@@ -1,4 +1,6 @@
 import curses
+from datetime import datetime as dt
+
 from modules import Task, Habit
 
 def display_borders(window, selected, split=False, task_list=[]):
@@ -239,3 +241,16 @@ def init_colors():
     curses.init_pair(6, 20, curses.COLOR_WHITE)
     curses.init_pair(7, curses.COLOR_WHITE, curses.COLOR_RED)
     curses.init_pair(8, curses.COLOR_RED, curses.COLOR_BLACK)
+
+def check_date(string):
+    try:
+        dt.strptime(string, "%Y-%m-%d")
+    except:
+        return False
+    return True
+
+def center_string(window, string, color_pair=0, offset=(0, 0)):
+    height, width = window.getmaxyx()
+    x = (width - len(string)) // 2 + offset[0]
+    y = height // 2 + offset[1]
+    window.addstr(y, x, string, curses.color_pair(color_pair))

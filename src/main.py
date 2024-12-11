@@ -28,25 +28,13 @@ from misc import (
     status_bar,
     edit_task_parent,
     outer_navbar, inner_options, inner_navbar,
-    change_color, init_colors
+    change_color, init_colors,
+    check_date, center_string
 )
 
 from content import content
 
 config = toml.load(os.path.join(os.path.expanduser("~"), ".dots", "config.toml"))
-
-def check_date(string):
-    try:
-        dt.strptime(string, "%Y-%m-%d")
-    except:
-        return False
-    return True
-
-def center_string(window, string, color_pair=0, offset=(0, 0)):
-    height, width = window.getmaxyx()
-    x = (width - len(string)) // 2 + offset[0]
-    y = height // 2 + offset[1]
-    window.addstr(y, x, string, curses.color_pair(color_pair))
 
 def main(stdscr):
     # Screen setup

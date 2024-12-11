@@ -660,7 +660,10 @@ def days_view(window, selected, day, removing, hide_completed, view_type):
     )
     window.addstr(
         len(data) + 8, 5,
-        f"completed tasks due this {view_type}: ({completed_tasks}/{len(due_tasks)}) ({completion_percentage})"
+        (
+            f"completed tasks due this {view_type}: "
+            + f"({completed_tasks}/{len(due_tasks)}) ({completion_percentage})"
+        )
     )
 
 def week_view(*args):

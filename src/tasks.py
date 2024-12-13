@@ -27,7 +27,7 @@ def traverse_tasks(task_key, tasks, clean_list, hide_completed=False):
     If hide_completed is True, skip tasks where the task and all its subtasks are completed.
     """
     # Skip the task if hide_completed is True and all subtasks are completed
-    if hide_completed and all_subtasks_completed(task_key):
+    if hide_completed and tasks[task_key]["completed"]:
         return
 
     clean_list.append(task_key)  # Add the parent task key
@@ -35,7 +35,6 @@ def traverse_tasks(task_key, tasks, clean_list, hide_completed=False):
     # Recursively add subtasks
     for subtask_key in tasks[task_key].get('subtasks', []):
         traverse_tasks(subtask_key, tasks, clean_list, hide_completed=hide_completed)
-
 
 def get_task_list(hide_completed=False):
     """Return a clean list of tasks and their subtasks in a structured order."""
@@ -134,7 +133,8 @@ def display_task(
     hide_completed=False
 ):
     """Display a task and its subtasks with indentation, adapted for two split boxes."""
-    task = Task.load_tasks()[str(task_key)]
+    tasks = Task.load_tasks()
+    task = tasks[str(task_key)]
     if not task:
         return  # Skip if task not found
 
@@ -207,14 +207,15 @@ def display_task(
 
     task_list.append(task_key)
     for subtask_key in task['subtasks']:
-        display_task(
-            window,
-            subtask_key, selected, task_list,
-            text_mode,
-            indent + 1, split_x, box,
-            removing, bool(removing == task_key),
-            hide_completed=hide_completed
-        )
+        if not(tasks[subtask_key]["completed"] and hide_completed): 
+            display_task(
+                window,
+                subtask_key, selected, task_list,
+                text_mode,
+                indent + 1, split_x, box,
+                removing, bool(removing == task_key),
+                hide_completed=hide_completed
+            )
 
 def display_task_details(window, task_id, split_x, selected):
     """

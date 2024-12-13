@@ -122,6 +122,8 @@ def duration_maps(window, selected, map_settings):
                 str((earliest_time.hour) + x % 24).rjust(2, "0")
             )
 
+        records = dict(sorted(records.items()))
+
         for i, record in enumerate(records):
             if i + 9 <= window.getmaxyx()[0] - 6:
                 if based_on == "day":
@@ -208,6 +210,8 @@ def progress_maps(window, selected, map_settings):
         max_width = window.getmaxyx()[1] - 23 - max_length
 
         interval = max_width // 10
+
+        records = dict(sorted(records.items()))
 
         for i, (key, value) in enumerate(records.items()):
             if i + 9 <= window.getmaxyx()[0] - 6:

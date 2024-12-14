@@ -2,7 +2,7 @@
 
 ## [0.2.0] - 2024-12-14
 
-### new features
+### new features:
 - habit management:  
   - introduced a dedicated screen to manage habits with options to edit and delete.  
   - supported three main habit types:  
@@ -14,18 +14,16 @@
     - added helper functions to format data based on selected intervals.  
 
 - task management:  
-  - scheduling: added the ability to schedule/unschedule tasks due today.  
   - hiding completed tasks: toggle via the “h” keybinding for completed tasks and subtasks.  
-  - dynamic task filtering: grouped tasks by parent ID to manage subtasks when hiding completed tasks.  
   - improved task table formatting:  
-    - added sorting (completed tasks first, then by due date).  
+    - added autosorting (completed tasks first, then by due date).  
     - styled completed tasks in non-list views.  
 
 - installation flexibility:  
   - integrated gum for enhanced user prompts and selection during installation.  
   - introduced the `use_gum=false` option for non-gum installations, with updated scripts and comprehensive instructions.  
 
-### improvements
+### improvements:
 - navigation views:  
   - unified `week`, `month`, and `year` views into a single function for better maintainability.  
   - addressed navigation bugs and fixed truncation issues in duration maps.  
@@ -50,10 +48,8 @@
 ### bug fixes:  
 - fixed screen flickering issue.  
 - fixed navigation and overflow issues in task tables and list views.  
-- resolved heatmap display and functionality bugs.  
 - improved exception handling for stability (e.g., `addwstr` exceptions).  
 - fixed message priorities to address format prompts first.  
-- fixed bugs related to subtasks in hide_completed mode.  
 - fixed "." keybinding functionality: toggling due dates to/from "today".  
 
 ### other changes:  
@@ -62,9 +58,6 @@
 - updated README.md and added new gifs.  
 - reworked GitHub workflows: fixed artifact uploads and integrated new steps.  
 - cleaned up repository by removing `dist/` from `.gitignore`.  
-
-full changelog:  
-[[0.1.1...0.2.0](https://github.com/tb-dhk/dots/compare/0.1.1...0.2.0)](https://github.com/tb-dhk/dots/compare/0.1.1...0.2.0)
 
 ---
 

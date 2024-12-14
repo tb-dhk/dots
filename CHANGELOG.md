@@ -1,35 +1,70 @@
 # changelog
 
-## [0.2.0] - 2024-11-??
+## [0.2.0] - 2024-12-14
 
 ### new features
-- **habit management screen**: added a dedicated screen to manage habits with options to edit and delete habits.
-- **three main habit types**:
-  - **frequency**: tracking occurrences without a specific goal.
-  - **duration**: tracking habits from start to end time.
-  - **progress**: tracking occurrences with a set goal.
-- **dynamic habit heatmaps**:
-  - added weekly, monthly, and yearly heatmap intervals.
-  - enhanced date handling for accurate display across intervals.
-  - implemented helper functions to format data based on selected start and end dates.
+- habit management:  
+  - introduced a dedicated screen to manage habits with options to edit and delete.  
+  - supported three main habit types:  
+    - frequency: doing something x times without a set goal.  
+    - duration: tracking time from start to end.  
+    - progress: completing tasks x times towards a goal.  
+  - dynamic habit heatmaps with weekly, monthly, and yearly intervals.  
+    - enhanced date handling for accurate display.  
+    - added helper functions to format data based on selected intervals.  
 
-### bugs fixed
-- rewrote file imports for improved structure.
-- rearranged `try/except` logic in `duration_maps()` for error handling.
-- fixed minimum width logic in `draw_task_table()` for better layout.
+- task management:  
+  - scheduling: added the ability to schedule/unschedule tasks due today.  
+  - hiding completed tasks: toggle via the “h” keybinding for completed tasks and subtasks.  
+  - dynamic task filtering: grouped tasks by parent ID to manage subtasks when hiding completed tasks.  
+  - improved task table formatting:  
+    - added sorting (completed tasks first, then by due date).  
+    - styled completed tasks in non-list views.  
 
-### others
-- **general code updates**:
-  - renamed `draw_table` to `draw_task_table` for clarity.
-  - moved shared methods to `misc.py` for better consistency across modules.
-- **linting**:
-  - fixed trailing whitespace.
-  - removed unused arguments and resolved `redefined-outer-name` and `redefined-builtin` issues.
-  - corrected `undefined-variable` and `unused-variable` errors.
-  - simplified nested min-max expressions.
-  - optimized code by using `dict.items()` and eliminated redundant `else` statements after `continue`.
-- **renamed "journals" to "logs"**.
-- moved `coming_soon()` function from `src/tasks.py` to `src/misc.py`.
+- installation flexibility:  
+  - integrated gum for enhanced user prompts and selection during installation.  
+  - introduced the `use_gum=false` option for non-gum installations, with updated scripts and comprehensive instructions.  
+
+### improvements
+- navigation views:  
+  - unified `week`, `month`, and `year` views into a single function for better maintainability.  
+  - addressed navigation bugs and fixed truncation issues in duration maps.  
+
+- code structure:  
+  - refactored and modularized major components:  
+    - moved content-related functions to `content.py`.  
+    - consolidated class definitions in `modules.py`.  
+    - isolated utility functions (e.g., `init_color()` and navbar rendering) in `misc.py`.  
+  - renamed `journals` to `logs` for clarity.  
+  - reduced line lengths for readability.  
+
+- habit management improvements:  
+  - sorted records by date in habit-based mode.  
+  - resolved crashes in the edit menu.  
+  - fixed table border issues for habits.  
+
+- performance enhancements:  
+  - increased frame rate from 10 fps to 50 fps.  
+  - optimized sorting and rendering logic for tasks.  
+
+### bug fixes:  
+- fixed screen flickering issue.  
+- fixed navigation and overflow issues in task tables and list views.  
+- resolved heatmap display and functionality bugs.  
+- improved exception handling for stability (e.g., `addwstr` exceptions).  
+- fixed message priorities to address format prompts first.  
+- fixed bugs related to subtasks in hide_completed mode.  
+- fixed "." keybinding functionality: toggling due dates to/from "today".  
+
+### other changes:  
+- enhanced table borders for better aesthetics.  
+- added descriptions for all functions for improved documentation.  
+- updated README.md and added new gifs.  
+- reworked GitHub workflows: fixed artifact uploads and integrated new steps.  
+- cleaned up repository by removing `dist/` from `.gitignore`.  
+
+full changelog:  
+[[0.1.1...0.2.0](https://github.com/tb-dhk/dots/compare/0.1.1...0.2.0)](https://github.com/tb-dhk/dots/compare/0.1.1...0.2.0)
 
 ---
 

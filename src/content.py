@@ -22,6 +22,7 @@ def content(
     map_settings, new_habit,
     hide_completed
 ):
+    """generate content window."""
     if outer_option == 0:
         if inner_option == 0:
             display_tasks(window, selected, text_mode, removing, hide_completed)

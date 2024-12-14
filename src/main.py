@@ -37,19 +37,22 @@ from content import content
 config = toml.load(os.path.join(os.path.expanduser("~"), ".dots", "config.toml"))
 
 def main(stdscr):
-    # Screen setup
+    """
+    the main function.
+    """
+    # screen setup
     stdscr.clear()
     stdscr.nodelay(1)
     stdscr.keypad(1)
-    curses.curs_set(0)  # Hide cursor
+    curses.curs_set(0)  # hide cursor
     curses.nonl()
 
-    # Color configuration
+    # color configuration
     special_color = [1000, 0, 0]
     if curses.has_colors():
         init_colors()
 
-    # Initial states
+    # initial states
     height, width = stdscr.getmaxyx()
     started = "-n" in sys.argv or "--no-home-screen" in sys.argv
     selected = [0, -1]
@@ -65,10 +68,10 @@ def main(stdscr):
     map_settings = {"based_on": 0, "index": 0, "index2": 0}
     new_habit = {"name": " ", "type": "progress", "unit": "", "target_value": 0}
 
-    # Create a window for content
-    content_height = height - 3  # Adjust based on your layout
+    # create a window for content
+    content_height = height - 3  # adjust based on your layout
     content_width = width
-    content_window = curses.newwin(content_height, content_width, 2, 0)  # Starting from row 2
+    content_window = curses.newwin(content_height, content_width, 2, 0)  # starting from row 2
 
     while True:
         special_color = change_color(special_color)
@@ -77,7 +80,7 @@ def main(stdscr):
 
         height, width = stdscr.getmaxyx()
 
-        # Draw screen
+        # draw screen
         try:
             if not started:
                 for x in range(width):
@@ -123,7 +126,7 @@ def main(stdscr):
                 if today not in habit["data"]:
                     FrequencyHabit.add_occurrence_record(habit_id, today, 0)
 
-        # Non-blocking check for key input
+        # non-blocking check for key input
         key = stdscr.getch()
         if key != -1:  # -1 means no key was pressed
             content_window.erase()
@@ -183,13 +186,13 @@ def main(stdscr):
                 if key == curses.KEY_BACKSPACE:
                     text_box = text_box[:text_index - 1] + text_box[text_index:]
                     text_index = max(0, text_index - 1)
-                elif key == 27:  # ESC key
+                elif key == 27:  # esc key
                     text_input = False
                     text_box = ""
                     text_mode = ""
                     if outer_option == 0 and inner_option == 0:
                         selected[1] = -1
-                elif key == 13:  # Enter key
+                elif key == 13:  # enter key
                     clear = True
                     if selected[0] >= 2:
                         task_id = ""

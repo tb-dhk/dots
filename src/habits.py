@@ -10,6 +10,9 @@ from misc import display_borders
 from modules import Habit
 
 def get_records_from_habits(habits, index):
+    """
+    retrieves records from habits as a dict with the day as the key.
+    """
     habitid = list(habits.keys())[index % len(habits)]
     raw_records = habits[habitid]['data']
 
@@ -25,6 +28,9 @@ def get_records_from_habits(habits, index):
     return records
 
 def duration_maps(window, selected, map_settings):
+    """
+    prints a duration map, with bars starting and ending based on time.
+    """
     display_borders(window, selected)
     based_on = ["day", "habit"][map_settings['based_on'] % 2]
     index = map_settings['index']
@@ -61,11 +67,11 @@ def duration_maps(window, selected, map_settings):
                 latest_time = dt.combine(day, time(hour=12, minute=0, second=0))
 
                 try:
-                    # Ensure earliest_time aligns to the nearest hour
+                    # ensure earliest_time aligns to the nearest hour
                     # (if necessary adjustments are needed)
                     earliest_time = earliest_time.replace(minute=0, second=0)
                 except:
-                    # Fallback in case of errors
+                    # fallback in case of errors
                     earliest_time = dt.combine(day, time(hour=0, minute=0, second=0))
 
             latest_time_diff = math.ceil((latest_time - earliest_time) / timedelta(hours=1))
@@ -75,8 +81,8 @@ def duration_maps(window, selected, map_settings):
             raw_records = habits[habitid]['data']
             on = habits[habitid]['name']
 
-            # Find periods and analyze the least recorded times
-            # Create a count for each hour in a 24-hour format
+            # find periods and analyze the least recorded times
+            # create a count for each hour in a 24-hour format
             hour_counts = [0] * 24
             for record in raw_records:
                 start_dt = dt.strptime(record[0], "%Y-%m-%d-%H:%M")
@@ -84,7 +90,7 @@ def duration_maps(window, selected, map_settings):
                 for hour in range(start_dt.hour, end_dt.hour + 1):
                     hour_counts[hour % 24] += 1
 
-            # Find the hour with the least records
+            # find the hour with the least records
             earliest_record = min(
                 raw_records, key=lambda r: dt.strptime(r[0], "%Y-%m-%d-%H:%M").hour
             )
@@ -161,6 +167,9 @@ def duration_maps(window, selected, map_settings):
         )
 
 def progress_maps(window, selected, map_settings):
+    """
+    prints a progress map, with progress bars.
+    """
     display_borders(window, selected)
     based_on = ["day", "habit"][map_settings['based_on'] % 2]
     index = map_settings['index']
@@ -223,7 +232,7 @@ def progress_maps(window, selected, map_settings):
                     habitid = list(habits.keys())[index % len(habits)]
                     if habits[habitid]['type'] == "progress":
                         target = habits[habitid]['target_value']
-                    else:  # For frequency tasks, use the maximum value in the displayed data
+                    else:  # for frequency tasks, use the maximum value in the displayed data
                         target = max(*records.values(), 1)
 
                 for x in range(interval + 1):
@@ -261,10 +270,16 @@ def progress_maps(window, selected, map_settings):
         window.addstr(8, 5, "no progress habits!")
 
 def get_sunday(this_date):
+    """
+    returns the sunday of the week.
+    """
     this_date = dt.strptime(this_date, "%Y-%m-%d")
     return (this_date - timedelta(days=this_date.weekday() + 1)).strftime("%Y-%m-%d")
 
 def get_bounds(based_on, index, index2):
+    """
+    gets the start and end of the heatmap dates.
+    """
     if based_on in ["day", "week"]:
         start_day = (datetime.date.today() + timedelta(days=index)).strftime("%Y-%m-%d")
         end_day = (datetime.date.today() + timedelta(days=index2)).strftime("%Y-%m-%d")
@@ -287,6 +302,9 @@ def get_bounds(based_on, index, index2):
     return start_day, end_day
 
 def get_dates(start_day, end_day, based_on):
+    """
+    gets dates based on start and end day.
+    """
     if based_on == "day":
         length = math.ceil((end_day - start_day) / timedelta(days=1)) + 1
         length = max(1, length)
@@ -306,6 +324,9 @@ def get_dates(start_day, end_day, based_on):
     return dates
 
 def heatmaps(window, selected, map_settings):
+    """
+    prints heatmap.
+    """
     display_borders(window, selected)
     based_list = ["day", "week", "month", "year", "calendar"]
     based_on = based_list[map_settings['based_on'] % len(based_list)]
@@ -518,6 +539,9 @@ def heatmaps(window, selected, map_settings):
         window.addstr(8, 5, "no habits!")
 
 def manage_habits(window, selected, removing):
+    """
+    prints a habit management menu.
+    """
     display_borders(window, selected)
     habits = Habit.load_habits()
     habits = dict(sorted(habits.items(), key=lambda x: x[0]))
@@ -534,29 +558,29 @@ def manage_habits(window, selected, removing):
     window.addstr(2, 5, "manage habits")
 
     for i, header in enumerate(headers):
-        # Draw the top row of the table
+        # draw the top row of the table
         window.addstr(
             4, 5 + sum(column_widths[:i]) + i,
             ('╔' if i == 0 else "╦") + '═' * column_widths[i]
         )
-        # Draw the header row
+        # draw the header row
         window.addstr(
             5, 5 + sum(column_widths[:i]) + i,
             "║ " + header.ljust(column_widths[i])
         )
-        # Draw the separator row below the header
+        # draw the separator row below the header
         window.addstr(
             6, 5 + sum(column_widths[:i]) + i,
             ('╠' if i == 0 else "╬") + '═' * column_widths[i]
         )
-        # Draw the bottom border of the table
+        # draw the bottom border of the table
         window.addstr(
             min(7 + len(habits), window.getmaxyx()[0] - 6),
             5 + sum(column_widths[:i]) + i,
             ('╚' if i == 0 else "╩") + '═' * column_widths[i]
         )
 
-    # Draw the right border of the table
+    # draw the right border of the table
     for row in range(3):
         window.addstr(
             4 + row, 5 + sum(column_widths) + len(column_widths),
@@ -574,7 +598,7 @@ def manage_habits(window, selected, removing):
                 item = str(habits[habit][header])
                 if i == 3 and habits[habit]["type"] == "frequency":
                     item = ""
-                # Draw cell contents
+                # draw cell contents
                 window.addstr(
                     7 + h, 5 + sum(column_widths[:i]) + i,
                     "║" + " " * column_widths[i]
@@ -590,10 +614,13 @@ def manage_habits(window, selected, removing):
                         item.ljust(column_widths[i] - 2),
                         curses.color_pair(1 + (selected[0] == h + 2 and selected[1] % 4 == i))
                     )
-            # Draw the right cell border
+            # draw the right cell border
             window.addstr(7 + h, 5 + sum(column_widths) + len(column_widths), "║")
 
 def add_new_habit(window, selected, new_habit):
+    """
+    prints the add new habit menu.
+    """
     display_borders(window, selected)
 
     window.addstr(2, 5, "new habit")

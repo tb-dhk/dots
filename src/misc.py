@@ -54,6 +54,9 @@ def display_text_box(window, text_input, text_box, text_index):
         window.addstr(max_y - 2, len(text_box) + 2, " ", curses.color_pair(1))
 
 def coming_soon(window):
+    """
+    print a coming soon message for pending features.
+    """
     display_borders(window, [0, 0])
     window.addstr(2, 5, "coming soon...")
 
@@ -172,6 +175,9 @@ def edit_task_parent(selected, text_box, task_list):
     return message
 
 def outer_navbar(stdscr, outer_option, selected):
+    """
+    print the outer navbar.
+    """
     options = ["tasks", "habits", "lists", "logs"]
     stdscr.addstr(0, 0, " " * stdscr.getmaxyx()[1], curses.color_pair(2 + 4 * (selected[0] == 0)))
     stdscr.move(0, 0)
@@ -182,6 +188,9 @@ def outer_navbar(stdscr, outer_option, selected):
         )
 
 def inner_options(outer_option):
+    """
+    load inner navbar options.
+    """
     if outer_option == 0:
         return ["list", "day", "week", "month", "year"]
     if outer_option == 1:
@@ -191,6 +200,9 @@ def inner_options(outer_option):
     return ["+ new"]
 
 def inner_navbar(stdscr, outer_option, inner_option, selected):
+    """
+    print the inner navbar.
+    """
     stdscr.addstr(1, 0, " " * stdscr.getmaxyx()[1], curses.color_pair(2 + 4 * (selected[0] == 1)))
     stdscr.move(1, 0)
     options = inner_options(outer_option)
@@ -201,6 +213,9 @@ def inner_navbar(stdscr, outer_option, inner_option, selected):
         )
 
 def change_color(special_color):
+    """
+    change the RGB color on the starting screen.
+    """
     base_value = 750
     color_offset = 25
     if special_color[0] == 1000:
@@ -228,6 +243,9 @@ def change_color(special_color):
     return special_color
 
 def init_colors():
+    """
+    initialise colors.
+    """
     curses.start_color()
     curses.init_color(curses.COLOR_BLACK, 0, 0, 0)
     curses.init_color(curses.COLOR_WHITE, 1000, 1000, 1000)
@@ -243,6 +261,9 @@ def init_colors():
     curses.init_pair(8, curses.COLOR_RED, curses.COLOR_BLACK)
 
 def check_date(string):
+    """
+    check if the string is a valid date.
+    """
     try:
         dt.strptime(string, "%Y-%m-%d")
     except:
@@ -250,6 +271,9 @@ def check_date(string):
     return True
 
 def center_string(window, string, color_pair=0, offset=(0, 0)):
+    """
+    center a string in the middle of a screen.
+    """
     height, width = window.getmaxyx()
     x = (width - len(string)) // 2 + offset[0]
     y = height // 2 + offset[1]

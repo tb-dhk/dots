@@ -10,12 +10,12 @@ from misc import display_borders
 config = toml.load(os.path.join(os.path.expanduser("~"), ".dots", "config.toml"))
 
 def all_subtasks_completed(task_key):
-    """Check if the task and all its subtasks are marked as completed."""
+    """check if the task and all its subtasks are marked as completed."""
     task = Task.get_task(task_key)
-    if not task.get('completed', False):  # Check if the task itself is not completed
+    if not task.get('completed', False):  # check if the task itself is not completed
         return False
 
-    # Check recursively for all subtasks
+    # check recursively for all subtasks
     for subtask_key in task.get('subtasks', []):
         if not all_subtasks_completed(subtask_key):
             return False
@@ -23,25 +23,25 @@ def all_subtasks_completed(task_key):
 
 def traverse_tasks(task_key, tasks, clean_list, hide_completed=False):
     """
-    Recursively traverse through the task and its subtasks, adding them to the clean list.
-    If hide_completed is True, skip tasks where the task and all its subtasks are completed.
+    recursively traverse through the task and its subtasks, adding them to the clean list.
+    if hide_completed is true, skip tasks where the task and all its subtasks are completed.
     """
-    # Skip the task if hide_completed is True and all subtasks are completed
+    # skip the task if hide_completed is true and all subtasks are completed
     if hide_completed and tasks[task_key]["completed"]:
         return
 
-    clean_list.append(task_key)  # Add the parent task key
+    clean_list.append(task_key)  # add the parent task key
 
-    # Recursively add subtasks
+    # recursively add subtasks
     for subtask_key in tasks[task_key].get('subtasks', []):
         traverse_tasks(subtask_key, tasks, clean_list, hide_completed=hide_completed)
 
 def get_task_list(hide_completed=False):
-    """Return a clean list of tasks and their subtasks in a structured order."""
-    tasks = Task.load_tasks()  # Load all tasks
+    """return a clean list of tasks and their subtasks in a structured order."""
+    tasks = Task.load_tasks()  # load all tasks
     clean_list = []
 
-    # Find tasks without parents (root tasks)
+    # find tasks without parents (root tasks)
     for task_key in tasks:
         if not tasks[task_key].get('parent'):
             traverse_tasks(task_key, tasks, clean_list, hide_completed=hide_completed)
@@ -56,12 +56,14 @@ def get_task_list(hide_completed=False):
     return clean_list
 
 def check_migrated(history, to_date):
+    """check if a task has been migrated."""
     for record in range(len(history)-1):
         if history[record][1] == history[record+1][0] and history[record][1] == to_date:
             return True
     return False
 
 def tasks_for_day(day=None):
+    """return tasks for a day."""
     if day is None:
         day = date.today().strftime("%Y-%m-%d")
     tasks = [
@@ -78,6 +80,7 @@ def tasks_for_day(day=None):
     return tasks
 
 def tasks_for_days(start, end):
+    """return tasks for several days."""
     tasks = []
     start = dt.strptime(start, "%Y-%m-%d")
     end = dt.strptime(end, "%Y-%m-%d")
@@ -93,35 +96,26 @@ def tasks_for_days(start, end):
     return tasks
 
 def tasks_for_week(day):
+    """return tasks for a week."""
     start = (
         dt.strptime(day, "%Y-%m-%d") - timedelta(days=dt.strptime(day, "%Y-%m-%d").weekday()-1)
     ).strftime("%Y-%m-%d")
     end = (dt.strptime(start, "%Y-%m-%d") + timedelta(days=6)).strftime("%Y-%m-%d")
     tasks = tasks_for_days(start, end)
-    tasks.sort(key=lambda x: (
-        int(x["completed"]),
-        -dt.timestamp(dt.strptime(x["due_date"], "%Y-%m-%d"))
-    ))
     return tasks
 
 def tasks_for_month(day):
+    """return tasks for a month."""
     start = dt.strptime(day, "%Y-%m-%d").replace(day=1).strftime("%Y-%m-%d")
     end = (dt.strptime(start, "%Y-%m-%d") + timedelta(days=31)).strftime("%Y-%m-%d")
     tasks = tasks_for_days(start, end)
-    tasks.sort(key=lambda x: (
-        int(x["completed"]),
-        -dt.timestamp(dt.strptime(x["due_date"], "%Y-%m-%d"))
-    ))
     return tasks
 
 def tasks_for_year(day):
+    """return tasks for a year."""
     start = dt.strptime(day, "%Y-%m-%d").replace(month=1, day=1).strftime("%Y-%m-%d")
     end = dt.strptime(start, "%Y-%m-%d").replace(month=12, day=31).strftime("%Y-%m-%d")
     tasks = tasks_for_days(start, end)
-    tasks.sort(key=lambda x: (
-        int(x["completed"]),
-        -dt.timestamp(dt.strptime(x["due_date"], "%Y-%m-%d"))
-    ))
     return tasks
 
 def display_task(
@@ -132,16 +126,16 @@ def display_task(
     removing="", removing_subtask=False,
     hide_completed=False
 ):
-    """Display a task and its subtasks with indentation, adapted for two split boxes."""
+    """display a task and its subtasks with indentation, adapted for two split boxes."""
     tasks = Task.load_tasks()
     task = tasks[str(task_key)]
     if not task:
-        return  # Skip if task not found
+        return  # skip if task not found
 
     if window.getyx()[0] <= window.getmaxyx()[0] - 7:
         task_number = get_task_list(hide_completed).index(task_key)
 
-        # Choose the starting column based on the box ('left' or 'right')
+        # choose the starting column based on the box ('left' or 'right')
         start_col = 2 if box != 'right' else split_x + 3
         end_col = split_x - 13 if box == 'left' else window.getmaxyx()[1] - 13
         window.move(window.getyx()[0] + 1, start_col)
@@ -183,17 +177,17 @@ def display_task(
         if removing != task_key and not removing_subtask:
             window.addstr(f"{'  ' * indent}{symbol} ", curses.color_pair(task_color_pair))
 
-            # Wrap text if it exceeds the column width (end_col)
+            # wrap text if it exceeds the column width (end_col)
             task_name = task['name']
-            available_width = end_col - window.getyx()[1] - 2  # Account for space and '...'
+            available_width = end_col - window.getyx()[1] - 2  # account for space and '...'
 
-            # Check if truncation is needed
+            # check if truncation is needed
             if len(task_name) > available_width:
-                truncated_name = task_name[:available_width - 3] + "..."  # Truncate and add "..."
+                truncated_name = task_name[:available_width - 3] + "..."  # truncate and add "..."
             else:
                 truncated_name = task_name
 
-            # Print the truncated task name
+            # print the truncated task name
             window.addstr(truncated_name, curses.color_pair(task_color_pair))
 
         else:
@@ -207,7 +201,7 @@ def display_task(
 
     task_list.append(task_key)
     for subtask_key in task['subtasks']:
-        if not(tasks[subtask_key]["completed"] and hide_completed): 
+        if not(tasks[subtask_key]["completed"] and hide_completed):
             display_task(
                 window,
                 subtask_key, selected, task_list,
@@ -219,7 +213,7 @@ def display_task(
 
 def display_task_details(window, task_id, split_x, selected):
     """
-    Display the attributes of the selected task in the right box,
+    display the attributes of the selected task in the right box,
     with aligned colons and edit commands.
     """
 
@@ -234,7 +228,7 @@ def display_task_details(window, task_id, split_x, selected):
     else:
         passed = due_date.date() < dt.now().date()
 
-    # Define the edit commands for each task attribute
+    # define the edit commands for each task attribute
     edit_commands = {
         "name": "n",
         "completed": "x",
@@ -245,7 +239,7 @@ def display_task_details(window, task_id, split_x, selected):
         "recurrence": "c"
     }
 
-    # Define the task details with keys for alignment
+    # define the task details with keys for alignment
     details = {
         "name": task['name'],
         "completed": 'yes' if task['completed'] else 'no ',
@@ -255,46 +249,46 @@ def display_task_details(window, task_id, split_x, selected):
         "tags": ', '.join(task['tags']),
     }
 
-    # Calculate the maximum key length for proper alignment
+    # calculate the maximum key length for proper alignment
     max_key_length = max(len(key) for key in details)
-    max_width = window.getmaxyx()[1] - split_x - 7  # Available space for wrapping
+    max_width = window.getmaxyx()[1] - split_x - 7  # available space for wrapping
 
-    # Display each detail line with aligned colons and edit commands
+    # display each detail line with aligned colons and edit commands
     window.move(1, split_x + 3)
     count = 0
     for key, value in details.items():
-        # Construct the base line with key, edit command, and colon
+        # construct the base line with key, edit command, and colon
         base_line = f"{key.ljust(max_key_length)} ({edit_commands[key]}) : "
         base_len = len(base_line)
 
-        # Split the value into lines if it exceeds the available width
+        # split the value into lines if it exceeds the available width
         lines = []
         value_str = str(value)
         while len(value_str) > max_width - base_len:
             lines.append(value_str[:max_width - base_len].rstrip())
             value_str = value_str[max_width - base_len:].lstrip()
-        lines.append(value_str)  # Add the remaining part
+        lines.append(value_str)  # add the remaining part
 
-        # Display the first line with the base formatting
+        # display the first line with the base formatting
         window.addstr(base_line + lines[0], curses.color_pair(1 + (selected[1] == count)))
         window.move(window.getyx()[0] + 1, split_x + 3)
 
-        # Display any additional wrapped lines for the value
+        # display any additional wrapped lines for the value
         for line in lines[1:]:
             window.addstr(" " * base_len + line, curses.color_pair(1 + (selected[1] == count)))
             window.move(window.getyx()[0] + 1, split_x + 3)
 
-        # Add extra spacing between each task detail
+        # add extra spacing between each task detail
         window.move(window.getyx()[0] + 1, split_x + 3)
         count += 1
 
 def display_tasks(window, selected, text_mode, removing, hide_completed):
-    """Main function to display tasks, with task details in the right box when selected."""
+    """main function to display tasks, with task details in the right box when selected."""
     max_x = window.getmaxyx()[1]
     display_borders(window, selected, split=True, task_list=get_task_list(hide_completed))
     tasks = Task.load_tasks()
 
-    # Group tasks by parent ID
+    # group tasks by parent id
     tasks_by_parent = {}
 
     for task in tasks:
@@ -302,7 +296,7 @@ def display_tasks(window, selected, text_mode, removing, hide_completed):
         if parent_id and parent_id in list(tasks.keys()):
             tasks_by_parent.setdefault(parent_id, []).append(task)
 
-    # Filter tasks if hide_completed is true
+    # filter tasks if hide_completed is true
     if hide_completed:
         tasks = {key: task for key, task in tasks.items()
                  if not task['completed'] or not all_subtasks_completed(task["id"])}
@@ -321,7 +315,7 @@ def display_tasks(window, selected, text_mode, removing, hide_completed):
     task_list = []
 
     if selected[0] >= 2 and selected[0] < len(get_task_list(hide_completed)) + 2:
-        # Display tasks in the left box
+        # display tasks in the left box
         window.move(0, 0)
         for task_key in tasks:
             if not tasks[task_key]['parent']:
@@ -348,11 +342,11 @@ def display_tasks(window, selected, text_mode, removing, hide_completed):
             )
         )
 
-        # Find the selected task and display its details in the right box
+        # find the selected task and display its details in the right box
         selected_task_key = task_list[selected[0] - 2]
         display_task_details(window, selected_task_key, split_x, selected)
     else:
-        # Single full-width box display
+        # single full-width box display
         window.move(0, 0)
         for task_key in tasks:
             if not tasks[task_key]['parent']:
@@ -372,45 +366,46 @@ def display_tasks(window, selected, text_mode, removing, hide_completed):
         ))
 
 def draw_task_table(window, data, start_y, start_x, selected, removing):
-    # Calculate the maximum width of each column
+    """draw a table contaning info about the tasks"""
+    # calculate the maximum width of each column
     column_widths = [
         max(len(str(item)) for item in column) + 2 for column in zip(*data)
     ][1:-1]
 
-    # Identify specific columns for prioritization
+    # identify specific columns for prioritization
     headers = data[0][1:-1]
 
-    # Index of the name column (headers[1])
-    name_column_index = 1  # Adjusted for slicing [1:-1]
+    # index of the name column (headers[1])
+    name_column_index = 1  # adjusted for slicing [1:-1]
 
-    table_width = sum(column_widths) + len(column_widths) + 5  # Total width of the table
-    max_width = window.getmaxyx()[1] - 10  # Max width allowed for the table
+    table_width = sum(column_widths) + len(column_widths) + 5  # total width of the table
+    max_width = window.getmaxyx()[1] - 10  # max width allowed for the table
 
-    # If the table is wider than the maximum allowed width
+    # if the table is wider than the maximum allowed width
     if table_width > max_width:
-        # Calculate how much the table exceeds the max width
+        # calculate how much the table exceeds the max width
         total_excess = table_width - max_width
 
-        # Reduce only the name column width
+        # reduce only the name column width
         min_name_width = len(headers[name_column_index]) + 3
         current_name_width = column_widths[name_column_index]
 
-        # Calculate the reduced width for the name column
+        # calculate the reduced width for the name column
         reduced_name_width = max(min_name_width, current_name_width - total_excess)
 
-        # Update the width for the name column
+        # update the width for the name column
         column_widths[name_column_index] = reduced_name_width
 
-        # Recalculate the final table width
+        # recalculate the final table width
         final_table_width = sum(column_widths) + len(column_widths) + 5
         if final_table_width > max_width:
-            # If still exceeding, further reduce the name column width
+            # if still exceeding, further reduce the name column width
             total_excess = final_table_width - max_width
             column_widths[name_column_index] = max(
                 min_name_width, column_widths[name_column_index] - total_excess
             )
 
-    # Draw table header
+    # draw table header
     for i, header in enumerate(data[0][1:-1]):
         window.addstr(
             start_y + 0, start_x + sum(column_widths[:i]) + i,
@@ -440,7 +435,7 @@ def draw_task_table(window, data, start_y, start_x, selected, removing):
         '╝'
     )
 
-    # Draw table rows
+    # draw table rows
     for row_idx, row in enumerate(data[1:]):
         if start_y + row_idx + 3 <= window.getmaxyx()[0] - 7:
             for i, item in enumerate(row[1:-1]):
@@ -449,7 +444,7 @@ def draw_task_table(window, data, start_y, start_x, selected, removing):
                     "║ "
                 )
 
-                # Handle priority and completed columns
+                # handle priority and completed columns
                 if i == 0:
                     window.addstr(item[:2], curses.color_pair(8))
                 else:
@@ -460,14 +455,14 @@ def draw_task_table(window, data, start_y, start_x, selected, removing):
                     if item == "":
                         item = " " * (column_widths[i] - 2)
 
-                    # Handle removing subtasks
+                    # handle removing subtasks
                     if row[-1] and i == 1:
                         if row[0] == removing:
                             item = "this task will be removed"
                         else:
                             item = "this subtask will be removed"
 
-                    # Truncate text and add ellipses if it exceeds column width
+                    # truncate text and add ellipses if it exceeds column width
                     item_str = str(item)
                     if len(item_str) > column_widths[i]:
                         item_str = item_str[:column_widths[i] - 5] + "..."
@@ -490,15 +485,15 @@ def render_task_and_children(
     bullets=False, removing_subtask=False
 ):
     """
-    Recursively render task and its children with appropriate indentation
+    recursively render task and its children with appropriate indentation
     and hide completed tasks if required.
     """
 
-    # If hide_completed is True and both the task and all its subtasks are completed, skip rendering
+    # if hide_completed is true and both the task and all its subtasks are completed, skip rendering
     if hide_completed and task['completed'] and all_subtasks_completed(task["id"]):
         return
 
-    # Mark task priority and bullet style
+    # mark task priority and bullet style
     important = "! " if task['priority'] == 3 else "  "
     if not bullets:
         bullet = "x" if task['completed'] else "•"
@@ -509,13 +504,13 @@ def render_task_and_children(
     else:
         bullet = "x" if task['completed'] else "•"
 
-    # Prepare the parent name if it exists
+    # prepare the parent name if it exists
     try:
         parent_name = Task.get_task(task['parent'])['name']
     except:
         parent_name = ""
 
-    # Append the task to the data list with appropriate indentation
+    # append the task to the data list with appropriate indentation
     data.append([
         task['id'],
         important,
@@ -526,7 +521,7 @@ def render_task_and_children(
         (removing == task['id']) or removing_subtask
     ])
 
-    # Recursively render child tasks
+    # recursively render child tasks
     if task['id'] in tasks_by_parent:
         for child in tasks_by_parent[task['id']]:
             render_task_and_children(
@@ -538,6 +533,7 @@ def render_task_and_children(
             )
 
 def day_view(window, selected, day, removing, hide_completed):
+    """print the day view"""
     display_borders(window, selected)
 
     window.addstr(2, 5, "tasks for ")
@@ -545,21 +541,21 @@ def day_view(window, selected, day, removing, hide_completed):
 
     tasks = tasks_for_day(day)
 
-    # Group tasks by parent ID
+    # group tasks by parent id
     tasks_by_parent = {}
     orphaned_tasks = []
 
     for task in tasks:
         parent_id = task['parent']
         if not parent_id or parent_id not in [t['id'] for t in tasks]:
-            orphaned_tasks.append(task)  # Task has no parent in today's tasks
+            orphaned_tasks.append(task)  # task has no parent in today's tasks
         else:
             tasks_by_parent.setdefault(parent_id, []).append(task)
 
-    # Data table for display
+    # data table for display
     data = [['id', '', 'task', 'due', 'priority', 'part of', 'removing']]
 
-    # Recursively render orphaned tasks and their children
+    # recursively render orphaned tasks and their children
     for task in orphaned_tasks:
         render_task_and_children(
             window, data,
@@ -569,10 +565,10 @@ def day_view(window, selected, day, removing, hide_completed):
             bullets=True
         )
 
-    # Draw the table
+    # draw the table
     draw_task_table(window, data, 4, 5, selected, removing)
 
-    # Calculate and display completed tasks for today
+    # calculate and display completed tasks for today
     due_today = [task for task in tasks if task['due_date'] == day]
     completed_today = len([task for task in due_today if task['completed']])
     if removing:
@@ -593,9 +589,10 @@ def day_view(window, selected, day, removing, hide_completed):
         )
 
 def days_view(window, selected, day, removing, hide_completed, view_type):
+    """print a view spanning several days."""
     display_borders(window, selected)
 
-    # Determine start and end dates based on the view type
+    # determine start and end dates based on the view type
     if view_type == "week":
         start = (
             dt.strptime(day, "%Y-%m-%d") - timedelta(
@@ -625,7 +622,7 @@ def days_view(window, selected, day, removing, hide_completed, view_type):
     tasks_by_parent = {}
     orphaned_tasks = []
 
-    # Process tasks
+    # process tasks
     for task in tasks:
         if view_type in ["month", "year"]:
             if task['due_type'] == "month":
@@ -638,10 +635,10 @@ def days_view(window, selected, day, removing, hide_completed, view_type):
         else:
             tasks_by_parent.setdefault(parent_id, []).append(task)
 
-    # Data table for display
+    # data table for display
     data = [['id', '', 'task', 'due', 'priority', 'part of', 'removing']]
 
-    # Recursively render orphaned tasks and their children
+    # recursively render orphaned tasks and their children
     for task in orphaned_tasks:
         render_task_and_children(
             window, data,
@@ -649,10 +646,10 @@ def days_view(window, selected, day, removing, hide_completed, view_type):
             0, day, removing, hide_completed
         )
 
-    # Draw the table
+    # draw the table
     draw_task_table(window, data, 4, 5, selected, removing)
 
-    # Calculate and display completed tasks
+    # calculate and display completed tasks
     due_tasks = [task for task in tasks if start <= task['due_date'] <= end]
     completed_tasks = len([task for task in due_tasks if task['completed']])
     completion_percentage = (

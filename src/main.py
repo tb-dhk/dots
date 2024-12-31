@@ -66,7 +66,7 @@ def main(stdscr):
     hide_completed = False
     day = date.today().strftime("%Y-%m-%d")
     map_settings = {"based_on": 0, "index": 0, "index2": 0}
-    new_habit = {"name": " ", "type": "progress", "unit": "", "target_value": 0}
+    new_habit = {"name": " ", "type": "progress", "unit": "", "target_value": 1.0}
 
     # create a window for content
     content_height = height - 3  # adjust based on your layout
@@ -389,7 +389,8 @@ def main(stdscr):
                                     message = f"habit unit set to '{text_box}'"
                                 case "habit target value":
                                     try:
-                                        new_habit["target_value"] = int(text_box)
+                                        if new_habit["type"] != "frequency":
+                                            new_habit["target_value"] = max(float(text_box), 1.0)
                                     except:
                                         message = "invalid target value. try again!"
                                         clear = False
@@ -926,8 +927,11 @@ def main(stdscr):
                                     index, index2 = map_settings["index"], map_settings["index2"]
                                     start_day, end_day = get_bounds(based_on, index, index2)
                                     selected_habit = list(habits.keys())[selected[0] - 5]
+
                                     selected_day = get_dates(
-                                        start_day, end_day, based_on
+                                        dt.strptime(start_day, "%Y-%m-%d"), 
+                                        dt.strptime(end_day, "%Y-%m-%d"), 
+                                        based_on
                                     )[selected[1]].strftime("%Y-%m-%d")[:10]
                                     text_input = True
                                     text_mode = [

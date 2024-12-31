@@ -546,7 +546,7 @@ def manage_habits(window, selected, removing):
     habits = Habit.load_habits()
     habits = dict(sorted(habits.items(), key=lambda x: x[0]))
 
-    headers = ["name", "type", "unit", "target_value"]
+    headers = ["name", "type", "unit", "target value"]
     column_widths = []
     for key in headers:
         try:

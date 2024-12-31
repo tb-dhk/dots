@@ -123,6 +123,7 @@ class Habit:
             habit_data = habits[habit_id]  # Get habit data
             # Update habit attributes based on provided kwargs
             for key, value in kwargs.items():
+                key = key.replace(" ", "_")
                 if key in habit_data:
                     habit_data[key] = value
             habits[habit_id] = habit_data  # Update the habit in the dictionary
@@ -149,6 +150,7 @@ class Habit:
 class DurationHabit(Habit):
     def __init__(self, name, target_value=""):
         super().__init__(name, habit_type="duration", unit="hours", target_value=target_value)
+        self.data = []
 
     @classmethod
     def add_duration_record(cls, habit_id, duration_sessions):
